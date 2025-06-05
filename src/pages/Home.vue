@@ -1,25 +1,67 @@
-<template>
-  <section class="min-h-screen flex flex-col justify-center items-center bg-orange-100 px-4 text-center">
-    <div class="max-w-3xl">
-      <img
-        src="/hero.jpg"
-        alt="山色主視覺"
-        class="w-full max-h-[400px] object-cover rounded-lg shadow-md mb-6"
-      />
-      <h1 class="text-4xl md:text-5xl font-bold text-orange-700 mb-4">山色</h1>
-      <p class="text-lg md:text-xl text-gray-700 mb-6">
+<template><div class="min-h-screen bg-gradient-to-b from-[#e5712f] to-[#f39532] flex flex-col items-center px-6 text-black">
+
+    <!-- 跑馬燈 -->
+    <div class="w-full bg-black overflow-hidden whitespace-nowrap py-1">
+      <div class="animate-marquee text-[rgba(255,255,255,0.8)] font-semibold inline-block px-4">
         ขอให้โชคดียิ้มให้คุณและนำพรทุกอย่างมาให้คุณ
-      </p>
-      <router-link
-        to="/reserve"
-        class="inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded transition"
-      >
-        桌餐予約
+      </div>
+    </div>
+
+    <!-- LOGO -->
+    <img
+      src="/hero-transparent.png"
+      alt="山色主視覺"
+      class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
+    />
+
+    <!-- 中間文字 -->
+    <p class="text-xl text-black font-normal mb-1">ขอบคุณค่ะ</p>
+    <div class="h-[1.5em]"></div>
+    <p class="text-lg mb-8 text-black font-semibold custom-wide-jp">完全予約制</p>
+
+    <!-- 按鈕群 -->
+    <div class="w-full max-w-sm space-y-6">
+      <router-link to="/about" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">關於我們</span>
+        </button>
+      </router-link>
+      <router-link to="/reserve" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">餐桌予約</span>
+        </button>
+      </router-link>
+      <router-link to="/menu" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">預先點餐</span>
+        </button>
+      </router-link>
+      <router-link to="/faq" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">訂位問題</span>
+        </button>
       </router-link>
     </div>
-  </section>
+  </div>
 </template>
 
-<script setup>
-// 無需邏輯，純展示頁
-</script>
+<style scoped>
+@keyframes marquee {
+  0% {
+    transform: translateX(100vw);
+  }
+  100% {
+    transform: translateX(-100vw);
+  }
+}
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 24s linear infinite;
+}
+.custom-wide-jp {
+  letter-spacing: 0.8em;
+}
+</style>
+
+<script setup></script>
