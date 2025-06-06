@@ -1,22 +1,22 @@
 # macOS
 .DS_Store
 
-# Node
+# Node modules
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-package-lock.json
-yarn.lock
 .pnpm-debug.log*
 
-# Vite cache
-dist/
+# Vite build cache
 .vite/
 coverage/
 
-# Editor directories and files
+# Build output (不要忽略 dist，因為是部署用的)
+# dist/
+
+# Editor settings
 .idea/
 .vscode/
 *.suo
@@ -24,23 +24,20 @@ coverage/
 *.njsproj
 *.sln
 
-# Env files
+# Environment files
 .env
 .env.*.local
 
-# Optional: log / temporary files
+# Optional logs and temporary files
 *.log
 tmp/
 temp/
 *.tmp
 
-# System
+# System files
 Thumbs.db
 Desktop.ini
 
-# Git
-.git/
-
-# Local build artifacts
+# Cache or local config
 *.local
 *.cache

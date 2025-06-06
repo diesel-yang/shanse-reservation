@@ -1,0 +1,27 @@
+# 忽略本機 node_modules 與 lock files（Vercel 會自動安裝乾淨的）
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 忽略本機建構產物（Vercel 會自動執行 build）
+dist/
+.vite/
+
+# 忽略開發工具設定
+.vscode/
+.idea/
+*.log
+*.tmp
+tmp/
+temp/
+
+# macOS 系統檔案
+.DS_Store
+
+# 測試與覆蓋率報告
+coverage/
+
+# env 檔案（通常不建議上傳）
+.env
+.env.*
