@@ -1,52 +1,47 @@
-<template>
-  <div class="min-h-screen bg-[#f2701d] font-[DM Sans] text-base leading-relaxed">
+<<template>
+  <div class="min-h-screen bg-gradient-to-b from-[#e5712f] to-[#f39532] flex flex-col items-center px-6 text-black">
+
     <!-- 黑底跑馬燈 -->
-    <div class="w-full bg-black text-white text-sm whitespace-nowrap overflow-hidden">
-      <div
-        class="animate-marquee py-1"
-        style="animation-duration: 18s;"
-      >
+    <div class="w-screen bg-black overflow-hidden whitespace-nowrap py-1">
+      <div class="animate-marquee text-[60%] text-white font-normal inline-block px-4 leading-tight">
         ขอให้โชคดียิ้มให้คุณและนำพรทุกอย่างมาให้คุณ
       </div>
     </div>
 
-    <!-- 主內容區塊 -->
-    <div class="flex flex-col items-center justify-center px-4 pt-10 pb-6 space-y-6">
-      <img
-        src="/shanse-logo.png"
-        alt="山色 logo"
-        class="h-[7vh] object-contain"
-      />
+    <!-- LOGO -->
+    <img
+      src="/hero-transparent.png"
+      alt="山色主視覺"
+      class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
+    />
 
-      <router-link
-        to="/about"
-        class="w-full max-w-xs rounded-2xl border border-black bg-[#f2701d] py-3 text-center text-lg text-black shadow-md"
-      >
-        關於我們
+    <!-- 中間文字 -->
+    <p class="text-xl text-black font-normal mb-1">ขอบคุณค่ะ</p>
+    <div class="h-[1.5em]"></div>
+    <p class="text-lg mb-8 text-black font-semibold custom-wide-jp">完全予約制</p>
+
+    <!-- 按鈕群 -->
+    <div class="w-full max-w-sm space-y-6">
+      <router-link to="/about" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">關於我們</span>
+        </button>
       </router-link>
-
-      <router-link
-        to="/reserve"
-        class="w-full max-w-xs rounded-2xl border border-black bg-[#f2701d] py-3 text-center text-lg text-black shadow-md"
-      >
-        餐桌予約
+      <router-link to="/reserve" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">餐桌予約</span>
+        </button>
       </router-link>
-
-      <router-link
-        to="/menu"
-        class="w-full max-w-xs rounded-2xl border border-black bg-[#f2701d] py-3 text-center text-lg text-black shadow-md"
-      >
-        預先點餐
+      <router-link to="/menu" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">預先點餐</span>
+        </button>
       </router-link>
-
-      <router-link
-        to="/faq"
-        class="w-full max-w-xs rounded-2xl border border-black bg-[#f2701d] py-3 text-center text-lg text-black shadow-md"
-      >
-        訂位問題
+      <router-link to="/faq" class="block">
+        <button class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          <span class="block text-center tracking-[0.2em]">訂位問題</span>
+        </button>
       </router-link>
-
-      <div class="text-black pt-8">完全予約制</div>
     </div>
   </div>
 </template>
@@ -63,7 +58,12 @@
 
 .animate-marquee {
   display: inline-block;
-  white-space: nowrap;
-  animation: marquee linear infinite;
+  animation: marquee 20s linear infinite;
+}
+
+.custom-wide-jp {
+  letter-spacing: 0.8em;
 }
 </style>
+
+<script setup></script>
