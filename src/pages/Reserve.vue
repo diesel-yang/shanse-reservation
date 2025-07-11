@@ -8,7 +8,12 @@
       </div>
       <div>
         <label class="block font-medium">用餐日期：</label>
-        <input id="datePicker" v-model="form.date" type="text" required class="w-full border p-2 rounded" />
+        <input
+          id="datePicker"
+          v-model="form.date"
+          type="text"
+          required
+          class="w-full border p-2 rounded" />
       </div>
       <div>
         <label class="block font-medium">用餐時段：</label>
@@ -43,11 +48,13 @@ const form = ref({
   name: '',
   date: '',
   time: '',
-  people: '',
+  people: ''
 })
 
 const submitReservation = () => {
-  alert(`✅ 感謝 ${form.value.name} 訂位！\n\n時間：${form.value.date} ${form.value.time}\n人數：${form.value.people} 位`)
+  alert(
+    `✅ 感謝 ${form.value.name} 訂位！\n\n時間：${form.value.date} ${form.value.time}\n人數：${form.value.people} 位`
+  )
   // 你可以在此加入 Google Sheets 寫入邏輯
 }
 
@@ -56,11 +63,11 @@ onMounted(() => {
     dateFormat: 'Y-m-d',
     minDate: 'today',
     disable: [
-      function(date) {
+      function (date) {
         // 禁用每週三、四
         return date.getDay() === 3 || date.getDay() === 4
-      },
-    ],
+      }
+    ]
   })
 })
 </script>

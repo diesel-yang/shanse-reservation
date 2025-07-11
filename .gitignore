@@ -41,3 +41,4 @@ Desktop.ini
 # Cache or local config
 *.local
 *.cache
+.vercel

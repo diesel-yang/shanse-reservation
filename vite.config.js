@@ -3,12 +3,16 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
-  base: '/',
+  base: './',
   plugins: [vue()],
   resolve: {
     alias: {
-      vue: 'vue/dist/vue.esm-bundler.js'
+      vue: 'vue/dist/vue.esm-bundler.js', // 注意逗號
+      '@': resolve(__dirname, './src') // 正確引入 resolve
     }
+  },
+  optimizeDeps: {
+    include: ['vue']
   },
   build: {
     target: 'es2015',

@@ -1,0 +1,45 @@
+.
+├── deploy.sh
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── project-structure.txt
+├── public
+│   ├── favicon.ico.html
+│   ├── hero-strict.png
+│   ├── hero-transparent.png
+│   ├── hero.jpg
+│   ├── shanse-about-us.mp4
+│   ├── shanse-logo.png
+│   └── shanse-view.pg.webp
+├── README-2.md
+├── src
+│   ├── App.vue
+│   ├── assets
+│   ├── components
+│   │   ├── CardGrid.vue
+│   │   ├── Navbar.vue
+│   │   ├── OrderBlock.vue
+│   │   ├── OrderForm.vue
+│   │   └── SectionCard.vue
+│   ├── index.css
+│   ├── main.js
+│   ├── pages
+│   │   ├── About.vue
+│   │   ├── Faq.vue
+│   │   ├── Home.vue
+│   │   ├── Menu.vue
+│   │   ├── Order.vue
+│   │   ├── Reserve.vue
+│   │   └── Tool.vue
+│   ├── routes
+│   │   └── index.js
+│   └── utils
+│       ├── dataLoaders.js
+│       └── helpers.js
+├── tailwind.config.js
+├── vercel.json
+└── vite.config.js
+
+8 directories, 35 files

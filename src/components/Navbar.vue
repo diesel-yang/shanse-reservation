@@ -12,8 +12,7 @@
   </nav>
 </template>
 
-<script setup>
-</script>
+<script setup></script>
 
 <style scoped>
 nav a.router-link-exact-active {
