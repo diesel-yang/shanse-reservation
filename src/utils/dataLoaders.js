@@ -1,4 +1,3 @@
-// src/utils/dataLoaders.js
 export const fetchMenu = async () => {
   try {
     const res = await fetch(
@@ -9,8 +8,8 @@ export const fetchMenu = async () => {
 
     if (json.result !== 'success' || !json.data) throw new Error('資料格式錯誤')
 
-    const convert = (arr) =>
-      arr.map((r) => ({
+    const convert = arr =>
+      arr.map(r => ({
         code: r.code || r.name || '',
         name: r.name || '',
         price: Number(r.price) || 0,
@@ -40,11 +39,9 @@ export const fetchHolidays = async () => {
 
     const res = await fetch(url)
     const data = await res.json()
-    // ✅ 回傳假日陣列
-    const holidayDates = data.items.map((e) => e.start.date)
-    return holidayDates
+    return data.items.map(e => e.start.date) // ✅ 假日為 YYYY-MM-DD 陣列
   } catch (err) {
-    console.error('假日載入失敗', err)
-    return [] // ✅ 必須保底 return 空陣列，避免 undefined
+    console.error('❌ 假日載入失敗', err)
+    return []
   }
 }

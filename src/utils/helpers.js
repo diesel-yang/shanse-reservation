@@ -26,14 +26,14 @@ export function getItemByCode(category, code, menu) {
  * 計算全部訂單的總金額（主餐+飲品+副餐+加點），含 10% 服務費
  */
 export function calcTotal(orders, menu) {
-  const getPrice = (type, code) =>
-    menu[type]?.find(item => item.code === code)?.price || 0
+  const getPrice = (type, code) => menu[type]?.find(item => item.code === code)?.price || 0
 
   const subtotal = orders.reduce((sum, order) => {
     const main = getPrice('main', order.main)
     const drink = getPrice('drink', order.drink)
     const side = getPrice('side', order.side)
-    const addons = order.addons?.map(code => getPrice('addon', code)).reduce((a, b) => a + b, 0) || 0
+    const addons =
+      order.addons?.map(code => getPrice('addon', code)).reduce((a, b) => a + b, 0) || 0
     return sum + main + drink + side + addons
   }, 0)
 
@@ -55,5 +55,9 @@ export function formatDate(isoDateStr) {
  * @returns {string}
  */
 export function formatCurrency(num) {
-  return toNumber(num).toLocaleString('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 })
+  return toNumber(num).toLocaleString('zh-TW', {
+    style: 'currency',
+    currency: 'TWD',
+    minimumFractionDigits: 0
+  })
 }

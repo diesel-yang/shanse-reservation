@@ -13,7 +13,8 @@
           v-model="form.date"
           type="text"
           required
-          class="w-full border p-2 rounded" />
+          class="w-full border p-2 rounded"
+        />
       </div>
       <div>
         <label class="block font-medium">用餐時段：</label>

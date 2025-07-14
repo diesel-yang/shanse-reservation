@@ -1,61 +1,32 @@
-<template>
-  <div class="min-h-screen bg-[#F28157] text-gray-900">
-    <main class="flex flex-col min-h-screen">
-      <router-view />
-    </main>
-  </div>
-</template>
-
 <script setup>
-import { ref, provide, onMounted } from 'vue'
+import { reactive, provide, ref, onMounted } from 'vue'
 import { fetchMenu, fetchHolidays } from '@/utils/dataLoaders'
+import { RouterView } from 'vue-router'
 
-// 建立 reactive 資料
-const menu = ref({
-  main: [],
-  drink: [],
-  side: [],
-  addon: []
-})
-const holidays = ref([])
+const menu = reactive({ main: [], drink: [], side: [], addon: [] })
+const holidays = reactive([])
+const loading = ref(true)
 
-// 提供給全站其他元件 inject 使用
 provide('menu', menu)
 provide('holidays', holidays)
 
-// 預抓資料
 onMounted(async () => {
   try {
-    const [menuData, holidayData] = await Promise.all([fetchMenu(), fetchHolidays()])
-    menu.value = menuData
-    holidays.value = holidayData
-    console.log('✅ 假日與菜單資料已載入完成')
+    const menuData = await fetchMenu()
+    Object.assign(menu, menuData)
+    const holidayList = await fetchHolidays()
+    holidays.splice(0, holidays.length, ...holidayList)
   } catch (err) {
-    console.error('❌ 載入初始化資料失敗', err)
+    console.error('❌ 資料載入失敗', err)
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
-<style>
-@import 'flatpickr/dist/flatpickr.min.css';
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  margin: 0;
-  background-color: #fff;
-  color: #333;
-}
-
-.holiday-highlight {
-  color: red !important;
-  font-weight: bold !important;
-}
-.holiday-highlight.selected,
-.holiday-highlight.selected:hover {
-  background: #ffe5e5 !important;
-  color: red !important;
-  font-weight: bold !important;
-}
-</style>
+<template>
+  <div v-if="!loading" class="min-h-screen bg-orange-50 text-gray-800 font-sans">
+    <RouterView />
+  </div>
+  <div v-else class="flex items-center justify-center h-screen text-gray-500">載入中...</div>
+</template>

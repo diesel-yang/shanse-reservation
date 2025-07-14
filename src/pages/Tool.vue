@@ -8,11 +8,13 @@
     <textarea
       v-model="input"
       placeholder="貼上 JSON 內容..."
-      class="w-full h-48 border rounded p-2 mb-4 font-mono text-sm"></textarea>
+      class="w-full h-48 border rounded p-2 mb-4 font-mono text-sm"
+    ></textarea>
 
     <button
       @click="generate"
-      class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow">
+      class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow"
+    >
       🔁 轉換為菜單格式
     </button>
 

@@ -11,13 +11,15 @@
             ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300'
             : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50',
           item.disabled ? 'opacity-50 pointer-events-none' : ''
-        ]">
+        ]"
+      >
         <!-- 圖片 -->
         <img
           :src="item.img || fallbackImg"
           @error="handleImgError"
           alt="item.name"
-          class="w-16 h-16 object-cover mb-1 rounded" />
+          class="w-16 h-16 object-cover mb-1 rounded"
+        />
 
         <!-- 名稱與加價 -->
         <span class="font-medium text-gray-800 text-center leading-tight">{{ item.name }}</span>
@@ -31,7 +33,8 @@
         <!-- 禁用文字 -->
         <div
           v-if="item.disabled"
-          class="absolute top-0 right-0 text-[10px] text-white bg-red-400 px-1.5 py-0.5 rounded-bl">
+          class="absolute top-0 right-0 text-[10px] text-white bg-red-400 px-1.5 py-0.5 rounded-bl"
+        >
           補貨中
         </div>
 
@@ -41,13 +44,15 @@
           type="checkbox"
           class="hidden"
           :checked="modelValue.includes(item.code)"
-          @change="toggleItem(item.code)" />
+          @change="toggleItem(item.code)"
+        />
         <input
           v-else
           type="radio"
           class="hidden"
           :checked="modelValue === item.code"
-          @change="$emit('update:selected', item.code)" />
+          @change="$emit('update:selected', item.code)"
+        />
       </label>
     </div>
   </div>
@@ -55,6 +60,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   title: String,
@@ -72,12 +78,12 @@ const fallbackImg = '/placeholder.png'
 const modelValue = computed(() => (props.multiple ? props.selectedList || [] : props.selected))
 
 // 判斷是否被選中
-const isSelected = (code) => {
+const isSelected = code => {
   return props.multiple ? modelValue.value.includes(code) : modelValue.value === code
 }
 
 // 多選切換
-const toggleItem = (code) => {
+const toggleItem = code => {
   const list = [...(props.selectedList || [])]
   const idx = list.indexOf(code)
   if (idx >= 0) {
@@ -89,7 +95,7 @@ const toggleItem = (code) => {
 }
 
 // 圖片錯誤處理
-const handleImgError = (e) => {
+const handleImgError = e => {
   e.target.src = fallbackImg
 }
 </script>

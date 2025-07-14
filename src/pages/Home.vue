@@ -1,11 +1,13 @@
 <
 <template>
   <div
-    class="min-h-screen bg-gradient-to-b from-[#e5712f] to-[#f39532] flex flex-col items-center px-6 text-black">
+    class="min-h-screen bg-gradient-to-b from-[#e5712f] to-[#f39532] flex flex-col items-center px-6 text-black"
+  >
     <!-- 黑底跑馬燈 -->
     <div class="w-screen bg-black overflow-hidden whitespace-nowrap py-1">
       <div
-        class="animate-marquee text-[60%] text-white font-normal inline-block px-4 leading-tight">
+        class="animate-marquee text-[60%] text-white font-normal inline-block px-4 leading-tight"
+      >
         ขอให้โชคดียิ้มให้คุณและนำพรทุกอย่างมาให้คุณ
       </div>
     </div>
@@ -14,7 +16,8 @@
     <img
       src="/hero-transparent.png"
       alt="山色主視覺"
-      class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent" />
+      class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
+    />
 
     <!-- 中間文字 -->
     <p class="text-xl text-black font-normal mb-1">ขอบคุณค่ะ</p>
@@ -25,25 +28,29 @@
     <div class="w-full max-w-sm space-y-6">
       <router-link to="/about" class="block">
         <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
           <span class="block text-center tracking-[0.2em]">關於我們</span>
         </button>
       </router-link>
       <router-link to="/reserve" class="block">
         <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
           <span class="block text-center tracking-[0.2em]">餐桌予約</span>
         </button>
       </router-link>
       <router-link to="/menu" class="block">
         <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
           <span class="block text-center tracking-[0.2em]">預先點餐</span>
         </button>
       </router-link>
       <router-link to="/faq" class="block">
         <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal">
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
           <span class="block text-center tracking-[0.2em]">訂位問題</span>
         </button>
       </router-link>

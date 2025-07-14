@@ -4,6 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
+  base: '/', // 若為子目錄部署（如 GitHub Pages）需指定路徑
   resolve: {
     alias: {
       vue: 'vue/dist/vue.esm-bundler.js', // 注意逗號
