@@ -66,30 +66,89 @@ watch(
 const totalPrice = computed(() => {
   return Array.isArray(form.orders) && form.orders.length > 0 ? calcTotal(form.orders, menu) : 0
 })
-
 const submitOrder = async () => {
   if (!form.name || !form.date || !form.time || !form.people) return
+
   isSubmitting.value = true
   submitMessage.value = ''
-  const payload = { ...form, orders: JSON.parse(JSON.stringify(form.orders)) }
+
+  const formData = new URLSearchParams()
+  formData.append('訂位姓名', form.name)
+  formData.append('用餐日期', form.date)
+  formData.append('用餐時段', form.time)
+  formData.append('人數', form.people)
+
+  form.orders.forEach((order, idx) => {
+    formData.append(`main_${idx}`, order.main || '')
+    formData.append(`drink_${idx}`, order.drink || '')
+    formData.append(`side_${idx}`, order.side || '')
+
+    // 加點：展開至 addon_0、addon_1...，最多 4 個
+    const addons = Array.isArray(order.addons) ? order.addons.slice(0, 4) : []
+    addons.forEach((addon, i) => {
+      formData.append(`addon_${idx}`, addon)
+    })
+  })
+
+  try {
+    const res = await fetch(
+      'const submitOrder = async () => {
+  if (!form.name || !form.date || !form.time || !form.people) return
+
+  isSubmitting.value = true
+  submitMessage.value = ''
+
+  const formData = new URLSearchParams()
+  formData.append('訂位姓名', form.name)
+  formData.append('用餐日期', form.date)
+  formData.append('用餐時段', form.time)
+  formData.append('人數', form.people)
+
+  form.orders.forEach((order, idx) => {
+    formData.append(`main_${idx}`, order.main || '')
+    formData.append(`drink_${idx}`, order.drink || '')
+    formData.append(`side_${idx}`, order.side || '')
+
+    // 加點：展開至 addon_0、addon_1...，最多 4 個
+    const addons = Array.isArray(order.addons) ? order.addons.slice(0, 4) : []
+    addons.forEach((addon, i) => {
+      formData.append(`addon_${idx}`, addon)
+    })
+  })
 
   try {
     const res = await fetch(
       'https://script.google.com/macros/s/AKfycbxsywNwio4gJU4acT7vHdRXnQxUdNVBBob8mFDsy_vkf2eKJEe6LRsQwZrVEHdmBmImow/exec',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: formData // ✅ 使用 URLSearchParams，自動設定為 x-www-form-urlencoded
       }
     )
-    const result = await res.json()
-    submitMessage.value = result.result === 'success' ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+
+    const text = await res.text()
+    submitMessage.value = text.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
   } catch (err) {
-    console.error(err)
+    console.error('送出錯誤：', err)
     submitMessage.value = '❌ 發送失敗，請稍後再試'
   } finally {
     isSubmitting.value = false
-    setTimeout(() => (submitMessage.value = ''), 2000)
+    setTimeout(() => (submitMessage.value = ''), 2500)
+  }
+}',
+      {
+        method: 'POST',
+        body: formData // ✅ 使用 URLSearchParams，自動設定為 x-www-form-urlencoded
+      }
+    )
+
+    const text = await res.text()
+    submitMessage.value = text.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+  } catch (err) {
+    console.error('送出錯誤：', err)
+    submitMessage.value = '❌ 發送失敗，請稍後再試'
+  } finally {
+    isSubmitting.value = false
+    setTimeout(() => (submitMessage.value = ''), 2500)
   }
 }
 </script>
