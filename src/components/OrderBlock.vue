@@ -1,31 +1,3 @@
-<script setup>
-import { inject, computed } from 'vue'
-import { getItemByCode } from '@/utils/helpers'
-
-const props = defineProps({
-  index: Number,
-  order: Object
-})
-
-const emit = defineEmits(['update:order'])
-const menu = inject('menu')
-
-// ✅ 單選更新方法
-function updateSelection(type, value) {
-  emit('update:order', {
-    ...props.order,
-    [type]: value
-  })
-}
-
-// ✅ 加點多選 toggle 方法
-function toggleAddon(code) {
-  const current = props.order.addons || []
-  const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
-  emit('update:order', { ...props.order, addons: updated })
-}
-</script>
-
 <template>
   <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
     <h3 class="text-lg font-semibold text-gray-800 mb-3">第 {{ index + 1 }} 位顧客</h3>
@@ -115,3 +87,37 @@ function toggleAddon(code) {
     </div>
   </div>
 </template>
+
+<script setup>
+import { inject, computed } from 'vue'
+import { getItemByCode } from '@/utils/helpers'
+
+const props = defineProps({
+  index: Number,
+  order: Object
+})
+
+const emit = defineEmits(['update:order'])
+// ✅ 正確注入 menu 並設完整 fallback，避免 undefined 錯誤
+const menu = inject('menu', {
+  main: [],
+  drink: [],
+  side: [],
+  addon: []
+})
+
+// ✅ 單選更新方法
+function updateSelection(type, value) {
+  emit('update:order', {
+    ...props.order,
+    [type]: value
+  })
+}
+
+// ✅ 加點多選 toggle 方法
+function toggleAddon(code) {
+  const current = props.order.addons || []
+  const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
+  emit('update:order', { ...props.order, addons: updated })
+}
+</script>
