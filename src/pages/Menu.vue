@@ -67,88 +67,87 @@ const totalPrice = computed(() => {
   return Array.isArray(form.orders) && form.orders.length > 0 ? calcTotal(form.orders, menu) : 0
 })
 const submitOrder = async () => {
-  if (!form.name || !form.date || !form.time || !form.people) return
+  if (!form.name || !form.date || !form.time || !form.people) {
+   const submitOrder = async () => {
+  if (!form.name || !form.date || !form.time || !form.people) {
+    submitMessage.value = '⚠️ 請填寫完整訂位資料'
+    return
+  }
 
   isSubmitting.value = true
   submitMessage.value = ''
 
-  const formData = new URLSearchParams()
-  formData.append('訂位姓名', form.name)
-  formData.append('用餐日期', form.date)
-  formData.append('用餐時段', form.time)
-  formData.append('人數', form.people)
+  const payload = {
+    name: form.name,
+    date: form.date,
+    time: form.time,
+    people: form.people,
+    orders: JSON.parse(JSON.stringify(form.orders))
+  }
 
-  form.orders.forEach((order, idx) => {
-    formData.append(`main_${idx}`, order.main || '')
-    formData.append(`drink_${idx}`, order.drink || '')
-    formData.append(`side_${idx}`, order.side || '')
-
-    // 加點：展開至 addon_0、addon_1...，最多 4 個
-    const addons = Array.isArray(order.addons) ? order.addons.slice(0, 4) : []
-    addons.forEach((addon, i) => {
-      formData.append(`addon_${idx}`, addon)
-    })
-  })
-
-  try {
-    const res = await fetch(
-      'const submitOrder = async () => {
-  if (!form.name || !form.date || !form.time || !form.people) return
-
-  isSubmitting.value = true
-  submitMessage.value = ''
-
-  const formData = new URLSearchParams()
-  formData.append('訂位姓名', form.name)
-  formData.append('用餐日期', form.date)
-  formData.append('用餐時段', form.time)
-  formData.append('人數', form.people)
-
-  form.orders.forEach((order, idx) => {
-    formData.append(`main_${idx}`, order.main || '')
-    formData.append(`drink_${idx}`, order.drink || '')
-    formData.append(`side_${idx}`, order.side || '')
-
-    // 加點：展開至 addon_0、addon_1...，最多 4 個
-    const addons = Array.isArray(order.addons) ? order.addons.slice(0, 4) : []
-    addons.forEach((addon, i) => {
-      formData.append(`addon_${idx}`, addon)
-    })
-  })
+  console.log('🚀 即將送出的訂單資料 payload：', payload)
 
   try {
     const res = await fetch(
       'https://script.google.com/macros/s/AKfycbxsywNwio4gJU4acT7vHdRXnQxUdNVBBob8mFDsy_vkf2eKJEe6LRsQwZrVEHdmBmImow/exec',
       {
         method: 'POST',
-        body: formData // ✅ 使用 URLSearchParams，自動設定為 x-www-form-urlencoded
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       }
     )
 
-    const text = await res.text()
-    submitMessage.value = text.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+    const result = await res.json()
+    submitMessage.value =
+      result.result === 'success' ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
   } catch (err) {
-    console.error('送出錯誤：', err)
+    console.error('❌ 發送錯誤:', err)
     submitMessage.value = '❌ 發送失敗，請稍後再試'
   } finally {
     isSubmitting.value = false
-    setTimeout(() => (submitMessage.value = ''), 2500)
+    setTimeout(() => (submitMessage.value = ''), 3000)
   }
-}',
-      {
-        method: 'POST',
-        body: formData // ✅ 使用 URLSearchParams，自動設定為 x-www-form-urlencoded
-      }
-    )
+}
 
-    const text = await res.text()
-    submitMessage.value = text.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+function doPost(e) {
+  try {
+    const json = JSON.parse(e.postData.contents)
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('訂單紀錄')
+
+    // 建立標題列（如果是空表）
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        '時間戳記', '訂位姓名', '用餐日期', '用餐時段', '人數', '客序',
+        '主餐', '飲品', '副餐', '加點1', '加點2', '加點3', '加點4'
+      ])
+    }
+
+    const { name, date, time, people, orders } = json
+
+    for (let i = 0; i < orders.length; i++) {
+      const order = orders[i]
+      const addons = Array.isArray(order.addons) ? order.addons : []
+
+      sheet.appendRow([
+        new Date(), name, date, time, people, `第${i + 1}位`,
+        order.main || '', order.drink || '', order.side || '',
+        addons[0] || '', addons[1] || '', addons[2] || '', addons[3] || ''
+      ])
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ result: 'success' }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader('Access-Control-Allow-Origin', '*') // 或指定 origin
+      .setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
   } catch (err) {
-    console.error('送出錯誤：', err)
-    submitMessage.value = '❌ 發送失敗，請稍後再試'
-  } finally {
-    isSubmitting.value = false
-    setTimeout(() => (submitMessage.value = ''), 2500)
+    Logger.log('❌ JSON 接收錯誤: ' + err)
+    return ContentService.createTextOutput(JSON.stringify({ result: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader('Access-Control-Allow-Origin', '*')
+      .setHeader('Access-Control-Allow-Headers', 'Content-Type')
   }
 }
 </script>
