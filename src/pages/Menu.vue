@@ -198,7 +198,7 @@ const submitOrder = async () => {
   </div>
 </template>
 
-<style scoped>
+<style>
 .input {
   @apply w-full p-2 border border-gray-300 rounded mb-2;
 }
