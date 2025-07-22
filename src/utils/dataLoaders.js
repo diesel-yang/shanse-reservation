@@ -1,3 +1,5 @@
+// src/utils/dataLoaders.js
+
 export const fetchMenu = async () => {
   try {
     const res = await fetch(
@@ -33,13 +35,27 @@ export const fetchMenu = async () => {
 export const fetchHolidays = async () => {
   try {
     const year = new Date().getFullYear()
-    const apiKey = 'AIzaSyBXYYhx67JpH8eR-eiDIGKMS11iTQE1sIw'
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY
+    if (!apiKey) throw new Error('❌ 未提供 Google API 金鑰')
+
     const calendarId = 'zh.taiwan%23holiday@group.v.calendar.google.com'
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}&timeMin=${year}-01-01T00:00:00Z&timeMax=${year}-12-31T23:59:59Z`
+    const timeMin = `${year}-01-01T00:00:00Z`
+    const timeMax = `${year}-12-31T23:59:59Z`
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}`
+
+    // ✅ 加入這兩行 debug log（放在 try 裡）
+    console.log('📦 fetch URL:', url)
+    console.log('🧪 API Key (masked):', apiKey?.slice(0, 5) + '...')
 
     const res = await fetch(url)
     const data = await res.json()
-    return data.items.map(e => e.start.date) // ✅ 假日為 YYYY-MM-DD 陣列
+
+    if (!Array.isArray(data.items)) {
+      console.warn('⚠️ Google 回傳資料沒有 items:', data)
+      return []
+    }
+
+    return data.items.filter(e => e?.start?.date).map(e => e.start.date)
   } catch (err) {
     console.error('❌ 假日載入失敗', err)
     return []
