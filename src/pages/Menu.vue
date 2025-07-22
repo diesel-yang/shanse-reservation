@@ -76,6 +76,7 @@ const submitOrder = async () => {
   isSubmitting.value = true
   submitMessage.value = ''
 
+  // 準備送出資料 payload（多人訂單）
   const payload = {
     name: form.name,
     date: form.date,
@@ -83,8 +84,6 @@ const submitOrder = async () => {
     people: form.people,
     orders: JSON.parse(JSON.stringify(form.orders))
   }
-
-  console.log('🚀 即將送出的訂單資料 payload：', payload)
 
   try {
     const res = await fetch(
@@ -101,7 +100,7 @@ const submitOrder = async () => {
     const result = await res.json()
     submitMessage.value = result.result === 'success' ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
   } catch (err) {
-    console.error('❌ 發送錯誤:', err)
+    console.error('❌ 錯誤:', err)
     submitMessage.value = '❌ 發送失敗，請稍後再試'
   } finally {
     isSubmitting.value = false
