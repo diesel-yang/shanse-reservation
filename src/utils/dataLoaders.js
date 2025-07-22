@@ -38,6 +38,8 @@ export const fetchHolidays = async () => {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY
     if (!apiKey) throw new Error('❌ 未提供 Google API 金鑰')
 
+    console.log('🧪 API KEY 現在是：', import.meta.env.VITE_GOOGLE_API_KEY)
+
     const calendarId = 'zh.taiwan%23holiday@group.v.calendar.google.com'
     const timeMin = `${year}-01-01T00:00:00Z`
     const timeMax = `${year}-12-31T23:59:59Z`

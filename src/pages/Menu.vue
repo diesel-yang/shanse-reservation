@@ -2,13 +2,11 @@
 import { ref, reactive, computed, watch, onMounted, inject, toRaw } from 'vue'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.min.css'
-
 import FlatpickrLanguages from 'flatpickr/dist/l10n'
 
 import OrderBlock from '@/components/OrderBlock.vue'
 import { getItemByCode, calcTotal } from '@/utils/helpers'
 
-// ✅ 注入 menu 與 holidays，並提供預設值避免 undefined
 const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
 const holidays = inject('holidays', [])
 
@@ -66,9 +64,8 @@ watch(
 const totalPrice = computed(() => {
   return Array.isArray(form.orders) && form.orders.length > 0 ? calcTotal(form.orders, menu) : 0
 })
+
 const submitOrder = async () => {
-  if (!form.name || !form.date || !form.time || !form.people) {
-   const submitOrder = async () => {
   if (!form.name || !form.date || !form.time || !form.people) {
     submitMessage.value = '⚠️ 請填寫完整訂位資料'
     return
@@ -100,54 +97,13 @@ const submitOrder = async () => {
     )
 
     const result = await res.json()
-    submitMessage.value =
-      result.result === 'success' ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+    submitMessage.value = result.result === 'success' ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
   } catch (err) {
     console.error('❌ 發送錯誤:', err)
     submitMessage.value = '❌ 發送失敗，請稍後再試'
   } finally {
     isSubmitting.value = false
     setTimeout(() => (submitMessage.value = ''), 3000)
-  }
-}
-
-function doPost(e) {
-  try {
-    const json = JSON.parse(e.postData.contents)
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('訂單紀錄')
-
-    // 建立標題列（如果是空表）
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        '時間戳記', '訂位姓名', '用餐日期', '用餐時段', '人數', '客序',
-        '主餐', '飲品', '副餐', '加點1', '加點2', '加點3', '加點4'
-      ])
-    }
-
-    const { name, date, time, people, orders } = json
-
-    for (let i = 0; i < orders.length; i++) {
-      const order = orders[i]
-      const addons = Array.isArray(order.addons) ? order.addons : []
-
-      sheet.appendRow([
-        new Date(), name, date, time, people, `第${i + 1}位`,
-        order.main || '', order.drink || '', order.side || '',
-        addons[0] || '', addons[1] || '', addons[2] || '', addons[3] || ''
-      ])
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ result: 'success' }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*') // 或指定 origin
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
-  } catch (err) {
-    Logger.log('❌ JSON 接收錯誤: ' + err)
-    return ContentService.createTextOutput(JSON.stringify({ result: 'error', message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*')
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type')
   }
 }
 </script>
