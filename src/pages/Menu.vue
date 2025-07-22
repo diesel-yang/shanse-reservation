@@ -36,14 +36,16 @@ onMounted(() => {
       form.date = date?.toISOString().split('T')[0] || ''
     },
     onDayCreate(_, __, ___, dayElem) {
-      const d = dayElem.dateObj
-      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      if (Array.isArray(toRaw(holidays)) && toRaw(holidays).includes(ds)) {
-        dayElem.classList.add('holiday-highlight')
-      }
-    }
-  })
-})
+  const d = dayElem.dateObj
+  const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+  const holidayList = toRaw(holidays) // 或 holidays.value，依你的 provide 格式為主
+
+  if (Array.isArray(holidayList) && holidayList.includes(ds)) {
+    console.log('🎯 套用紅字日期:', ds)
+    dayElem.classList.add('holiday-highlight')
+  }
+}
 
 watch(
   () => form.people,
