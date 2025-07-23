@@ -85,32 +85,6 @@
         </button>
       </div>
     </div>
-    <!-- 顧客金額明細顯示區塊 -->
-    <div class="mt-4 bg-gray-50 border border-gray-200 rounded p-3 text-sm leading-relaxed">
-      <p class="text-gray-700">
-        主餐：{{ getItemByCode('main', props.order.main, menu)?.name || '' }}
-      </p>
-      <p class="text-gray-700">
-        飲品：{{ getItemByCode('drink', props.order.drink, menu)?.name || '' }}
-      </p>
-      <p class="text-gray-700">
-        副餐：{{ getItemByCode('side', props.order.side, menu)?.name || '' }}
-      </p>
-      <p class="text-gray-700" v-if="props.order.addons?.length">
-        加點：
-        {{
-          props.order.addons
-            .map(code => getItemByCode('addon', code, menu)?.name)
-            .filter(Boolean)
-            .join('、')
-        }}
-      </p>
-      <hr class="my-2" />
-      <p class="text-gray-700">套餐：{{ priceDetail.value.meal }} 元</p>
-      <p class="text-gray-700">加點：{{ priceDetail.value.addons }} 元</p>
-      <p class="text-gray-700">服務費（10%）：{{ priceDetail.value.serviceFee }} 元</p>
-      <p class="font-bold text-orange-700">總金額：{{ priceDetail.value.total }} 元</p>
-    </div>
   </div>
 </template>
 
