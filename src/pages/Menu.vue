@@ -68,21 +68,17 @@ const totalPrice = computed(() => {
 })
 
 const submitOrder = async () => {
-  if (!form.name || !form.date || !form.time || !form.people) {
-    submitMessage.value = '⚠️ 請填寫完整訂位資料'
-    return
-  }
+  if (!form.name || !form.date || !form.time || !form.people) return
 
   isSubmitting.value = true
   submitMessage.value = ''
 
-  // 準備送出資料 payload（多人訂單）
   const payload = {
     name: form.name,
     date: form.date,
     time: form.time,
     people: form.people,
-    orders: JSON.parse(JSON.stringify(form.orders))
+    orders: form.orders
   }
 
   try {
@@ -100,11 +96,11 @@ const submitOrder = async () => {
     const result = await res.json()
     submitMessage.value = result.result === 'success' ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
   } catch (err) {
-    console.error('❌ 錯誤:', err)
+    console.error('❌ 訂單提交錯誤', err)
     submitMessage.value = '❌ 發送失敗，請稍後再試'
   } finally {
     isSubmitting.value = false
-    setTimeout(() => (submitMessage.value = ''), 3000)
+    setTimeout(() => (submitMessage.value = ''), 2000)
   }
 }
 </script>
