@@ -69,38 +69,43 @@ const totalPrice = computed(() => {
 
 const submitOrder = async () => {
   if (!form.name || !form.date || !form.time || !form.people) return
+
   isSubmitting.value = true
   submitMessage.value = ''
 
+  // 將資料組裝成 URLSearchParams
   const payload = new URLSearchParams()
-  payload.append('訂位姓名', form.name)
-  payload.append('用餐日期', form.date)
-  payload.append('用餐時段', form.time)
-  payload.append('人數', form.people)
+  payload.append('name', form.name)
+  payload.append('date', form.date)
+  payload.append('time', form.time)
+  payload.append('people', form.people)
 
   form.orders.forEach((order, i) => {
     payload.append(`main_${i}`, order.main || '')
     payload.append(`drink_${i}`, order.drink || '')
     payload.append(`side_${i}`, order.side || '')
+
     const addons = Array.isArray(order.addons) ? order.addons : []
-    addons.forEach(a => payload.append(`addon_${i}`, a))
+    addons.forEach((addon, j) => {
+      payload.append(`addon_${i}_${j}`, addon) // 每筆加點獨立欄位
+    })
   })
 
+  console.log('🔥 送出內容:', payload.toString())
+
   try {
-    const res = await fetch(
-      'https://script.google.com/macros/s/AKfycbxsywNwio4gJU4acT7vHdRXnQxUdNVBBob8mFDsy_vkf2eKJEe6LRsQwZrVEHdmBmImow/exec',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: payload
-      }
-    )
-    const resultText = await res.text()
-    submitMessage.value = resultText.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+    const res = await fetch('https://script.google.com/macros/s/你的_GAS_URL/exec', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: payload
+    })
+
+    const result = await res.text()
+    submitMessage.value = result.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
   } catch (err) {
-    console.error('❌ 提交失敗:', err)
+    console.error('❌ 發送失敗:', err)
     submitMessage.value = '❌ 發送失敗，請稍後再試'
   } finally {
     isSubmitting.value = false
