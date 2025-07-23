@@ -49,17 +49,25 @@
       v-if="Array.isArray(form.orders) && form.orders.some(o => o.main || o.drink || o.side)"
       class="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2"
     >
+      <!-- 餐點摘要 -->
       <div
         v-for="(order, i) in form.orders"
         :key="i"
         class="p-4 bg-white border border-gray-300 rounded shadow"
       >
-        <h3 class="font-semibold text-blue-800">第 {{ i + 1 }} 位</h3>
+        <h3 class="font-semibold text-blue-800">第 {{ i + 1 }} 位顧客</h3>
         <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
         <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
         <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
-        <p v-if="Array.isArray(order.addons) && order.addons.length > 0">
+        <p v-if="order.addons?.length">
           加點：{{ order.addons.map(code => getItemByCode('addon', code, menu)?.name).join('、') }}
+        </p>
+        <p class="mt-2 text-sm text-gray-700">
+          套餐：{{ calcPriceBreakdown(order, menu).setTotal }} 元， 加點：{{
+            calcPriceBreakdown(order, menu).addonTotal
+          }}元， 服務費（10%)：{{ calcPriceBreakdown(order, menu).serviceFee }} 元， 總金額：{{
+            calcPriceBreakdown(order, menu).total
+          }}元
         </p>
       </div>
     </section>
@@ -93,7 +101,7 @@ import 'flatpickr/dist/flatpickr.min.css'
 import FlatpickrLanguages from 'flatpickr/dist/l10n'
 
 import OrderBlock from '@/components/OrderBlock.vue'
-import { getItemByCode, calcTotal } from '@/utils/helpers'
+import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
 
 const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
 const holidays = inject('holidays', [])
@@ -154,6 +162,8 @@ watch(
 const totalPrice = computed(() => {
   return Array.isArray(form.orders) && form.orders.length > 0 ? calcTotal(form.orders, menu) : 0
 })
+
+console.log('🧾 計算總金額:', form.orders, menu, calcTotal(form.orders, menu))
 
 const submitOrder = async () => {
   if (!form.name || !form.date || !form.time || !form.people) return

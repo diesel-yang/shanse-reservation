@@ -85,12 +85,19 @@
         </button>
       </div>
     </div>
+    <!-- 餐點金額明細 -->
+    <div class="mt-3 text-sm text-gray-800">
+      <p>套餐：{{ priceDetail.package }} 元</p>
+      <p>加點：{{ priceDetail.addon }} 元</p>
+      <p>服務費（10%）：{{ priceDetail.service }} 元</p>
+      <p class="font-semibold">總金額：{{ priceDetail.total }} 元</p>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { inject, computed } from 'vue'
-import { getItemByCode } from '@/utils/helpers'
+import { getItemByCode, calcPriceBreakdown } from '@/utils/helpers'
 
 const props = defineProps({
   index: Number,
@@ -120,4 +127,7 @@ function toggleAddon(code) {
   const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
   emit('update:order', { ...props.order, addons: updated })
 }
+
+// ✅ 計算金額明細
+const priceDetail = computed(() => calcPriceBreakdown(props.order, menu))
 </script>

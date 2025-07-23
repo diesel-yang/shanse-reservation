@@ -23,21 +23,39 @@ export function getItemByCode(category, code, menu) {
 }
 
 /**
- * 計算全部訂單的總金額（主餐+飲品+副餐+加點），含 10% 服務費
+ * 計算每位顧客的套餐金額與加點金額
  */
-export function calcTotal(orders, menu) {
+export function calcPriceBreakdown(order, menu) {
+  const basePrice = 700
   const getPrice = (type, code) => menu[type]?.find(item => item.code === code)?.price || 0
 
-  const subtotal = orders.reduce((sum, order) => {
-    const main = getPrice('main', order.main)
-    const drink = getPrice('drink', order.drink)
-    const side = getPrice('side', order.side)
-    const addons =
-      order.addons?.map(code => getPrice('addon', code)).reduce((a, b) => a + b, 0) || 0
-    return sum + main + drink + side + addons
-  }, 0)
+  const mainAdd = getPrice('main', order.main)
+  const drinkAdd = getPrice('drink', order.drink)
+  const sideAdd = getPrice('side', order.side)
+  const addons = (order.addons || []).map(code => getPrice('addon', code))
+  const addonTotal = addons.reduce((a, b) => a + b, 0)
 
-  return Math.round(subtotal * 1.1) // 含 10% 服務費
+  const setTotal = basePrice + mainAdd + drinkAdd + sideAdd
+  const subtotal = setTotal + addonTotal
+  const serviceFee = Math.round(subtotal * 0.1)
+  const total = subtotal + serviceFee
+
+  return {
+    setTotal,
+    addonTotal,
+    serviceFee,
+    total
+  }
+}
+
+/**
+ * 計算全部訂單的總金額（含服務費）
+ */
+export function calcTotal(orders, menu) {
+  return orders.reduce((sum, order) => {
+    const { total } = calcPriceBreakdown(order, menu)
+    return sum + total
+  }, 0)
 }
 
 /**
