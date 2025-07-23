@@ -1,6 +1,8 @@
 <template>
   <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
-    <h3 class="text-lg font-semibold text-gray-800 mb-3">第 {{ index + 1 }} 位顧客</h3>
+    <h3 v-if="!hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
+      第 {{ index + 1 }} 位顧客
+    </h3>
 
     <!-- 主餐 -->
     <div class="mb-3">
@@ -12,7 +14,7 @@
           type="button"
           :class="[
             'px-3 py-1 rounded border text-sm',
-            props.order.main === item.code
+            order.main === item.code
               ? 'bg-orange-500 text-white border-orange-500'
               : 'bg-white text-gray-700 hover:bg-orange-100'
           ]"
@@ -33,7 +35,7 @@
           type="button"
           :class="[
             'px-3 py-1 rounded border text-sm',
-            props.order.drink === item.code
+            order.drink === item.code
               ? 'bg-orange-500 text-white border-orange-500'
               : 'bg-white text-gray-700 hover:bg-orange-100'
           ]"
@@ -54,7 +56,7 @@
           type="button"
           :class="[
             'px-3 py-1 rounded border text-sm',
-            props.order.side === item.code
+            order.side === item.code
               ? 'bg-orange-500 text-white border-orange-500'
               : 'bg-white text-gray-700 hover:bg-orange-100'
           ]"
@@ -75,7 +77,7 @@
           type="button"
           :class="[
             'px-3 py-1 rounded border text-sm',
-            (props.order.addons || []).includes(item.code)
+            (order.addons || []).includes(item.code)
               ? 'bg-orange-500 text-white border-orange-500'
               : 'bg-white text-gray-700 hover:bg-orange-100'
           ]"
@@ -90,15 +92,16 @@
 
 <script setup>
 import { inject, computed } from 'vue'
-import { getItemByCode, calcPriceBreakdown } from '@/utils/helpers'
+import { calcPriceBreakdown } from '@/utils/helpers'
 
 const props = defineProps({
   index: Number,
-  order: Object
+  order: Object,
+  hideTitle: Boolean
 })
 
 const emit = defineEmits(['update:order'])
-// ✅ 正確注入 menu 並設完整 fallback，避免 undefined 錯誤
+
 const menu = inject('menu', {
   main: [],
   drink: [],
@@ -106,7 +109,6 @@ const menu = inject('menu', {
   addon: []
 })
 
-// ✅ 單選更新方法
 function updateSelection(type, value) {
   emit('update:order', {
     ...props.order,
@@ -114,13 +116,11 @@ function updateSelection(type, value) {
   })
 }
 
-// ✅ 加點多選 toggle 方法
 function toggleAddon(code) {
   const current = props.order.addons || []
   const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
   emit('update:order', { ...props.order, addons: updated })
 }
 
-// ✅ 計算金額明細
 const priceDetail = computed(() => calcPriceBreakdown(props.order, menu))
 </script>

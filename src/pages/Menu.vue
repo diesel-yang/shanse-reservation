@@ -6,7 +6,7 @@
 
     <!-- 訂位資料 -->
     <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <input v-model="form.name" type="text" placeholder="姓名" class="input" required />
+      <input v-model="form.name" type="text" placeholder="訂位人姓名" class="input" required />
       <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
       <div class="flex flex-wrap gap-2 my-2">
         <button
@@ -28,24 +28,63 @@
       </select>
     </section>
 
-    <!-- 點餐模式 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <label><input type="radio" v-model="orderMode" value="group" /> 共同點餐</label>
-      <label><input type="radio" v-model="orderMode" value="individual" /> 個別點餐</label>
+    <!-- 點餐模式切換 -->
+    <section class="bg-white rounded-lg shadow-md p-4 mb-6 text-center">
+      <div class="flex justify-center gap-4">
+        <button
+          :class="[
+            'px-4 py-2 rounded border w-40',
+            orderMode === 'group'
+              ? 'bg-orange-500 text-white border-orange-500'
+              : 'bg-white text-gray-800 hover:bg-orange-100'
+          ]"
+          @click="changeOrderMode('group')"
+        >
+          共同點餐
+        </button>
+        <button
+          :class="[
+            'px-4 py-2 rounded border w-40',
+            orderMode === 'individual'
+              ? 'bg-orange-500 text-white border-orange-500'
+              : 'bg-white text-gray-800 hover:bg-orange-100'
+          ]"
+          @click="changeOrderMode('individual')"
+        >
+          個別點餐
+        </button>
+      </div>
     </section>
 
-    <!-- 每位顧客的點餐區塊 + 摘要 -->
+    <!-- 顧客區塊 + 摘要 -->
     <section v-if="Array.isArray(form.orders) && form.orders.length > 0">
       <div
         v-for="(order, idx) in form.orders"
         :key="idx"
         class="mb-6 border border-gray-200 rounded-lg shadow bg-white p-4"
       >
-        <OrderBlock :index="idx" v-model:order="form.orders[idx]" />
+        <!-- 個別點餐模式（只顯示第一位，隱藏標題） -->
+        <OrderBlock
+          v-if="orderMode === 'individual'"
+          v-model:order="form.orders[0]"
+          :index="0"
+          :hide-title="true"
+        />
 
-        <!-- 摘要區塊（顯示在每位顧客後） -->
-        <div class="text-sm text-gray-800 mt-4">
-          <h3 class="font-semibold text-blue-800 mb-1">第 {{ idx + 1 }} 位顧客</h3>
+        <!-- 共同點餐模式（多位顧客顯示） -->
+        <div v-else>
+          <OrderBlock
+            v-for="(order, idx) in form.orders"
+            :key="idx"
+            :index="idx"
+            v-model:order="form.orders[idx]"
+            :hide-title="false"
+          />
+        </div>
+
+        <!-- 每位顧客明細 -->
+        <div class="text-sm text-gray-800 mt-4 border-t pt-3">
+          <h3 class="font-semibold text-blue-800 mb-1">餐點明細</h3>
           <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
           <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
           <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
@@ -100,7 +139,7 @@ const holidays = inject('holidays', [])
 
 const dateInput = ref(null)
 const timeSlots = ['11:30–13:00', '12:20–13:50', '13:10–14:40', '14:00–15:30']
-const orderMode = ref('group')
+const orderMode = ref('group') // group or individual
 
 const form = reactive({
   name: '',
@@ -135,13 +174,14 @@ onMounted(() => {
     }
   })
 })
+
 watch(
   () => form.people,
-  n => {
-    const count = Number(n)
+  count => {
+    const n = Number(count)
     form.orders =
-      count > 0
-        ? Array.from({ length: count }, () => ({
+      n > 0
+        ? Array.from({ length: orderMode.value === 'group' ? n : 1 }, () => ({
             main: '',
             drink: '',
             side: '',
@@ -150,6 +190,27 @@ watch(
         : []
   }
 )
+
+// 點餐模式切換處理
+function changeOrderMode(mode) {
+  if (orderMode.value === mode) return
+  if (form.orders.length > 0) {
+    const confirmChange = window.confirm('您將更換點餐模式，原點餐資料將清除，是否繼續？')
+    if (!confirmChange) return
+  }
+  orderMode.value = mode
+  // 重建 orders
+  const count = Number(form.people)
+  form.orders =
+    count > 0
+      ? Array.from({ length: mode === 'group' ? count : 1 }, () => ({
+          main: '',
+          drink: '',
+          side: '',
+          addons: []
+        }))
+      : []
+}
 
 const totalPrice = computed(() => {
   return Array.isArray(form.orders) && form.orders.length > 0 ? calcTotal(form.orders, menu) : 0
@@ -191,7 +252,7 @@ const submitOrder = async () => {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: payload
+        body: payload.toString()
       }
     )
 
