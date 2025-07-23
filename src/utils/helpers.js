@@ -14,8 +14,9 @@ export function toNumber(val, fallback = 0) {
  * 根據 code 取得 menu 中對應分類的品項資訊（用於顯示名稱）
  * @param {string} category - 'main' | 'drink' | 'side' | 'addon'
  * @param {string} code - 品項代碼
+ * @param {object} order - 顧客點餐資料
  * @param {object} menu - 菜單資料（包含各分類陣列）
- * @returns {object|null} - 對應的品項物件或 null
+ * @returns {{ base: number, addon: number, service: number, total: number }}
  */
 export function getItemByCode(category, code, menu) {
   if (!category || !code || !menu?.[category]) return null
@@ -26,26 +27,24 @@ export function getItemByCode(category, code, menu) {
  * 計算每位顧客的套餐金額與加點金額
  */
 export function calcPriceBreakdown(order, menu) {
-  const basePrice = 700
   const getPrice = (type, code) => menu[type]?.find(item => item.code === code)?.price || 0
 
-  const mainAdd = getPrice('main', order.main)
-  const drinkAdd = getPrice('drink', order.drink)
-  const sideAdd = getPrice('side', order.side)
-  const addons = (order.addons || []).map(code => getPrice('addon', code))
-  const addonTotal = addons.reduce((a, b) => a + b, 0)
+  const basePrice = 700
+  const main = getPrice('main', order.main)
+  const drink = getPrice('drink', order.drink)
+  const side = getPrice('side', order.side)
 
-  const setTotal = basePrice + mainAdd + drinkAdd + sideAdd
-  const subtotal = setTotal + addonTotal
-  const serviceFee = Math.round(subtotal * 0.1)
-  const total = subtotal + serviceFee
+  const base = basePrice + main + drink + side
 
-  return {
-    setTotal,
-    addonTotal,
-    serviceFee,
-    total
-  }
+  const addon = Array.isArray(order.addons)
+    ? order.addons.map(code => getPrice('addon', code)).reduce((a, b) => a + b, 0)
+    : 0
+
+  const subtotal = base + addon
+  const service = Math.round(subtotal * 0.1)
+  const total = subtotal + service
+
+  return { base, addon, service, total }
 }
 
 /**

@@ -34,17 +34,18 @@
       <label><input type="radio" v-model="orderMode" value="individual" /> 個別點餐</label>
     </section>
 
-    <!-- 每位顧客的點餐區塊 + 摘要 -->
+    <!-- 每位顧客的點餐區塊 + 明細 -->
     <section v-if="Array.isArray(form.orders) && form.orders.length > 0">
       <div
         v-for="(order, idx) in form.orders"
         :key="idx"
         class="mb-6 border border-gray-200 rounded-lg shadow bg-white p-4"
       >
+        <!-- 點餐表單 -->
         <OrderBlock :index="idx" v-model:order="form.orders[idx]" />
 
-        <!-- 摘要區塊（顯示在每位顧客後） -->
-        <div class="text-sm text-gray-800 mt-4">
+        <!-- 點餐明細 -->
+        <div class="text-sm text-gray-800 mt-4 border-t pt-3">
           <h3 class="font-semibold text-blue-800 mb-1">第 {{ idx + 1 }} 位顧客</h3>
           <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
           <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
@@ -54,21 +55,18 @@
               order.addons.map(code => getItemByCode('addon', code, menu)?.name).join('、')
             }}
           </p>
-          <div v-if="order" class="mt-2">
-            <p>套餐：{{ calcPriceBreakdown(order, menu).base }} 元</p>
+
+          <div class="mt-2 text-right">
+            <p>套餐：{{ calcPriceBreakdown(order, menu).set }} 元</p>
             <p>加點：{{ calcPriceBreakdown(order, menu).addon }} 元</p>
             <p>服務費（10%）：{{ calcPriceBreakdown(order, menu).service }} 元</p>
-            <p class="font-semibold">總金額：{{ calcPriceBreakdown(order, menu).total }} 元</p>
+            <p class="font-semibold text-orange-600">
+              總金額：{{ calcPriceBreakdown(order, menu).total }} 元
+            </p>
           </div>
         </div>
       </div>
     </section>
-
-    <!-- 最下方總金額 -->
-    <section v-if="totalPrice > 0" class="mt-6 text-right text-lg font-semibold text-gray-900">
-      總消費金額：{{ totalPrice }} 元（含 10% 服務費）
-    </section>
-
     <!-- 送出 -->
     <div class="text-center mt-6">
       <button
