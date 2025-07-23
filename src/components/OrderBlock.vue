@@ -85,13 +85,6 @@
         </button>
       </div>
     </div>
-    <!-- 餐點金額明細 -->
-    <div class="mt-3 text-sm text-gray-800">
-      <p>套餐：{{ priceDetail.package }} 元</p>
-      <p>加點：{{ priceDetail.addon }} 元</p>
-      <p>服務費（10%）：{{ priceDetail.service }} 元</p>
-      <p class="font-semibold">總金額：{{ priceDetail.total }} 元</p>
-    </div>
   </div>
 </template>
 
