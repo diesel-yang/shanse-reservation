@@ -1,3 +1,91 @@
+<template>
+  <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
+    <div class="flex flex-col items-center mb-6">
+      <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
+    </div>
+
+    <!-- 訂位資料 -->
+    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <input v-model="form.name" type="text" placeholder="姓名" class="input" required />
+      <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
+      <div class="flex flex-wrap gap-2 my-2">
+        <button
+          v-for="slot in timeSlots"
+          :key="slot"
+          type="button"
+          :class="[
+            'px-3 py-2 rounded border',
+            form.time === slot ? 'bg-orange-500 text-white' : 'bg-white text-gray-800'
+          ]"
+          @click="form.time = slot"
+        >
+          {{ slot }}
+        </button>
+      </div>
+      <select v-model.number="form.people" class="input" required>
+        <option disabled value="">請選擇人數</option>
+        <option v-for="n in 8" :key="n" :value="n">{{ n }} 位</option>
+      </select>
+    </section>
+
+    <!-- 點餐模式 -->
+    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <label><input type="radio" v-model="orderMode" value="group" /> 共同點餐</label>
+      <label><input type="radio" v-model="orderMode" value="individual" /> 個別點餐</label>
+    </section>
+
+    <!-- 每位顧客的點餐區塊 -->
+    <section v-if="Array.isArray(form.orders) && form.orders.length > 0">
+      <OrderBlock
+        v-for="(order, idx) in form.orders"
+        :key="idx"
+        :index="idx"
+        v-model:order="form.orders[idx]"
+      />
+    </section>
+
+    <!-- 餐點摘要 -->
+    <section
+      v-if="Array.isArray(form.orders) && form.orders.some(o => o.main || o.drink || o.side)"
+      class="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2"
+    >
+      <div
+        v-for="(order, i) in form.orders"
+        :key="i"
+        class="p-4 bg-white border border-gray-300 rounded shadow"
+      >
+        <h3 class="font-semibold text-blue-800">第 {{ i + 1 }} 位</h3>
+        <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
+        <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
+        <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
+        <p v-if="Array.isArray(order.addons) && order.addons.length > 0">
+          加點：{{ order.addons.map(code => getItemByCode('addon', code, menu)?.name).join('、') }}
+        </p>
+      </div>
+    </section>
+
+    <!-- 小計 -->
+    <p v-if="totalPrice > 0" class="text-right text-lg font-semibold my-4">
+      總金額：{{ totalPrice }} 元（含 10% 服務費）
+    </p>
+
+    <!-- 送出 -->
+    <div class="text-center">
+      <button
+        type="button"
+        :disabled="isSubmitting"
+        @click="submitOrder"
+        class="px-6 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+      >
+        {{ isSubmitting ? '送出中...' : '送出訂單' }}
+      </button>
+      <p v-if="submitMessage" class="mt-2 text-green-600 text-sm animate-pulse">
+        {{ submitMessage }}
+      </p>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, reactive, computed, watch, onMounted, inject, toRaw } from 'vue'
 import flatpickr from 'flatpickr'
@@ -94,13 +182,16 @@ const submitOrder = async () => {
   console.log('🔥 送出內容:', payload.toString())
 
   try {
-    const res = await fetch('https://script.google.com/macros/s/你的_GAS_URL/exec', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: payload
-    })
+    const res = await fetch(
+      'https://script.google.com/macros/s/AKfycbxsywNwio4gJU4acT7vHdRXnQxUdNVBBob8mFDsy_vkf2eKJEe6LRsQwZrVEHdmBmImow/exec',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: payload
+      }
+    )
 
     const result = await res.text()
     submitMessage.value = result.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
@@ -113,94 +204,6 @@ const submitOrder = async () => {
   }
 }
 </script>
-
-<template>
-  <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
-    <div class="flex flex-col items-center mb-6">
-      <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
-    </div>
-
-    <!-- 訂位資料 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <input v-model="form.name" type="text" placeholder="姓名" class="input" required />
-      <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
-      <div class="flex flex-wrap gap-2 my-2">
-        <button
-          v-for="slot in timeSlots"
-          :key="slot"
-          type="button"
-          :class="[
-            'px-3 py-2 rounded border',
-            form.time === slot ? 'bg-orange-500 text-white' : 'bg-white text-gray-800'
-          ]"
-          @click="form.time = slot"
-        >
-          {{ slot }}
-        </button>
-      </div>
-      <select v-model.number="form.people" class="input" required>
-        <option disabled value="">請選擇人數</option>
-        <option v-for="n in 8" :key="n" :value="n">{{ n }} 位</option>
-      </select>
-    </section>
-
-    <!-- 點餐模式 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <label><input type="radio" v-model="orderMode" value="group" /> 共同點餐</label>
-      <label><input type="radio" v-model="orderMode" value="individual" /> 個別點餐</label>
-    </section>
-
-    <!-- 每位顧客的點餐區塊 -->
-    <section v-if="Array.isArray(form.orders) && form.orders.length > 0">
-      <OrderBlock
-        v-for="(order, idx) in form.orders"
-        :key="idx"
-        :index="idx"
-        v-model:order="form.orders[idx]"
-      />
-    </section>
-
-    <!-- 餐點摘要 -->
-    <section
-      v-if="Array.isArray(form.orders) && form.orders.some(o => o.main || o.drink || o.side)"
-      class="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2"
-    >
-      <div
-        v-for="(order, i) in form.orders"
-        :key="i"
-        class="p-4 bg-white border border-gray-300 rounded shadow"
-      >
-        <h3 class="font-semibold text-blue-800">第 {{ i + 1 }} 位</h3>
-        <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
-        <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
-        <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
-        <p v-if="Array.isArray(order.addons) && order.addons.length > 0">
-          加點：{{ order.addons.map(code => getItemByCode('addon', code, menu)?.name).join('、') }}
-        </p>
-      </div>
-    </section>
-
-    <!-- 小計 -->
-    <p v-if="totalPrice > 0" class="text-right text-lg font-semibold my-4">
-      總金額：{{ totalPrice }} 元（含 10% 服務費）
-    </p>
-
-    <!-- 送出 -->
-    <div class="text-center">
-      <button
-        type="button"
-        :disabled="isSubmitting"
-        @click="submitOrder"
-        class="px-6 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
-      >
-        {{ isSubmitting ? '送出中...' : '送出訂單' }}
-      </button>
-      <p v-if="submitMessage" class="mt-2 text-green-600 text-sm animate-pulse">
-        {{ submitMessage }}
-      </p>
-    </div>
-  </div>
-</template>
 
 <style>
 .input {
