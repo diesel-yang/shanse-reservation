@@ -31,35 +31,36 @@
 
     <!-- 點餐模式切換 -->
     <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <h2 class="text-lg font-semibold mb-2 text-center">點餐模式</h2>
-      <div class="flex justify-center gap-4">
+      <div class="flex justify-center gap-4 flex-wrap">
         <button
           type="button"
-          class="px-4 py-2 rounded border font-semibold text-gray-700"
+          class="w-40 px-4 py-3 rounded border font-semibold text-gray-700 text-center leading-snug transition"
           :class="[
             orderMode === 'group'
               ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white hover:bg-orange-100'
+              : 'bg-white border-gray-300 hover:bg-orange-100'
           ]"
           @click="setOrderMode('group')"
         >
-          共同點餐
+          多人一起點<br class="sm:hidden" />
+          <span class="text-sm font-normal">(幫全桌點餐)</span>
         </button>
+
         <button
           type="button"
-          class="px-4 py-2 rounded border font-semibold text-gray-700"
+          class="w-40 px-4 py-3 rounded border font-semibold text-gray-700 text-center leading-snug transition"
           :class="[
             orderMode === 'individual'
               ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white hover:bg-orange-100'
+              : 'bg-white border-gray-300 hover:bg-orange-100'
           ]"
           @click="setOrderMode('individual')"
         >
-          個別點餐
+          自己點自己的<br class="sm:hidden" />
+          <span class="text-sm font-normal">(每人各自選)</span>
         </button>
       </div>
     </section>
-
     <!-- 每位顧客點餐區塊 -->
     <section v-if="form.orders.length">
       <div
