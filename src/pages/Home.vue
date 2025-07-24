@@ -33,13 +33,19 @@
           <span class="block text-center tracking-[0.2em]">關於我們</span>
         </button>
       </router-link>
-      <router-link to="/reserve" class="block">
+      <a
+        href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="block w-full"
+      >
         <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+          class="w-full bg-orange-500 text-black border border-black rounded-full py-3 shadow-lg text-lg font-normal"
         >
-          <span class="block text-center tracking-[0.2em]">餐桌予約</span>
+          餐桌予約
         </button>
-      </router-link>
+      </a>
+
       <router-link to="/menu" class="block">
         <button
           class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
