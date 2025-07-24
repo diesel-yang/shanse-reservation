@@ -61,6 +61,7 @@
         </button>
       </div>
     </section>
+
     <!-- 每位顧客點餐區塊 -->
     <section v-if="form.orders.length">
       <div
@@ -211,8 +212,10 @@ const totalPrice = computed(() => {
 
 // ✅ 送出訂單
 async function submitOrder() {
-  if (!form.name || !form.date || !form.time || !form.people || !form.orders.length) return
-
+  if (!form.name || !form.date || !form.time || !form.people || !form.orders.length) {
+    submitMessage.value = '❌ 請填寫所有必填欄位'
+    return
+  }
   isSubmitting.value = true
   submitMessage.value = ''
 
@@ -222,21 +225,24 @@ async function submitOrder() {
   payload.append('date', form.date)
   payload.append('time', form.time)
   payload.append('people', form.people)
-  payload.append('orders', JSON.stringify(form.orders))
+  payload.append('orders', JSON.stringify(form.orders)) // ✅ 傳送 orders 為 JSON 字串
 
   try {
     const res = await fetch(import.meta.env.VITE_GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded' // ✅ 避免 CORS 預檢
+      },
       body: payload.toString()
     })
 
-    const result = await res.json()
-    if (result.result === 'success') {
+    const resultText = await res.text()
+
+    if (resultText.includes('成功')) {
       submitMessage.value = '✅ 已成功送出訂單！'
-      resetForm(form, orderMode) // ✅ 使用公用函式清空
+      resetForm() // ✅ 呼叫重置表單
     } else {
-      submitMessage.value = '❌ 訂單送出失敗：' + result.message
+      submitMessage.value = '❌ 訂單送出失敗：' + resultText
     }
   } catch (err) {
     submitMessage.value = '❌ 發生錯誤：' + err.message
