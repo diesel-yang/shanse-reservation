@@ -40,7 +40,7 @@
         class="block w-full"
       >
         <button
-          class="w-full bg-orange-500 text-black border border-black rounded-full py-3 shadow-lg text-lg font-normal"
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
         >
           餐桌予約
         </button>
