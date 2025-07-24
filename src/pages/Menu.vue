@@ -208,16 +208,6 @@ const totalPrice = computed(() => {
   return all.reduce((a, b) => a + b, 0)
 })
 
-// ✅ 重設表單內容
-function resetForm() {
-  form.name = ''
-  form.date = ''
-  form.time = ''
-  form.people = ''
-  form.orders = []
-  orderMode.value = ''
-}
-
 // ✅ 送出訂單
 async function submitOrder() {
   if (!form.name || !form.date || !form.time || !form.people || !form.orders.length) return
