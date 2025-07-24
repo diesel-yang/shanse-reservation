@@ -1,12 +1,13 @@
 <template>
   <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
+    <!-- 標題 -->
     <div class="flex flex-col items-center mb-6">
       <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
     </div>
 
     <!-- 訂位資料 -->
     <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <input v-model="form.name" type="text" placeholder="訂位人姓名" class="input" required />
+      <input v-model="form.name" type="text" placeholder="訂位姓名" class="input" required />
       <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
       <div class="flex flex-wrap gap-2 my-2">
         <button
@@ -29,62 +30,52 @@
     </section>
 
     <!-- 點餐模式切換 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6 text-center">
+    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <h2 class="text-lg font-semibold mb-2 text-center">點餐模式</h2>
       <div class="flex justify-center gap-4">
         <button
+          type="button"
+          class="px-4 py-2 rounded border font-semibold text-gray-700"
           :class="[
-            'px-4 py-2 rounded border w-40',
             orderMode === 'group'
               ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white text-gray-800 hover:bg-orange-100'
+              : 'bg-white hover:bg-orange-100'
           ]"
-          @click="changeOrderMode('group')"
+          @click="setOrderMode('group')"
         >
           共同點餐
         </button>
         <button
+          type="button"
+          class="px-4 py-2 rounded border font-semibold text-gray-700"
           :class="[
-            'px-4 py-2 rounded border w-40',
             orderMode === 'individual'
               ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white text-gray-800 hover:bg-orange-100'
+              : 'bg-white hover:bg-orange-100'
           ]"
-          @click="changeOrderMode('individual')"
+          @click="setOrderMode('individual')"
         >
           個別點餐
         </button>
       </div>
     </section>
 
-    <!-- 顧客區塊 + 摘要 -->
-    <section v-if="Array.isArray(form.orders) && form.orders.length > 0">
+    <!-- 每位顧客點餐區塊 -->
+    <section v-if="form.orders.length">
       <div
         v-for="(order, idx) in form.orders"
         :key="idx"
         class="mb-6 border border-gray-200 rounded-lg shadow bg-white p-4"
       >
-        <!-- 個別點餐模式（只顯示第一位，隱藏標題） -->
         <OrderBlock
-          v-if="orderMode === 'individual'"
-          v-model:order="form.orders[0]"
-          :index="0"
-          :hide-title="true"
+          :index="idx"
+          v-model:order="form.orders[idx]"
+          :hide-title="orderMode === 'individual'"
         />
 
-        <!-- 共同點餐模式（多位顧客顯示） -->
-        <div v-else>
-          <OrderBlock
-            v-for="(order, idx) in form.orders"
-            :key="idx"
-            :index="idx"
-            v-model:order="form.orders[idx]"
-            :hide-title="false"
-          />
-        </div>
-
-        <!-- 每位顧客明細 -->
-        <div class="text-sm text-gray-800 mt-4 border-t pt-3">
-          <h3 class="font-semibold text-blue-800 mb-1">餐點明細</h3>
+        <!-- 顧客明細摘要 -->
+        <div class="text-sm text-gray-800 mt-4">
+          <h3 class="font-semibold text-blue-800 mb-1">第 {{ idx + 1 }} 位顧客</h3>
           <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
           <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
           <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
@@ -103,16 +94,16 @@
       </div>
     </section>
 
-    <!-- 最下方總金額 -->
+    <!-- 總金額 -->
     <section v-if="totalPrice > 0" class="mt-6 text-right text-lg font-semibold text-gray-900">
       總消費金額：{{ totalPrice }} 元（含 10% 服務費）
     </section>
 
-    <!-- 送出 -->
+    <!-- 送出按鈕 -->
     <div class="text-center mt-6">
       <button
         type="button"
-        :disabled="isSubmitting"
+        :disabled="isSubmitting || !orderMode"
         @click="submitOrder"
         class="px-6 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
       >
@@ -133,13 +124,21 @@ import FlatpickrLanguages from 'flatpickr/dist/l10n'
 
 import OrderBlock from '@/components/OrderBlock.vue'
 import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
+import { resetForm } from '@/utils/resetForm' // ✅ 匯入共用函式
 
-const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
+const menu = inject('menu', {
+  main: [],
+  drink: [],
+  side: [],
+  addon: []
+})
 const holidays = inject('holidays', [])
-
 const dateInput = ref(null)
-const timeSlots = ['11:30–13:00', '12:20–13:50', '13:10–14:40', '14:00–15:30']
-const orderMode = ref('group') // group or individual
+
+const timeSlots = ['11:30–13:00', '12:30–13:50', '13:10–14:40', '14:00–15:30']
+const isSubmitting = ref(false)
+const submitMessage = ref('')
+const orderMode = ref('') // ✅ 無預設模式
 
 const form = reactive({
   name: '',
@@ -149,9 +148,7 @@ const form = reactive({
   orders: []
 })
 
-const isSubmitting = ref(false)
-const submitMessage = ref('')
-
+// ✅ 初始化日期選擇器
 onMounted(() => {
   flatpickr.localize({ ...FlatpickrLanguages['zh_tw'], firstDayOfWeek: 0 })
 
@@ -175,51 +172,55 @@ onMounted(() => {
   })
 })
 
+// ✅ 點餐模式切換（需確認）
+function setOrderMode(mode) {
+  if (orderMode.value && orderMode.value !== mode) {
+    const confirmed = window.confirm('您將更換點餐模式，原點餐資料將清除，是否確定更改？')
+    if (!confirmed) return
+  }
+
+  orderMode.value = mode
+  form.orders = []
+
+  if (mode === 'group' && form.people) {
+    for (let i = 0; i < form.people; i++) {
+      form.orders.push({ main: '', drink: '', side: '', addons: [] })
+    }
+  } else if (mode === 'individual') {
+    form.orders.push({ main: '', drink: '', side: '', addons: [] })
+  }
+}
+// ✅ 監聽人數變動（重新產生 orders）
 watch(
   () => form.people,
-  count => {
-    const n = Number(count)
-    form.orders =
-      n > 0
-        ? Array.from({ length: orderMode.value === 'group' ? n : 1 }, () => ({
-            main: '',
-            drink: '',
-            side: '',
-            addons: []
-          }))
-        : []
+  newVal => {
+    if (orderMode.value === 'group') {
+      form.orders = []
+      for (let i = 0; i < newVal; i++) {
+        form.orders.push({ main: '', drink: '', side: '', addons: [] })
+      }
+    }
   }
 )
-
-// 點餐模式切換處理
-function changeOrderMode(mode) {
-  if (orderMode.value === mode) return
-  if (form.orders.length > 0) {
-    const confirmChange = window.confirm('您將更換點餐模式，原點餐資料將清除，是否繼續？')
-    if (!confirmChange) return
-  }
-  orderMode.value = mode
-  // 重建 orders
-  const count = Number(form.people)
-  form.orders =
-    count > 0
-      ? Array.from({ length: mode === 'group' ? count : 1 }, () => ({
-          main: '',
-          drink: '',
-          side: '',
-          addons: []
-        }))
-      : []
-}
-
+// ✅ 計算總金額
 const totalPrice = computed(() => {
-  return Array.isArray(form.orders) && form.orders.length > 0 ? calcTotal(form.orders, menu) : 0
+  const all = form.orders.map(order => calcPriceBreakdown(order, menu).total || 0)
+  return all.reduce((a, b) => a + b, 0)
 })
 
-console.log('🧾 計算總金額:', form.orders, menu, calcTotal(form.orders, menu))
+// ✅ 重設表單內容
+function resetForm() {
+  form.name = ''
+  form.date = ''
+  form.time = ''
+  form.people = ''
+  form.orders = []
+  orderMode.value = ''
+}
 
-const submitOrder = async () => {
-  if (!form.name || !form.date || !form.time || !form.people) return
+// ✅ 送出訂單
+async function submitOrder() {
+  if (!form.name || !form.date || !form.time || !form.people || !form.orders.length) return
 
   isSubmitting.value = true
   submitMessage.value = ''
@@ -230,40 +231,27 @@ const submitOrder = async () => {
   payload.append('date', form.date)
   payload.append('time', form.time)
   payload.append('people', form.people)
-
-  form.orders.forEach((order, i) => {
-    payload.append(`main_${i}`, order.main || '')
-    payload.append(`drink_${i}`, order.drink || '')
-    payload.append(`side_${i}`, order.side || '')
-
-    const addons = Array.isArray(order.addons) ? order.addons : []
-    addons.forEach((addon, j) => {
-      payload.append(`addon_${i}_${j}`, addon) // 每筆加點獨立欄位
-    })
-  })
-
-  console.log('🔥 送出內容:', payload.toString())
+  payload.append('orders', JSON.stringify(form.orders))
 
   try {
-    const res = await fetch(
-      'https://script.google.com/macros/s/AKfycbxsywNwio4gJU4acT7vHdRXnQxUdNVBBob8mFDsy_vkf2eKJEe6LRsQwZrVEHdmBmImow/exec',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: payload.toString()
-      }
-    )
+    const res = await fetch(import.meta.env.VITE_GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payload.toString()
+    })
 
-    const result = await res.text()
-    submitMessage.value = result.includes('成功') ? '✅ 訂單已送出！' : '❌ 訂單送出失敗'
+    const result = await res.json()
+    if (result.result === 'success') {
+      submitMessage.value = '✅ 已成功送出訂單！'
+      resetForm(form, orderMode) // ✅ 使用公用函式清空
+    } else {
+      submitMessage.value = '❌ 訂單送出失敗：' + result.message
+    }
   } catch (err) {
-    console.error('❌ 發送失敗:', err)
-    submitMessage.value = '❌ 發送失敗，請稍後再試'
+    submitMessage.value = '❌ 發生錯誤：' + err.message
   } finally {
     isSubmitting.value = false
-    setTimeout(() => (submitMessage.value = ''), 2000)
+    setTimeout(() => (submitMessage.value = ''), 3000)
   }
 }
 </script>
