@@ -1,61 +1,96 @@
 <template>
   <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
-    <h3 v-if="!hideTitle" class="text-lg font-semibold text-gray-800 mb-4">
+    <h3 v-if="!hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
       第 {{ index + 1 }} 位顧客
     </h3>
 
-    <div v-for="(label, type) in labels" :key="type" class="mb-6">
-      <h4 class="text-base font-semibold mb-2">{{ label }}</h4>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+    <!-- 分類區塊：主餐、飲品、副餐、加點 -->
+    <div v-for="type in ['main', 'drink', 'side', 'addon']" :key="type" class="mb-6">
+      <h4 class="font-semibold mb-2">
+        {{
+          type === 'main'
+            ? '主餐'
+            : type === 'drink'
+              ? '飲品'
+              : type === 'side'
+                ? '副餐'
+                : '加點（可複選）'
+        }}
+      </h4>
+
+      <div class="flex flex-wrap gap-3">
         <div
-          v-for="item in menu[type]"
+          v-for="item in menu[type] || []"
           :key="item.code"
-          class="relative group border rounded-lg overflow-hidden cursor-pointer transition transform hover:shadow-md"
+          class="relative group w-32 cursor-pointer transition-transform"
           :class="{
-            'ring-2 ring-orange-500': isSelected(type, item.code),
-            'opacity-50 cursor-not-allowed': item.stop
+            'ring-2 ring-orange-500 scale-105': isSelected(type, item.code),
+            'opacity-50': item.stop
           }"
-          @click="
-            !item.stop &&
-            (selectItem(type === 'addon' ? 'addons' : type, item.code), toggleActive(item.code))
-          "
+          @click="handleClick(type, item)"
         >
+          <!-- 商品圖片 -->
           <img
             :src="item.image"
-            alt=""
-            class="w-full h-28 object-cover"
-            @click.stop="toggleExpand(type, item.code)"
+            alt="item.name"
+            class="w-full h-24 object-cover rounded-lg border border-gray-300"
+            @error="onImageError"
           />
-          <div class="p-2">
-            <p class="text-sm font-medium truncate">{{ item.name }}</p>
-            <p v-if="item.note" class="text-xs text-gray-600 truncate">{{ item.note }}</p>
-            <p v-if="item.price > 0" class="text-xs text-orange-600 font-semibold">
-              ＋{{ item.price }} 元
-            </p>
-          </div>
 
-          <!-- 展開區塊 -->
-          <div
-            v-if="expandedType === type && expandedCode === item.code"
-            class="absolute top-0 left-0 w-full h-full bg-white bg-opacity-95 z-20 flex flex-col items-center justify-center text-center p-4"
-            @click.stop="toggleExpand(null, null)"
+          <!-- 品名 -->
+          <p class="text-center mt-1 text-sm font-medium text-gray-800">{{ item.name }}</p>
+          <!-- 加價 -->
+          <p v-if="item.price > 0" class="text-center text-xs text-orange-600">
+            +{{ item.price }} 元
+          </p>
+          <!-- 停售 -->
+          <p
+            v-if="item.stop"
+            class="absolute top-1 right-1 bg-gray-700 text-white text-xs px-1 rounded"
           >
-            <img :src="item.image" alt="" class="w-40 h-40 object-cover rounded mb-3" />
-            <p class="text-base font-bold">{{ item.name }}</p>
-            <p v-if="item.note" class="text-sm text-gray-700 mt-1">{{ item.note }}</p>
-            <p v-if="item.price > 0" class="text-sm text-orange-600 mt-1">
-              加價：{{ item.price }} 元
-            </p>
-            <p class="text-xs text-gray-500 mt-2">( 點擊卡片以關閉 )</p>
-          </div>
+            停售
+          </p>
         </div>
+      </div>
+    </div>
+
+    <!-- 展開層：放大圖片與說明 -->
+    <div
+      v-if="expandedItem"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      @click.self="closeExpanded"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl p-4 w-[90%] max-w-xl max-h-[66vh] overflow-y-auto relative"
+      >
+        <img
+          :src="expandedItem.image"
+          alt="expanded"
+          class="w-full h-48 object-cover rounded"
+          @error="onImageError"
+        />
+        <h2 class="text-xl font-bold mt-3">{{ expandedItem.name }}</h2>
+        <p v-if="expandedItem.price > 0" class="text-orange-600 font-semibold">
+          +{{ expandedItem.price }} 元
+        </p>
+        <p v-if="expandedItem.description" class="text-gray-700 mt-2">
+          {{ expandedItem.description }}
+        </p>
+        <p v-if="expandedItem.note" class="text-gray-600 mt-1">{{ expandedItem.note }}</p>
+
+        <button
+          class="absolute top-2 right-3 text-gray-500 hover:text-black text-lg"
+          @click="closeExpanded"
+        >
+          ✕
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { inject, computed, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { calcPriceBreakdown } from '@/utils/helpers'
 
 const props = defineProps({
@@ -65,6 +100,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:order'])
 
+// 注入菜單資料
 const menu = inject('menu', {
   main: [],
   drink: [],
@@ -72,56 +108,104 @@ const menu = inject('menu', {
   addon: []
 })
 
-const labels = {
-  main: '主餐',
-  drink: '飲品',
-  side: '副餐',
-  addon: '加點（可複選）'
+// 展開中的項目（點選圖片後放大）
+const expandedItem = ref(null)
+
+// 展開或收合邏輯
+function handleClick(type, item) {
+  // 若已展開且點的是同一項 → 收合 + 取消選取
+  if (expandedItem.value?.code === item.code) {
+    deselectItem(type, item.code)
+    expandedItem.value = null
+    return
+  }
+
+  // 選取品項
+  selectItem(type === 'addon' ? 'addons' : type, item.code)
+  expandedItem.value = item
 }
 
+// 關閉展開層
+function closeExpanded() {
+  expandedItem.value = null
+}
+
+// 單選項目（主餐、飲品、配菜）
 function selectItem(type, code) {
   if (type === 'addons') {
-    const current = props.order.addons || []
-    const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
-    emit('update:order', { ...props.order, addons: updated })
+    toggleAddon(code)
   } else {
     emit('update:order', { ...props.order, [type]: code })
   }
 }
 
-function isSelected(type, code) {
-  if (type === 'addon') return props.order.addons?.includes(code)
-  return props.order[type] === code
+// 多選加點切換
+function toggleAddon(code) {
+  const current = props.order.addons || []
+  const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
+  emit('update:order', { ...props.order, addons: updated })
 }
 
-// 控制展開區塊
-const expandedType = ref(null)
-const expandedCode = ref(null)
-
-function toggleExpand(type, code) {
-  if (expandedType.value === type && expandedCode.value === code) {
-    expandedType.value = null
-    expandedCode.value = null
+// 取消選取（主要在點第二次卡片用）
+function deselectItem(type, code) {
+  if (type === 'addons') {
+    toggleAddon(code) // 會自動取消
   } else {
-    expandedType.value = type
-    expandedCode.value = code
+    if (props.order[type] === code) {
+      emit('update:order', { ...props.order, [type]: '' })
+    }
   }
 }
 
-// 顯示橘色邊框
-function toggleActive(code) {
-  // 這個函式為保留樣式控制，可加上動態樣式處理
+// 判斷是否選中該項
+function isSelected(type, code) {
+  if (type === 'addon') {
+    return props.order.addons?.includes(code)
+  } else {
+    return props.order[type] === code
+  }
+}
+
+// 圖片備援處理
+function onImageError(e) {
+  e.target.src = 'https://via.placeholder.com/150x100?text=No+Image'
 }
 </script>
 
-<style scoped>
-.card-button {
-  @apply w-28 p-2 border border-gray-300 rounded-lg flex flex-col items-center text-center bg-white cursor-pointer transition-all;
+<style>
+.menu-card {
+  @apply w-32 h-32 sm:w-36 sm:h-36 flex flex-col items-center justify-center border rounded-lg overflow-hidden relative cursor-pointer transition-transform transform hover:scale-105 bg-white;
 }
-.card-button:hover {
-  @apply border-orange-400 bg-orange-50;
+
+.menu-card--active {
+  @apply border-4 border-orange-500;
 }
-.card-button.selected {
-  @apply border-orange-500 bg-orange-100 text-orange-800 font-semibold;
+
+.menu-card__image {
+  @apply w-full h-20 object-cover rounded-t;
+}
+
+.menu-card--expanded {
+  @apply fixed top-1/2 left-1/2 z-50 w-[90vw] max-w-md h-[66vh] transform -translate-x-1/2 -translate-y-1/2 border-4 border-orange-500 rounded-xl shadow-lg bg-white p-4 overflow-y-auto;
+}
+
+.menu-card__content {
+  @apply mt-2 text-sm text-gray-800;
+}
+
+.menu-card__content p + p {
+  @apply mt-1;
+}
+
+.holiday-highlight {
+  color: red !important;
+  font-weight: bold !important;
+}
+
+.holiday-highlight.selected,
+.holiday-highlight.selected:hover {
+  background: #ffe5e5 !important;
+  color: red !important;
+  font-weight: bold !important;
 }
 </style>

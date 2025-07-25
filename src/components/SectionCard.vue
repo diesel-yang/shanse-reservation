@@ -5,11 +5,12 @@
       <div
         v-for="item in filteredItems"
         :key="item.code"
-        @click="handleClick(item.code)"
+        @click="handleClick(item)"
         class="card-item"
         :class="{
           selected: isSelected(item.code),
-          disabled: item.disabled
+          disabled: item.disabled,
+          expanded: expandedCode === item.code
         }"
       >
         <img
@@ -25,12 +26,26 @@
           + {{ item.price }} 元
         </div>
         <div v-if="item.disabled" class="text-xs text-red-500 mt-1">停售／補貨中</div>
+
+        <!-- 展開內容 -->
+        <div v-if="expandedCode === item.code" class="text-sm mt-2">
+          <div class="font-bold text-orange-600">{{ item.name }}</div>
+          <div v-if="item.price > 0" class="text-xs text-orange-500">+ {{ item.price }} 元</div>
+          <div v-if="item.description" class="text-xs text-gray-700 mt-1 whitespace-pre-line">
+            {{ item.description }}
+          </div>
+          <div v-if="item.note" class="text-xs text-gray-500 mt-0.5 whitespace-pre-line">
+            {{ item.note }}
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
+
 const props = defineProps({
   title: String,
   items: Array,
@@ -38,16 +53,31 @@ const props = defineProps({
   selectedList: Array,
   type: String
 })
+
 const emit = defineEmits(['select', 'toggle'])
 
-const handleClick = code => {
-  const item = props.items.find(i => i.code === code)
+const expandedCode = ref(null)
+
+function handleClick(item) {
   if (!item || item.disabled) return
 
+  // 點兩次取消選取與展開
+  if (expandedCode.value === item.code) {
+    expandedCode.value = null
+    if (props.type === 'addon') {
+      emit('toggle', item.code)
+    } else if (props.selectedCode === item.code) {
+      emit('select', props.type, '') // 清除選取
+    }
+    return
+  }
+
+  // 展開與選取
+  expandedCode.value = item.code
   if (props.type === 'addon') {
-    emit('toggle', code)
+    emit('toggle', item.code)
   } else {
-    emit('select', props.type, code)
+    emit('select', props.type, item.code)
   }
 }
 
@@ -62,7 +92,7 @@ function handleImgError(e) {
 }
 </script>
 
-<style scoped>
+<style>
 .card-item {
   @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
 }
@@ -74,5 +104,10 @@ function handleImgError(e) {
 }
 .card-item.disabled {
   @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
+}
+.card-item.expanded {
+  @apply z-20 p-4 bg-white shadow-xl border-2 border-orange-500;
+  position: relative;
+  transform: scale(1.05);
 }
 </style>
