@@ -4,74 +4,50 @@
       第 {{ index + 1 }} 位顧客
     </h3>
 
-    <!-- 主餐 -->
-    <div class="mb-4">
-      <h4 class="font-semibold mb-2">主餐</h4>
-      <div class="flex flex-wrap gap-3">
+    <div v-for="(label, type) in labels" :key="type" class="mb-6">
+      <h4 class="text-base font-semibold mb-2">{{ label }}</h4>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         <div
-          v-for="item in menu?.main || []"
+          v-for="item in menu[type]"
           :key="item.code"
-          class="card-button"
-          :class="{ selected: order.main === item.code }"
-          @click="updateSelection('main', item.code)"
+          class="relative group border rounded-lg overflow-hidden cursor-pointer transition transform hover:shadow-md"
+          :class="{
+            'ring-2 ring-orange-500': isSelected(type, item.code),
+            'opacity-50 cursor-not-allowed': item.stop
+          }"
+          @click="
+            !item.stop &&
+            (selectItem(type === 'addon' ? 'addons' : type, item.code), toggleActive(item.code))
+          "
         >
-          <img v-if="item.image" :src="item.image" alt="" class="w-16 h-16 object-cover rounded" />
-          <div class="text-sm font-semibold">{{ item.name }}</div>
-          <div class="text-xs text-gray-500">{{ item.note }}</div>
-        </div>
-      </div>
-    </div>
+          <img
+            :src="item.image"
+            alt=""
+            class="w-full h-28 object-cover"
+            @click.stop="toggleExpand(type, item.code)"
+          />
+          <div class="p-2">
+            <p class="text-sm font-medium truncate">{{ item.name }}</p>
+            <p v-if="item.note" class="text-xs text-gray-600 truncate">{{ item.note }}</p>
+            <p v-if="item.price > 0" class="text-xs text-orange-600 font-semibold">
+              ＋{{ item.price }} 元
+            </p>
+          </div>
 
-    <!-- 飲品 -->
-    <div class="mb-4">
-      <h4 class="font-semibold mb-2">飲品</h4>
-      <div class="flex flex-wrap gap-3">
-        <div
-          v-for="item in menu?.drink || []"
-          :key="item.code"
-          class="card-button"
-          :class="{ selected: order.drink === item.code }"
-          @click="updateSelection('drink', item.code)"
-        >
-          <img v-if="item.image" :src="item.image" alt="" class="w-16 h-16 object-cover rounded" />
-          <div class="text-sm font-semibold">{{ item.name }}</div>
-          <div class="text-xs text-gray-500">{{ item.note }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 副餐 -->
-    <div class="mb-4">
-      <h4 class="font-semibold mb-2">副餐</h4>
-      <div class="flex flex-wrap gap-3">
-        <div
-          v-for="item in menu?.side || []"
-          :key="item.code"
-          class="card-button"
-          :class="{ selected: order.side === item.code }"
-          @click="updateSelection('side', item.code)"
-        >
-          <img v-if="item.image" :src="item.image" alt="" class="w-16 h-16 object-cover rounded" />
-          <div class="text-sm font-semibold">{{ item.name }}</div>
-          <div class="text-xs text-gray-500">{{ item.note }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 加點 -->
-    <div>
-      <h4 class="font-semibold mb-2">加點（可複選）</h4>
-      <div class="flex flex-wrap gap-3">
-        <div
-          v-for="item in menu?.addon || []"
-          :key="item.code"
-          class="card-button"
-          :class="{ selected: (order.addons || []).includes(item.code) }"
-          @click="toggleAddon(item.code)"
-        >
-          <img v-if="item.image" :src="item.image" alt="" class="w-16 h-16 object-cover rounded" />
-          <div class="text-sm font-semibold">{{ item.name }}</div>
-          <div class="text-xs text-gray-500">{{ item.note }}</div>
+          <!-- 展開區塊 -->
+          <div
+            v-if="expandedType === type && expandedCode === item.code"
+            class="absolute top-0 left-0 w-full h-full bg-white bg-opacity-95 z-20 flex flex-col items-center justify-center text-center p-4"
+            @click.stop="toggleExpand(null, null)"
+          >
+            <img :src="item.image" alt="" class="w-40 h-40 object-cover rounded mb-3" />
+            <p class="text-base font-bold">{{ item.name }}</p>
+            <p v-if="item.note" class="text-sm text-gray-700 mt-1">{{ item.note }}</p>
+            <p v-if="item.price > 0" class="text-sm text-orange-600 mt-1">
+              加價：{{ item.price }} 元
+            </p>
+            <p class="text-xs text-gray-500 mt-2">( 點擊卡片以關閉 )</p>
+          </div>
         </div>
       </div>
     </div>
@@ -79,7 +55,7 @@
 </template>
 
 <script setup>
-import { inject, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
 import { calcPriceBreakdown } from '@/utils/helpers'
 
 const props = defineProps({
@@ -96,20 +72,46 @@ const menu = inject('menu', {
   addon: []
 })
 
-function updateSelection(type, value) {
-  emit('update:order', {
-    ...props.order,
-    [type]: value
-  })
+const labels = {
+  main: '主餐',
+  drink: '飲品',
+  side: '副餐',
+  addon: '加點（可複選）'
 }
 
-function toggleAddon(code) {
-  const current = props.order.addons || []
-  const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
-  emit('update:order', { ...props.order, addons: updated })
+function selectItem(type, code) {
+  if (type === 'addons') {
+    const current = props.order.addons || []
+    const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
+    emit('update:order', { ...props.order, addons: updated })
+  } else {
+    emit('update:order', { ...props.order, [type]: code })
+  }
 }
 
-const priceDetail = computed(() => calcPriceBreakdown(props.order, menu))
+function isSelected(type, code) {
+  if (type === 'addon') return props.order.addons?.includes(code)
+  return props.order[type] === code
+}
+
+// 控制展開區塊
+const expandedType = ref(null)
+const expandedCode = ref(null)
+
+function toggleExpand(type, code) {
+  if (expandedType.value === type && expandedCode.value === code) {
+    expandedType.value = null
+    expandedCode.value = null
+  } else {
+    expandedType.value = type
+    expandedCode.value = code
+  }
+}
+
+// 顯示橘色邊框
+function toggleActive(code) {
+  // 這個函式為保留樣式控制，可加上動態樣式處理
+}
 </script>
 
 <style scoped>

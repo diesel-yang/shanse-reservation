@@ -24,7 +24,7 @@
         </button>
       </div>
       <select v-model.number="form.people" class="input" required>
-        <option disabled value="">請選擇人數</option>
+        <option disabled value="">用餐人數</option>
         <option v-for="n in 8" :key="n" :value="n">{{ n }} 位</option>
       </select>
     </section>
