@@ -77,7 +77,14 @@
 
         <!-- 顧客明細摘要 -->
         <div class="text-sm text-gray-800 mt-4">
-          <h3 class="font-semibold text-blue-800 mb-1">第 {{ idx + 1 }} 位顧客</h3>
+          <!-- ✅ 條件判斷：非個別點餐且人數大於 1 才顯示 -->
+          <h3
+            v-if="!(orderMode === 'individual' || form.people === 1)"
+            class="font-semibold text-blue-800 mb-1"
+          >
+            第 {{ idx + 1 }} 位顧客
+          </h3>
+
           <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
           <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
           <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
@@ -86,6 +93,7 @@
               order.addons.map(code => getItemByCode('addon', code, menu)?.name).join('、')
             }}
           </p>
+
           <div v-if="order" class="mt-2">
             <p>套餐：{{ calcPriceBreakdown(order, menu).base }} 元</p>
             <p>加點：{{ calcPriceBreakdown(order, menu).addon }} 元</p>

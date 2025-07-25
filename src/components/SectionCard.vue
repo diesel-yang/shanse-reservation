@@ -1,7 +1,6 @@
 <template>
   <div class="mb-4">
     <h4 class="text-sm font-semibold mb-2 text-gray-700">{{ title }}</h4>
-
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
@@ -21,22 +20,20 @@
           @error="handleImgError"
         />
         <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
-        <div v-if="item.note" class="text-xs text-gray-600 mt-0.5">{{ item.note }}</div>
-        <div v-if="item.price > 0" class="text-xs text-orange-600 mt-0.5">
-          + {{ item.price }} 元
+
+        <!-- 僅加點顯示價格（無 + 號） -->
+        <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
+          {{ item.price }} 元
         </div>
+
         <div v-if="item.disabled" class="text-xs text-red-500 mt-1">停售／補貨中</div>
       </div>
     </div>
-
-    <!-- 展開彈窗元件 -->
-    <ModalItemPreview v-if="expandedItem" :item="expandedItem" @close="expandedItem = null" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import ModalItemPreview from './ModalItemPreview.vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   title: String,
@@ -45,31 +42,18 @@ const props = defineProps({
   selectedList: Array,
   type: String
 })
-const emit = defineEmits(['select', 'toggle'])
-
-const expandedItem = ref(null)
+const emit = defineEmits(['select', 'toggle', 'preview'])
 
 const handleClick = item => {
   if (!item || item.disabled) return
 
-  // 展開與選取邏輯整合
-  if (expandedItem.value?.code === item.code) {
-    expandedItem.value = null
-    // 再點一下取消選取（加點為 toggle，其他為取消）
-    if (props.type === 'addon') {
-      emit('toggle', item.code)
-    } else if (props.selectedCode === item.code) {
-      emit('select', props.type, '')
-    }
-  } else {
-    expandedItem.value = item
-    // 同時選取此品項
-    if (props.type === 'addon') {
-      emit('toggle', item.code)
-    } else {
-      emit('select', props.type, item.code)
-    }
+  if (props.type !== 'addon') {
+    emit('preview', item) // 彈窗預覽
+    return
   }
+
+  // addon 為多選
+  emit('toggle', item.code)
 }
 
 const isSelected = code => {
