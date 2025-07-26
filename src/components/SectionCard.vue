@@ -23,7 +23,7 @@
         <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
           {{ item.price }} 元
         </div>
-        <div v-if="item.disabled" class="text-xs text-red-500 mt-1">停售／補貨中</div>
+        <div v-if="item.disabled" class="text-xs text-red-500 mt-1">售完／補貨中</div>
       </div>
     </div>
   </div>
