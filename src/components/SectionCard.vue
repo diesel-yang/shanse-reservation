@@ -20,12 +20,9 @@
           @error="handleImgError"
         />
         <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
-
-        <!-- 僅加點顯示價格（無 + 號） -->
         <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
           {{ item.price }} 元
         </div>
-
         <div v-if="item.disabled" class="text-xs text-red-500 mt-1">停售／補貨中</div>
       </div>
     </div>
@@ -48,12 +45,10 @@ const handleClick = item => {
   if (!item || item.disabled) return
 
   if (props.type !== 'addon') {
-    emit('preview', item) // 彈窗預覽
-    return
+    emit('preview', item)
+  } else {
+    emit('toggle', item.code)
   }
-
-  // addon 為多選
-  emit('toggle', item.code)
 }
 
 const isSelected = code => {

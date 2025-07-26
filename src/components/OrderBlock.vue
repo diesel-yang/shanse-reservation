@@ -1,44 +1,47 @@
 <template>
   <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
-    <h3 v-if="!props.hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
+    <h3 v-if="!hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
       第 {{ index + 1 }} 位顧客
     </h3>
 
-    <!-- 主餐 / 飲品 / 副餐 -->
     <SectionCard
-      v-for="type in ['main', 'drink', 'side']"
-      :key="type"
-      :title="typeMap[type]"
-      :items="menu[type]"
-      :selectedCode="order[type]"
-      :type="type"
+      title="主餐"
+      :items="menu.main"
+      :selectedCode="order.main"
+      type="main"
       @select="selectItem"
-      @open-preview="openPreview"
+      @preview="previewItem"
     />
-
-    <!-- 加點（多選） -->
+    <SectionCard
+      title="飲品"
+      :items="menu.drink"
+      :selectedCode="order.drink"
+      type="drink"
+      @select="selectItem"
+      @preview="previewItem"
+    />
+    <SectionCard
+      title="副餐"
+      :items="menu.side"
+      :selectedCode="order.side"
+      type="side"
+      @select="selectItem"
+      @preview="previewItem"
+    />
     <SectionCard
       title="加點（可複選）"
       :items="menu.addon"
       :selectedList="order.addons"
       type="addon"
       @toggle="toggleAddon"
-      @open-preview="openPreview"
     />
 
-    <!-- 展開 Modal -->
-    <ModalItemPreview
-      v-if="previewItem"
-      :item="previewItem"
-      :selected="isSelected(previewItem.code)"
-      @select="handleSelectInModal"
-      @close="previewItem = null"
-    />
+    <ModalItemPreview :visible="showPreview" :item="previewData" @close="showPreview = false" />
   </div>
 </template>
 
 <script setup>
-import { inject, ref, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
 import SectionCard from './SectionCard.vue'
 import ModalItemPreview from './ModalItemPreview.vue'
 import { calcPriceBreakdown } from '@/utils/helpers'
@@ -57,15 +60,6 @@ const menu = inject('menu', {
   addon: []
 })
 
-const typeMap = {
-  main: '主餐',
-  drink: '飲品',
-  side: '副餐'
-}
-
-const previewItem = ref(null)
-
-// ✅ 單選
 function selectItem(type, code) {
   emit('update:order', {
     ...props.order,
@@ -73,40 +67,18 @@ function selectItem(type, code) {
   })
 }
 
-// ✅ 多選（加點）
 function toggleAddon(code) {
   const current = props.order.addons || []
   const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
   emit('update:order', { ...props.order, addons: updated })
 }
 
-// ✅ 判斷是否已選
-function isSelected(code) {
-  return (
-    props.order.main === code ||
-    props.order.drink === code ||
-    props.order.side === code ||
-    (props.order.addons || []).includes(code)
-  )
-}
+const showPreview = ref(false)
+const previewData = ref({})
 
-// ✅ 開啟預覽彈窗
-function openPreview(item) {
-  previewItem.value = item
-}
-
-// ✅ 在彈窗中選擇
-function handleSelectInModal(code) {
-  if (!previewItem.value) return
-  const item = previewItem.value
-
-  const type = ['main', 'drink', 'side'].find(t => menu[t].some(i => i.code === code))
-  if (type) {
-    selectItem(type, code)
-  } else {
-    toggleAddon(code)
-  }
-  previewItem.value = null
+function previewItem(item) {
+  previewData.value = item
+  showPreview.value = true
 }
 </script>
 
