@@ -1,45 +1,3 @@
-<template>
-  <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
-    <h3 v-if="!hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
-      第 {{ index + 1 }} 位顧客
-    </h3>
-
-    <SectionCard
-      title="主餐"
-      :items="menu.main"
-      :selectedCode="order.main"
-      type="main"
-      @select="selectItem"
-      @preview="previewItem"
-    />
-    <SectionCard
-      title="飲品"
-      :items="menu.drink"
-      :selectedCode="order.drink"
-      type="drink"
-      @select="selectItem"
-      @preview="previewItem"
-    />
-    <SectionCard
-      title="副餐"
-      :items="menu.side"
-      :selectedCode="order.side"
-      type="side"
-      @select="selectItem"
-      @preview="previewItem"
-    />
-    <SectionCard
-      title="加點（可複選）"
-      :items="menu.addon"
-      :selectedList="order.addons"
-      type="addon"
-      @toggle="toggleAddon"
-    />
-
-    <ModalItemPreview :visible="showPreview" :item="previewData" @close="showPreview = false" />
-  </div>
-</template>
-
 <script setup>
 import { inject, computed, ref } from 'vue'
 import SectionCard from './SectionCard.vue'
@@ -60,28 +18,75 @@ const menu = inject('menu', {
   addon: []
 })
 
+// 彈出視窗
+const previewItem = ref(null)
+const previewType = ref('')
+
+// ▶️ 選擇單選品項
 function selectItem(type, code) {
-  emit('update:order', {
-    ...props.order,
-    [type]: code
-  })
+  emit('update:order', { ...props.order, [type]: code })
 }
 
+// ▶️ 多選加點
 function toggleAddon(code) {
   const current = props.order.addons || []
   const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
   emit('update:order', { ...props.order, addons: updated })
 }
 
-const showPreview = ref(false)
-const previewData = ref({})
-
-function previewItem(item) {
-  previewData.value = item
-  showPreview.value = true
+// ▶️ 從 Modal 彈窗選擇品項
+function handlePreview(item, type) {
+  previewItem.value = item
+  previewType.value = type
+}
+function handleSelectFromPreview(item) {
+  selectItem(previewType.value, item.code)
 }
 </script>
 
+<template>
+  <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
+    <h3 v-if="!props.hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
+      第 {{ index + 1 }} 位顧客
+    </h3>
+
+    <SectionCard
+      title="主餐"
+      :items="menu.main"
+      :selectedCode="props.order.main"
+      type="main"
+      @preview="item => handlePreview(item, 'main')"
+    />
+    <SectionCard
+      title="飲品"
+      :items="menu.drink"
+      :selectedCode="props.order.drink"
+      type="drink"
+      @preview="item => handlePreview(item, 'drink')"
+    />
+    <SectionCard
+      title="副餐"
+      :items="menu.side"
+      :selectedCode="props.order.side"
+      type="side"
+      @preview="item => handlePreview(item, 'side')"
+    />
+    <SectionCard
+      title="加點"
+      :items="menu.addon"
+      :selectedList="props.order.addons"
+      type="addon"
+      @toggle="toggleAddon"
+    />
+
+    <ModalItemPreview
+      v-if="previewItem"
+      :item="previewItem"
+      @close="previewItem = null"
+      @select="handleSelectFromPreview"
+    />
+  </div>
+</template>
 <style>
 .card-item {
   @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;

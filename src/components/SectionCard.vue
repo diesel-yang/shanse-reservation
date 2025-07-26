@@ -44,10 +44,10 @@ const emit = defineEmits(['select', 'toggle', 'preview'])
 const handleClick = item => {
   if (!item || item.disabled) return
 
-  if (props.type !== 'addon') {
-    emit('preview', item)
-  } else {
+  if (props.type === 'addon') {
     emit('toggle', item.code)
+  } else {
+    emit('preview', item)
   }
 }
 
