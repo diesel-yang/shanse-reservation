@@ -15,9 +15,11 @@
       </div>
 
       <!-- 備註 -->
-      <div v-if="item.note" class="text-sm text-gray-700 mb-1">{{ item.note }}</div>
+      <div class="text-sm text-gray-700 mb-1">
+        {{ item.note || '（無備註）' }}
+      </div>
 
-      <!-- 商品介紹 -->
+      <!-- 商品介紹（允許換行） -->
       <div class="text-sm text-gray-600 whitespace-pre-line">
         {{ item.description || '（無介紹內容）' }}
       </div>
