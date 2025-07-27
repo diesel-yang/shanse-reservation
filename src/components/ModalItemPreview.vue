@@ -2,23 +2,36 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content">
       <button class="modal-close" @click="$emit('close')">×</button>
+
+      <!-- 商品圖片 -->
       <img v-if="item.image" :src="item.image" alt="" class="modal-image" @error="handleImgError" />
+
+      <!-- 品名 -->
       <div class="text-xl font-bold text-gray-800 mb-2">{{ item.name }}</div>
+
+      <!-- 加價 -->
       <div v-if="item.price > 0" class="text-sm text-orange-600 mb-1">
         加價：{{ item.price }} 元
       </div>
+
+      <!-- 備註 -->
       <div v-if="item.note" class="text-sm text-gray-700 mb-1">{{ item.note }}</div>
+
+      <!-- 商品介紹 -->
       <div v-if="item.description" class="text-sm text-gray-600 whitespace-pre-line">
         {{ item.description }}
       </div>
+
+      <!-- 除錯用 JSON 展示 -->
+      <!-- <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre> -->
+
+      <!-- 選擇按鈕 -->
       <button
         class="mt-4 px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600"
         @click="$emit('select', item)"
       >
         我要這個
       </button>
-      <!-- ✅ 除錯用：顯示完整 item 資料 -->
-      <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre>
     </div>
   </div>
 </template>
@@ -27,7 +40,9 @@
 const props = defineProps({
   item: Object
 })
-console.log('🧪 ModalItemPreview 接收 item:', props.item)
+
+// 除錯資訊顯示
+console.log('🔍 預覽 item 資料：', props.item)
 
 function handleImgError(e) {
   e.target.style.display = 'none'
