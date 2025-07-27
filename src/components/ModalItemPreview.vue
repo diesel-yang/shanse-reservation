@@ -16,14 +16,14 @@
         加價：{{ item.price }} 元
       </div>
 
-      <!-- 備註（多行） -->
-      <div v-if="'note' in item" class="text-sm text-gray-700 whitespace-pre-line mb-1">
-        {{ item.note || '(無備註)' }}
+      <!-- 備註 -->
+      <div class="text-sm text-gray-700 mb-1 whitespace-pre-line">
+        {{ item.note || '（無備註）' }}
       </div>
 
-      <!-- 介紹（多行） -->
-      <div v-if="'description' in item" class="text-sm text-gray-600 whitespace-pre-line">
-        {{ item.description || '(無介紹內容)' }}
+      <!-- 介紹 -->
+      <div class="text-sm text-gray-600 whitespace-pre-line">
+        {{ item.description || '（無介紹內容）' }}
       </div>
 
       <!-- 選擇按鈕 -->
@@ -35,7 +35,7 @@
       </button>
 
       <!-- 除錯用 JSON -->
-      <!-- <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre> -->
+      <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre>
     </div>
   </div>
 </template>
