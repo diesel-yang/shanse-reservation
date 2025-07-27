@@ -40,8 +40,15 @@ function handlePreview(item, type) {
   previewItem.value = item
   previewType.value = type
 }
-function handleSelectFromPreview(item) {
-  selectItem(previewType.value, item.code)
+const previewItem = ref(null)
+
+function handleSelectItem(item) {
+  if (props.type === 'addon') {
+    toggleAddon(item.code)
+  } else {
+    selectItem(item.code)
+  }
+  // Modal 會自動關閉（因為 emit('close')）
 }
 </script>
 
@@ -83,8 +90,8 @@ function handleSelectFromPreview(item) {
     <ModalItemPreview
       v-if="previewItem"
       :item="previewItem"
+      @select="handleSelectItem"
       @close="previewItem = null"
-      @select="handleSelectFromPreview"
     />
   </div>
 </template>
