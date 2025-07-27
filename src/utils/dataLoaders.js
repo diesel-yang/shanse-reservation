@@ -10,19 +10,21 @@ export const fetchMenu = async () => {
 
     if (json.result !== 'success' || !json.data) throw new Error('資料格式錯誤')
 
-    const convert = arr =>
-      arr.map(r => {
-        console.log('🍍 每筆資料 r:', r) // ← 加這一行
-        return {
+    const convert = arr => {
+      return arr.map(r => {
+        const result = {
           code: r.code || r.name || '',
           name: r.name || '',
           price: Number(r.price) || 0,
           note: r.note || '',
-          description: r.description || '', // 檢查這邊
+          description: r.description || '', // ← 關鍵欄位
           image: r.image || '',
           disabled: r.stop === true
         }
+        console.log('🍍 轉換後：', result) // ← 新增這行
+        return result
       })
+    }
 
     return {
       main: convert(json.data.main || []),
