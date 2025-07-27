@@ -36,6 +36,7 @@ function toggleAddon(code) {
 
 // ▶️ 從 Modal 彈窗選擇品項
 function handlePreview(item, type) {
+  console.log('🔍 預覽 item 資料：', item)
   previewItem.value = item
   previewType.value = type
 }
