@@ -18,8 +18,8 @@
       <div v-if="item.note" class="text-sm text-gray-700 mb-1">{{ item.note }}</div>
 
       <!-- 商品介紹 -->
-      <div v-if="item.description" class="text-sm text-gray-600 whitespace-pre-line">
-        {{ item.description }}
+      <div class="text-sm text-gray-600 whitespace-pre-line">
+        {{ item.description || '（無介紹內容）' }}
       </div>
 
       <!-- 除錯用 JSON 展示 -->
