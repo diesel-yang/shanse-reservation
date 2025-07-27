@@ -32,6 +32,11 @@
       >
         我要這個
       </button>
+
+      <!-- 🔍 除錯區塊：顯示完整 item 資料 -->
+      <pre class="text-xs text-gray-400 mt-4 whitespace-pre-wrap">
+        {{ item }}
+      </pre>
     </div>
   </div>
 </template>
