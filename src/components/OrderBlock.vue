@@ -40,8 +40,6 @@ function handlePreview(item, type) {
   previewItem.value = item
   previewType.value = type
 }
-const previewItem = ref(null)
-
 function handleSelectItem(item) {
   if (props.type === 'addon') {
     toggleAddon(item.code)
