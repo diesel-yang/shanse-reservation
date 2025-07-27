@@ -15,6 +15,7 @@ export const fetchMenu = async () => {
         code: r.code || r.name || '',
         name: r.name || '',
         price: Number(r.price) || 0,
+        note: r.note || '', // ✅ 加上這行
         description: r.description || '',
         image: r.image || '',
         disabled: r.stop === true
