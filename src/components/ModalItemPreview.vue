@@ -35,7 +35,7 @@
       </button>
 
       <!-- 除錯用 JSON -->
-      <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre>
+      <!-- <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre> -->
     </div>
   </div>
 </template>
