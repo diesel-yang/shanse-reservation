@@ -17,6 +17,8 @@
       >
         我要這個
       </button>
+      <!-- ✅ 除錯用：顯示完整 item 資料 -->
+      <pre class="text-xs text-gray-400 mt-4">{{ item }}</pre>
     </div>
   </div>
 </template>
@@ -25,6 +27,7 @@
 const props = defineProps({
   item: Object
 })
+console.log('🧪 ModalItemPreview 接收 item:', props.item)
 
 function handleImgError(e) {
   e.target.style.display = 'none'
