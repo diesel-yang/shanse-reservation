@@ -17,21 +17,22 @@
       </div>
 
       <!-- 備註 -->
-      <div class="text-sm text-gray-700 mb-1 whitespace-pre-line">
-        {{ item.note || '（無備註）' }}
+      <div v-if="item.note" class="text-sm text-gray-700 mb-1 whitespace-pre-line">
+        {{ item.note }}
       </div>
 
       <!-- 介紹 -->
-      <div class="text-sm text-gray-600 whitespace-pre-line">
-        {{ item.description || '（無介紹內容）' }}
+      <div v-if="item.description" class="text-sm text-gray-600 whitespace-pre-line">
+        {{ item.description }}
       </div>
 
-      <!-- 選擇按鈕 -->
+      <!-- 選擇按鈕 加上 :disabled 與 transition -->
       <button
-        class="mt-4 px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600"
-        @click="$emit('select', item)"
+        class="mt-4 px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 transition-transform active:scale-95"
+        :disabled="isSubmitting"
+        @click="selectAndClose"
       >
-        我要這個
+        {{ isSubmitting ? '已選取！' : '我要這個' }}
       </button>
 
       <!-- 除錯用 JSON -->
@@ -45,8 +46,26 @@ const props = defineProps({
   item: Object
 })
 
+const emit = defineEmits(['select', 'close'])
+
+function selectAndClose() {
+  emit('select', props.item)
+  emit('close') // ✅ 點完自動關閉 modal
+}
+
 function handleImgError(e) {
   e.target.style.display = 'none'
+}
+
+const isSubmitting = ref(false)
+
+function selectAndClose() {
+  isSubmitting.value = true
+  emit('select', props.item)
+  setTimeout(() => {
+    emit('close')
+    isSubmitting.value = false
+  }, 300)
 }
 </script>
 
