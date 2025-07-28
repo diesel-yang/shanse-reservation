@@ -18,48 +18,44 @@ const menu = inject('menu', {
   addon: []
 })
 
-// Modal 狀態
+// 彈出視窗
 const previewItem = ref(null)
 const previewType = ref('')
 
-// ▶️ 單選：主餐 / 飲品 / 副餐
+// ▶️ 選擇單選品項
 function selectItem(type, code) {
   emit('update:order', { ...props.order, [type]: code })
 }
 
-// ▶️ 加點多選
+// ▶️ 多選加點
 function toggleAddon(code) {
   const current = props.order.addons || []
-  const updated = current.includes(code)
-    ? current.filter(c => c !== code)
-    : [...current, code]
+  const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
   emit('update:order', { ...props.order, addons: updated })
 }
 
-// ▶️ 點選卡片 → 開啟 Modal 預覽
+// ▶️ 從 Modal 彈窗選擇品項
 function handlePreview(item, type) {
+  console.log('🔍 預覽 item 資料：', item)
   previewItem.value = item
   previewType.value = type
 }
-
-// ▶️ Modal 點「我要這個」
 function handleSelectItem(item) {
-  if (previewType.value === 'addon') {
+  if (props.type === 'addon') {
     toggleAddon(item.code)
   } else {
-    selectItem(previewType.value, item.code)
+    selectItem(item.code)
   }
+  // Modal 會自動關閉（因為 emit('close')）
 }
 </script>
 
 <template>
   <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
-    <!-- 顧客編號 -->
     <h3 v-if="!props.hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
       第 {{ index + 1 }} 位顧客
     </h3>
 
-    <!-- 主餐 -->
     <SectionCard
       title="主餐"
       :items="menu.main"
@@ -67,8 +63,6 @@ function handleSelectItem(item) {
       type="main"
       @preview="item => handlePreview(item, 'main')"
     />
-
-    <!-- 飲品 -->
     <SectionCard
       title="飲品"
       :items="menu.drink"
@@ -76,8 +70,6 @@ function handleSelectItem(item) {
       type="drink"
       @preview="item => handlePreview(item, 'drink')"
     />
-
-    <!-- 副餐 -->
     <SectionCard
       title="副餐"
       :items="menu.side"
@@ -85,8 +77,6 @@ function handleSelectItem(item) {
       type="side"
       @preview="item => handlePreview(item, 'side')"
     />
-
-    <!-- 加點 -->
     <SectionCard
       title="加點"
       :items="menu.addon"
@@ -95,7 +85,6 @@ function handleSelectItem(item) {
       @toggle="toggleAddon"
     />
 
-    <!-- Modal 預覽視窗 -->
     <ModalItemPreview
       v-if="previewItem"
       :item="previewItem"
@@ -104,25 +93,48 @@ function handleSelectItem(item) {
     />
   </div>
 </template>
-
 <style>
 .card-item {
-  @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-200 bg-white;
-  transform: scale(1);
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
 }
 .card-item:hover {
   @apply border-orange-400 shadow-md;
-  transform: scale(1.03);
-}
-.card-item:active {
-  transform: scale(0.97);
 }
 .card-item.selected {
   @apply border-orange-500 bg-orange-50 shadow-inner;
 }
 .card-item.disabled {
   @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
-  pointer-events: none;
+}
+
+/* Modal 基本樣式 */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50;
+}
+
+.modal-content {
+  @apply bg-white rounded-lg shadow-xl p-4 max-w-md w-[90%] max-h-[90vh] overflow-y-auto relative;
+}
+
+.modal-close {
+  @apply absolute top-2 right-2 text-gray-500 hover:text-gray-800 cursor-pointer text-xl;
+}
+
+/* 圖片放大效果 */
+.modal-image {
+  @apply w-full h-auto object-cover rounded-lg mb-4;
+  max-height: 60vh;
+}
+
+.holiday-highlight {
+  color: red !important;
+  font-weight: bold !important;
+}
+
+.holiday-highlight.selected,
+.holiday-highlight.selected:hover {
+  background: #ffe5e5 !important;
+  color: red !important;
+  font-weight: bold !important;
 }
 </style>
