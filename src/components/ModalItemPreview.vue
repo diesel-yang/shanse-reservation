@@ -1,5 +1,11 @@
 <template>
-  <div class="modal-overlay" @click.self="$emit('close')">
+  <div
+    class="modal-overlay"
+    @click.self="$emit('close')"
+    @touchstart="onTouchStart"
+    @touchmove="onTouchMove"
+    @touchend="onTouchEnd"
+  >
     <div class="modal-content">
       <button class="modal-close" @click="$emit('close')">×</button>
 
@@ -28,26 +34,54 @@
 
       <!-- 選擇按鈕 -->
       <button
-        class="mt-4 px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 transition"
+        class="mt-4 px-4 py-2 rounded transition font-semibold w-full"
+        :class="selected ? 'bg-green-500 text-white' : 'bg-orange-500 text-white hover:bg-orange-600'"
         @click="handleSelect"
       >
-        我要這個
+        {{ selected ? '✔ 已選擇' : '我要這個' }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
 const props = defineProps({ item: Object })
 const emit = defineEmits(['close', 'select'])
+
+const selected = ref(false)
 
 function handleImgError(e) {
   e.target.style.display = 'none'
 }
 
 function handleSelect() {
+  selected.value = true
   emit('select', props.item)
-  emit('close') // ✅ 選擇後自動關閉 Modal
+  // 延遲關閉，讓使用者看到「已選擇」
+  setTimeout(() => {
+    emit('close')
+  }, 1500)
+}
+
+// ✅ 滑動關閉
+let touchStartY = 0
+let touchDiffY = 0
+
+function onTouchStart(e) {
+  touchStartY = e.touches[0].clientY
+}
+
+function onTouchMove(e) {
+  touchDiffY = e.touches[0].clientY - touchStartY
+}
+
+function onTouchEnd() {
+  if (touchDiffY > 50) {
+    emit('close')
+  }
+  touchDiffY = 0
 }
 </script>
 
