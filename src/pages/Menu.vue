@@ -255,19 +255,30 @@ function cancelSwitch() {
 
 // ✅ 送出訂單
 async function submitOrder() {
-  if (!form.name || !form.date || !form.time || !form.people || !form.orders.length) {
+  // ✅ 驗證所有欄位是否填寫完成
+  const isFormComplete =
+    form.name &&
+    form.date &&
+    form.time &&
+    form.people &&
+    form.orders.length > 0 &&
+    form.orders.every(o => o.main && o.drink && o.side) // ✅ 每位顧客都要有主餐、飲品、副餐
+
+  if (!isFormComplete) {
     submitMessage.value = '❌ 請填寫所有必填欄位'
     return
   }
+
   isSubmitting.value = true
   submitMessage.value = ''
 
+  // ✅ 將資料組裝成 URLSearchParams
   const payload = new URLSearchParams()
   payload.append('name', form.name)
   payload.append('date', form.date)
   payload.append('time', form.time)
   payload.append('people', form.people)
-  payload.append('orders', JSON.stringify(form.orders))
+  payload.append('orders', JSON.stringify(form.orders)) // ✅ 傳送 orders 為 JSON 字串
 
   try {
     const res = await fetch(import.meta.env.VITE_GAS_URL, {

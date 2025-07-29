@@ -18,16 +18,16 @@ const menu = inject('menu', {
   addon: []
 })
 
-// ▶️ 彈出視窗控制
+// Modal 控制
 const previewItem = ref(null)
 const previewType = ref('')
 
-// ▶️ 選擇單選品項
+// 單選項目（主餐/飲品/副餐）
 function selectItem(type, code) {
   emit('update:order', { ...props.order, [type]: code })
 }
 
-// ▶️ 多選加點
+// 多選加點
 function toggleAddon(code) {
   const current = props.order.addons || []
   const updated = current.includes(code)
@@ -36,13 +36,13 @@ function toggleAddon(code) {
   emit('update:order', { ...props.order, addons: updated })
 }
 
-// ▶️ 開啟預覽視窗
+// 預覽觸發
 function handlePreview(item, type) {
   previewItem.value = item
   previewType.value = type
 }
 
-// ▶️ Modal 中選擇項目後套用
+// Modal 選取
 function handleSelectItem(item) {
   if (previewType.value === 'addon') {
     toggleAddon(item.code)
@@ -59,6 +59,7 @@ function handleSelectItem(item) {
       第 {{ index + 1 }} 位顧客
     </h3>
 
+    <!-- 主餐 -->
     <SectionCard
       title="主餐"
       :items="menu.main"
@@ -66,6 +67,9 @@ function handleSelectItem(item) {
       type="main"
       @preview="item => handlePreview(item, 'main')"
     />
+    <p v-if="!props.order.main" class="text-red-500 text-sm mt-1">請選擇主餐</p>
+
+    <!-- 飲品 -->
     <SectionCard
       title="飲品"
       :items="menu.drink"
@@ -73,6 +77,9 @@ function handleSelectItem(item) {
       type="drink"
       @preview="item => handlePreview(item, 'drink')"
     />
+    <p v-if="!props.order.drink" class="text-red-500 text-sm mt-1">請選擇飲品</p>
+
+    <!-- 副餐 -->
     <SectionCard
       title="副餐"
       :items="menu.side"
@@ -80,6 +87,9 @@ function handleSelectItem(item) {
       type="side"
       @preview="item => handlePreview(item, 'side')"
     />
+    <p v-if="!props.order.side" class="text-red-500 text-sm mt-1">請選擇副餐</p>
+
+    <!-- 加點 -->
     <SectionCard
       title="加點"
       :items="menu.addon"
@@ -88,6 +98,7 @@ function handleSelectItem(item) {
       @toggle="toggleAddon"
     />
 
+    <!-- Modal 預覽 -->
     <ModalItemPreview
       v-if="previewItem"
       :item="previewItem"
