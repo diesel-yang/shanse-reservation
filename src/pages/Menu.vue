@@ -40,7 +40,7 @@
               ? 'bg-orange-500 text-white border-orange-500'
               : 'bg-white border-gray-300 hover:bg-orange-100'
           ]"
-          @click="setOrderMode('group')"
+@click="confirmSwitchMode('group')"
         >
           多人一起點<br class="sm:hidden" />
           <span class="text-sm font-normal">(幫全桌點餐)</span>
@@ -54,7 +54,7 @@
               ? 'bg-orange-500 text-white border-orange-500'
               : 'bg-white border-gray-300 hover:bg-orange-100'
           ]"
-          @click="setOrderMode('individual')"
+@click="confirmSwitchMode('individual')"
         >
           自己點自己的<br class="sm:hidden" />
           <span class="text-sm font-normal">(每人各自選)</span>
@@ -69,11 +69,11 @@
         :key="idx"
         class="mb-6 border border-gray-200 rounded-lg shadow bg-white p-4"
       >
-        <OrderBlock
-          :index="idx"
-          v-model:order="form.orders[idx]"
-          :hide-title="orderMode === 'individual'"
-        />
+    <OrderBlock
+      :index="idx"
+      v-model:order="form.orders[idx]"
+      :hide-title="orderMode === 'individual' || form.people === 1"
+    />
 
         <!-- 顧客明細摘要 -->
         <div class="text-sm text-gray-800 mt-4">
@@ -122,6 +122,25 @@
       <p v-if="submitMessage" class="mt-2 text-green-600 text-sm animate-pulse">
         {{ submitMessage }}
       </p>
+    </div>
+    <!-- ✅ 切換點餐模式確認彈窗 -->
+    <div v-if="showConfirmModal" class="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm">
+        <h2 class="text-lg font-semibold mb-4 text-gray-800">切換點餐模式</h2>
+        <p class="text-gray-700 mb-6 text-sm">
+          您將更換點餐模式，原點餐資料將清除，是否確定更改？
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            class="px-4 py-2 bg-gray-200 rounded text-gray-700 hover:bg-gray-300"
+            @click="cancelSwitch"
+          >取消</button>
+          <button
+            class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+            @click="applySwitchMode"
+          >確定</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -200,6 +219,29 @@ function setOrderMode(mode) {
     form.orders.push({ main: '', drink: '', side: '', addons: [] })
   }
 }
+
+// 🔸 自訂 confirm 模式彈窗邏輯（取代 window.confirm）
+const showConfirmModal = ref(false)
+const pendingMode = ref('')
+
+function confirmSwitchMode(mode) {
+  if (orderMode.value && orderMode.value !== mode) {
+    pendingMode.value = mode
+    showConfirmModal.value = true
+  } else {
+    setOrderMode(mode)
+  }
+}
+
+function applySwitchMode() {
+  setOrderMode(pendingMode.value)
+  showConfirmModal.value = false
+}
+
+function cancelSwitch() {
+  showConfirmModal.value = false
+}
+
 // ✅ 監聽人數變動（重新產生 orders）
 watch(
   () => form.people,
