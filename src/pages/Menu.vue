@@ -201,21 +201,15 @@ onMounted(() => {
 })
 
 // ✅ 當人數變動時，自動初始化點餐資料
-watch(
-  () => form.people,
-  newVal => {
+watch(() => form.people, (newVal) => {
+  if (newVal === 1) {
+    orderMode.value = 'individual'
+    form.orders = [{ main: '', drink: '', side: '', addons: [] }]
+  } else {
+    orderMode.value = '' // 取消預設，使用者自行選擇
     form.orders = []
-
-    if (newVal === 1) {
-      orderMode.value = 'individual'
-      form.orders.push({ main: '', drink: '', side: '', addons: [] })
-    } else if (orderMode.value === 'group') {
-      for (let i = 0; i < newVal; i++) {
-        form.orders.push({ main: '', drink: '', side: '', addons: [] })
-      }
-    }
   }
-)
+})
 
 // ✅ 計算總金額
 const totalPrice = computed(() => {
@@ -225,12 +219,6 @@ const totalPrice = computed(() => {
 
 // ✅ 設定點餐模式並初始化 orders
 function setOrderMode(mode) {
-  if (orderMode.value && orderMode.value !== mode) {
-    pendingMode.value = mode
-    showConfirmModal.value = true
-    return
-  }
-
   orderMode.value = mode
   form.orders = []
 

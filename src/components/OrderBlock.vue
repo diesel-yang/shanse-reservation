@@ -18,7 +18,7 @@ const menu = inject('menu', {
   addon: []
 })
 
-// 彈出視窗
+// ▶️ 彈出視窗控制
 const previewItem = ref(null)
 const previewType = ref('')
 
@@ -30,23 +30,26 @@ function selectItem(type, code) {
 // ▶️ 多選加點
 function toggleAddon(code) {
   const current = props.order.addons || []
-  const updated = current.includes(code) ? current.filter(c => c !== code) : [...current, code]
+  const updated = current.includes(code)
+    ? current.filter(c => c !== code)
+    : [...current, code]
   emit('update:order', { ...props.order, addons: updated })
 }
 
-// ▶️ 從 Modal 彈窗選擇品項
+// ▶️ 開啟預覽視窗
 function handlePreview(item, type) {
-  console.log('🔍 預覽 item 資料：', item)
   previewItem.value = item
   previewType.value = type
 }
+
+// ▶️ Modal 中選擇項目後套用
 function handleSelectItem(item) {
-  if (props.type === 'addon') {
+  if (previewType.value === 'addon') {
     toggleAddon(item.code)
   } else {
-    selectItem(item.code)
+    selectItem(previewType.value, item.code)
   }
-  // Modal 會自動關閉（因為 emit('close')）
+  previewItem.value = null
 }
 </script>
 
@@ -93,6 +96,7 @@ function handleSelectItem(item) {
     />
   </div>
 </template>
+
 <style>
 .card-item {
   @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
@@ -105,36 +109,5 @@ function handleSelectItem(item) {
 }
 .card-item.disabled {
   @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
-}
-
-/* Modal 基本樣式 */
-.modal-overlay {
-  @apply fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50;
-}
-
-.modal-content {
-  @apply bg-white rounded-lg shadow-xl p-4 max-w-md w-[90%] max-h-[90vh] overflow-y-auto relative;
-}
-
-.modal-close {
-  @apply absolute top-2 right-2 text-gray-500 hover:text-gray-800 cursor-pointer text-xl;
-}
-
-/* 圖片放大效果 */
-.modal-image {
-  @apply w-full h-auto object-cover rounded-lg mb-4;
-  max-height: 60vh;
-}
-
-.holiday-highlight {
-  color: red !important;
-  font-weight: bold !important;
-}
-
-.holiday-highlight.selected,
-.holiday-highlight.selected:hover {
-  background: #ffe5e5 !important;
-  color: red !important;
-  font-weight: bold !important;
 }
 </style>
