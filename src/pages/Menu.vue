@@ -1,278 +1,153 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
-    <!-- 標題 -->
-    <div class="flex flex-col items-center mb-6">
-      <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
-    </div>
-
-    <!-- 訂位資料 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <input v-model="form.name" type="text" placeholder="訂位姓名" class="input" required />
-      <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
-      <div class="flex flex-wrap gap-2 my-2">
+  <div class="max-w-4xl mx-auto px-4 py-6">
+    <!-- 訂位基本資料 -->
+    <div class="grid gap-4 mb-6">
+      <input v-model="name" type="text" placeholder="訂位姓名" class="input" />
+      <input v-model="date" type="date" class="input" />
+      <div class="grid grid-cols-2 gap-2">
         <button
           v-for="slot in timeSlots"
           :key="slot"
-          type="button"
+          @click="time = slot"
           :class="[
-            'px-3 py-2 rounded border',
-            form.time === slot ? 'bg-orange-500 text-white' : 'bg-white text-gray-800'
+            'py-2 px-3 rounded border text-sm',
+            time === slot ? 'bg-orange-500 text-white' : 'bg-white border-gray-300 text-gray-800'
           ]"
-          @click="form.time = slot"
         >
           {{ slot }}
         </button>
       </div>
-      <select v-model.number="form.people" class="input" required>
-        <option disabled value="">用餐人數</option>
+      <select v-model="peopleCount" class="input">
+        <option disabled value="">人數</option>
         <option v-for="n in 8" :key="n" :value="n">{{ n }} 位</option>
       </select>
-    </section>
+    </div>
 
-    <!-- 點餐模式切換 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
+    <!-- 點餐模式選擇（人數 > 1 才顯示） -->
+    <div v-if="peopleCount > 1" class="text-center mb-6">
+      <p class="mb-2 text-sm text-gray-600">請選擇點餐方式</p>
       <div class="flex justify-center gap-4 flex-wrap">
         <button
-          type="button"
-          class="w-40 px-4 py-3 rounded border font-semibold text-gray-700 text-center leading-snug transition"
-          :class="[
-            orderMode === 'group'
-              ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white border-gray-300 hover:bg-orange-100'
-          ]"
-          @click="setOrderMode('group')"
+          class="px-4 py-2 rounded border border-orange-500 text-orange-500 hover:bg-orange-100 transition-all"
+          :class="{ 'bg-orange-500 text-white': isGroupMode }"
+          @click="confirmSwitchMode(true)"
         >
-          多人一起點<br class="sm:hidden" />
-          <span class="text-sm font-normal">(幫全桌點餐)</span>
+          多人一起點<br class="sm:hidden" />(幫全桌點餐)
         </button>
-
         <button
-          type="button"
-          class="w-40 px-4 py-3 rounded border font-semibold text-gray-700 text-center leading-snug transition"
-          :class="[
-            orderMode === 'individual'
-              ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white border-gray-300 hover:bg-orange-100'
-          ]"
-          @click="setOrderMode('individual')"
+          class="px-4 py-2 rounded border border-orange-500 text-orange-500 hover:bg-orange-100 transition-all"
+          :class="{ 'bg-orange-500 text-white': !isGroupMode }"
+          @click="confirmSwitchMode(false)"
         >
-          自己點自己的<br class="sm:hidden" />
-          <span class="text-sm font-normal">(每人各自選)</span>
+          自己點自己的<br class="sm:hidden" />(每人各自選)
         </button>
       </div>
-    </section>
+    </div>
 
-    <!-- 每位顧客點餐區塊 -->
-    <section v-if="form.orders.length">
-      <div
-        v-for="(order, idx) in form.orders"
-        :key="idx"
-        class="mb-6 border border-gray-200 rounded-lg shadow bg-white p-4"
-      >
-        <OrderBlock
-          :index="idx"
-          v-model:order="form.orders[idx]"
-          :hide-title="orderMode === 'individual'"
-        />
+    <!-- 顧客點餐區塊 -->
+    <div v-for="(order, index) in orders" :key="index" class="mb-8">
+      <OrderBlock
+        :order="order"
+        :index="index"
+        :hide-title="!showTitle(index)"
+        @update="(value) => updateOrder(index, value)"
+        @preview="(item) => openPreview(item)"
+      />
+    </div>
 
-        <!-- 顧客明細摘要 -->
-        <div class="text-sm text-gray-800 mt-4">
-          <!-- ✅ 條件判斷：非個別點餐且人數大於 1 才顯示 -->
-          <h3
-            v-if="!(orderMode === 'individual' || form.people === 1)"
-            class="font-semibold text-blue-800 mb-1"
-          >
-            第 {{ idx + 1 }} 位顧客
-          </h3>
-
-          <p>主餐：{{ getItemByCode('main', order.main, menu)?.name || '－' }}</p>
-          <p>飲品：{{ getItemByCode('drink', order.drink, menu)?.name || '－' }}</p>
-          <p>副餐：{{ getItemByCode('side', order.side, menu)?.name || '－' }}</p>
-          <p v-if="Array.isArray(order.addons) && order.addons.length > 0">
-            加點：{{
-              order.addons.map(code => getItemByCode('addon', code, menu)?.name).join('、')
-            }}
-          </p>
-
-          <div v-if="order" class="mt-2">
-            <p>套餐：{{ calcPriceBreakdown(order, menu).base }} 元</p>
-            <p>加點：{{ calcPriceBreakdown(order, menu).addon }} 元</p>
-            <p>服務費（10%）：{{ calcPriceBreakdown(order, menu).service }} 元</p>
-            <p class="font-semibold">總金額：{{ calcPriceBreakdown(order, menu).total }} 元</p>
-          </div>
+    <!-- 彈出確認切換模式的 Modal -->
+    <div v-if="showConfirmModal" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm">
+        <h2 class="text-lg font-semibold mb-4 text-gray-800">切換點餐模式</h2>
+        <p class="text-gray-700 mb-6 text-sm">
+          您將更換點餐模式，原點餐資料將清除，是否確定更改？
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            class="px-4 py-2 bg-gray-200 rounded text-gray-700 hover:bg-gray-300"
+            @click="cancelSwitch"
+          >取消</button>
+          <button
+            class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+            @click="applySwitchMode"
+          >確定</button>
         </div>
       </div>
-    </section>
-
-    <!-- 總金額 -->
-    <section v-if="totalPrice > 0" class="mt-6 text-right text-lg font-semibold text-gray-900">
-      總消費金額：{{ totalPrice }} 元（含 10% 服務費）
-    </section>
-
-    <!-- 送出按鈕 -->
-    <div class="text-center mt-6">
-      <button
-        type="button"
-        :disabled="isSubmitting || !orderMode"
-        @click="submitOrder"
-        class="px-6 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
-      >
-        {{ isSubmitting ? '送出中...' : '送出訂單' }}
-      </button>
-      <p v-if="submitMessage" class="mt-2 text-green-600 text-sm animate-pulse">
-        {{ submitMessage }}
-      </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, inject, toRaw } from 'vue'
-import flatpickr from 'flatpickr'
-import 'flatpickr/dist/flatpickr.min.css'
-import FlatpickrLanguages from 'flatpickr/dist/l10n'
+import { ref, computed, watch } from 'vue'
+import OrderBlock from '../components/OrderBlock.vue'
 
-import OrderBlock from '@/components/OrderBlock.vue'
-import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
-import { resetForm } from '@/utils/resetForm' // ✅ 匯入共用函式
-
-const menu = inject('menu', {
-  main: [],
-  drink: [],
-  side: [],
-  addon: []
-})
-const holidays = inject('holidays', [])
-const dateInput = ref(null)
-
+const name = ref('')
+const date = ref('')
+const time = ref('')
+const peopleCount = ref('')
 const timeSlots = ['11:30–13:00', '12:30–13:50', '13:10–14:40', '14:00–15:30']
-const isSubmitting = ref(false)
-const submitMessage = ref('')
-const orderMode = ref('') // ✅ 無預設模式
 
-const form = reactive({
-  name: '',
-  date: '',
-  time: '',
-  people: '',
-  orders: []
+// 點餐模式：true 為多人一起點，false 為自己點自己的
+const isGroupMode = ref(true)
+const showConfirmModal = ref(false)
+const pendingMode = ref(true)
+
+// 點餐資料
+const orders = ref([])
+
+// 當人數變動時初始化訂單區塊
+watch(peopleCount, (newCount) => {
+  if (!newCount) return
+  const count = parseInt(newCount)
+  orders.value = Array.from({ length: count }, () => ({
+    main: '', drink: '', side: '', addons: []
+  }))
 })
 
-// ✅ 初始化日期選擇器
-onMounted(() => {
-  flatpickr.localize({ ...FlatpickrLanguages['zh_tw'], firstDayOfWeek: 0 })
-
-  flatpickr(dateInput.value, {
-    dateFormat: 'Y-m-d',
-    minDate: 'today',
-    disable: [d => d.getDay() === 3 || d.getDay() === 4], // 店休日（三四）
-    onChange: ([date]) => {
-      form.date = date?.toISOString().split('T')[0] || ''
-    },
-    onDayCreate(_, __, ___, dayElem) {
-      const d = dayElem.dateObj
-      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-      const holidayList = toRaw(holidays)
-      if (Array.isArray(holidayList) && holidayList.includes(ds)) {
-        console.log('🎯 套用紅字日期:', ds)
-        dayElem.classList.add('holiday-highlight')
-      }
-    }
-  })
-})
-
-// ✅ 點餐模式切換（需確認）
-function setOrderMode(mode) {
-  if (orderMode.value && orderMode.value !== mode) {
-    const confirmed = window.confirm('您將更換點餐模式，原點餐資料將清除，是否確定更改？')
-    if (!confirmed) return
-  }
-
-  orderMode.value = mode
-  form.orders = []
-
-  if (mode === 'group' && form.people) {
-    for (let i = 0; i < form.people; i++) {
-      form.orders.push({ main: '', drink: '', side: '', addons: [] })
-    }
-  } else if (mode === 'individual') {
-    form.orders.push({ main: '', drink: '', side: '', addons: [] })
-  }
+// 切換點餐模式：預先記錄要切換的模式，開啟 Modal
+const confirmSwitchMode = (mode) => {
+  if (isGroupMode.value === mode) return
+  pendingMode.value = mode
+  showConfirmModal.value = true
 }
-// ✅ 監聽人數變動（重新產生 orders）
-watch(
-  () => form.people,
-  newVal => {
-    if (orderMode.value === 'group') {
-      form.orders = []
-      for (let i = 0; i < newVal; i++) {
-        form.orders.push({ main: '', drink: '', side: '', addons: [] })
-      }
-    }
-  }
-)
-// ✅ 計算總金額
-const totalPrice = computed(() => {
-  const all = form.orders.map(order => calcPriceBreakdown(order, menu).total || 0)
-  return all.reduce((a, b) => a + b, 0)
-})
 
-// ✅ 送出訂單
-async function submitOrder() {
-  if (!form.name || !form.date || !form.time || !form.people || !form.orders.length) {
-    submitMessage.value = '❌ 請填寫所有必填欄位'
-    return
-  }
-  isSubmitting.value = true
-  submitMessage.value = ''
+// 按「確定」切換點餐模式
+const applySwitchMode = () => {
+  isGroupMode.value = pendingMode.value
+  resetOrders()
+  showConfirmModal.value = false
+}
 
-  // 將資料組裝成 URLSearchParams
-  const payload = new URLSearchParams()
-  payload.append('name', form.name)
-  payload.append('date', form.date)
-  payload.append('time', form.time)
-  payload.append('people', form.people)
-  payload.append('orders', JSON.stringify(form.orders)) // ✅ 傳送 orders 為 JSON 字串
+// 按「取消」關閉彈窗
+const cancelSwitch = () => {
+  showConfirmModal.value = false
+}
 
-  try {
-    const res = await fetch(import.meta.env.VITE_GAS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded' // ✅ 避免 CORS 預檢
-      },
-      body: payload.toString()
-    })
+// 清空所有點餐資料
+const resetOrders = () => {
+  orders.value = orders.value.map(() => ({
+    main: '', drink: '', side: '', addons: []
+  }))
+}
 
-    const resultText = await res.text()
+// 是否顯示顧客 title（只在多人一起點時顯示）
+const showTitle = (index) => {
+  return peopleCount.value > 1 && isGroupMode.value
+}
 
-    if (resultText.includes('成功')) {
-      submitMessage.value = '✅ 已成功送出訂單！'
-      resetForm() // ✅ 呼叫重置表單
-    } else {
-      submitMessage.value = '❌ 訂單送出失敗：' + resultText
-    }
-  } catch (err) {
-    submitMessage.value = '❌ 發生錯誤：' + err.message
-  } finally {
-    isSubmitting.value = false
-    setTimeout(() => (submitMessage.value = ''), 3000)
-  }
+// 處理更新每位顧客的點餐資料
+const updateOrder = (index, value) => {
+  orders.value[index] = value
+}
+
+// 預覽功能略過
+const openPreview = (item) => {
+  console.log('預覽品項：', item)
 }
 </script>
 
 <style>
 .input {
-  @apply w-full p-2 border border-gray-300 rounded mb-2;
-}
-.holiday-highlight {
-  color: red !important;
-  font-weight: bold !important;
-}
-.holiday-highlight.selected,
-.holiday-highlight.selected:hover {
-  background: #ffe5e5 !important;
-  color: red !important;
-  font-weight: bold !important;
+  @apply border rounded px-3 py-2 text-sm w-full;
 }
 </style>
