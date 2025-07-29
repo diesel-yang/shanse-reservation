@@ -30,8 +30,8 @@
     </section>
 
     <!-- 點餐模式切換 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <div class="flex justify-center gap-4 flex-wrap">
+<section v-if="form.people > 1" class="bg-white rounded-lg shadow-md p-4 mb-6">     
+ <div class="flex justify-center gap-4 flex-wrap">
         <button
           type="button"
           class="w-40 px-4 py-3 rounded border font-semibold text-gray-700 text-center leading-snug transition"
@@ -204,8 +204,9 @@ onMounted(() => {
 // ✅ 點餐模式切換（需確認）
 function setOrderMode(mode) {
   if (orderMode.value && orderMode.value !== mode) {
-    const confirmed = window.confirm('您將更換點餐模式，原點餐資料將清除，是否確定更改？')
-    if (!confirmed) return
+    pendingMode.value = mode
+    showConfirmModal.value = true
+    return
   }
 
   orderMode.value = mode
@@ -223,15 +224,6 @@ function setOrderMode(mode) {
 // 🔸 自訂 confirm 模式彈窗邏輯（取代 window.confirm）
 const showConfirmModal = ref(false)
 const pendingMode = ref('')
-
-function confirmSwitchMode(mode) {
-  if (orderMode.value && orderMode.value !== mode) {
-    pendingMode.value = mode
-    showConfirmModal.value = true
-  } else {
-    setOrderMode(mode)
-  }
-}
 
 function applySwitchMode() {
   setOrderMode(pendingMode.value)
