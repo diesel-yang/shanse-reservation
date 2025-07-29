@@ -151,11 +151,6 @@ import { ref, reactive, computed, watch, onMounted, inject, toRaw } from 'vue'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.min.css'
 import FlatpickrLanguages from 'flatpickr/dist/l10n'
-<script setup>
-import { ref, reactive, computed, watch, onMounted, inject, toRaw } from 'vue'
-import flatpickr from 'flatpickr'
-import 'flatpickr/dist/flatpickr.min.css'
-import FlatpickrLanguages from 'flatpickr/dist/l10n'
 
 import OrderBlock from '@/components/OrderBlock.vue'
 import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
