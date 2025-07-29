@@ -255,14 +255,13 @@ function cancelSwitch() {
 
 // ✅ 送出訂單
 async function submitOrder() {
-  // ✅ 驗證所有欄位是否填寫完成
   const isFormComplete =
     form.name &&
     form.date &&
     form.time &&
     form.people &&
     form.orders.length > 0 &&
-    form.orders.every(o => o.main && o.drink && o.side) // ✅ 每位顧客都要有主餐、飲品、副餐
+    form.orders.every(o => o.main && o.drink && o.side)
 
   if (!isFormComplete) {
     submitMessage.value = '❌ 請填寫所有必填欄位'
@@ -272,13 +271,12 @@ async function submitOrder() {
   isSubmitting.value = true
   submitMessage.value = ''
 
-  // ✅ 將資料組裝成 URLSearchParams
   const payload = new URLSearchParams()
   payload.append('name', form.name)
   payload.append('date', form.date)
   payload.append('time', form.time)
   payload.append('people', form.people)
-  payload.append('orders', JSON.stringify(form.orders)) // ✅ 傳送 orders 為 JSON 字串
+  payload.append('orders', JSON.stringify(form.orders))
 
   try {
     const res = await fetch(import.meta.env.VITE_GAS_URL, {
@@ -290,12 +288,20 @@ async function submitOrder() {
     })
 
     const resultText = await res.text()
+    let resultJson = {}
 
-    if (resultText.includes('成功')) {
+    try {
+      resultJson = JSON.parse(resultText)
+    } catch (e) {
+      submitMessage.value = '❌ 後端回傳格式錯誤'
+      return
+    }
+
+    if (resultJson.result === 'success') {
       submitMessage.value = '✅ 已成功送出訂單！'
-      resetForm()
+      resetForm(form, orderMode, dateInput)
     } else {
-      submitMessage.value = '❌ 訂單送出失敗：' + resultText
+      submitMessage.value = '❌ 訂單送出失敗：' + (resultJson.message || resultText)
     }
   } catch (err) {
     submitMessage.value = '❌ 發生錯誤：' + err.message
@@ -303,6 +309,7 @@ async function submitOrder() {
     isSubmitting.value = false
     setTimeout(() => (submitMessage.value = ''), 3000)
   }
+}
 }
 </script>
 
