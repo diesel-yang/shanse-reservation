@@ -310,7 +310,6 @@ async function submitOrder() {
     setTimeout(() => (submitMessage.value = ''), 3000)
   }
 }
-}
 </script>
 
 <style>
