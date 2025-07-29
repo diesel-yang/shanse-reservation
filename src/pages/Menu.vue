@@ -200,7 +200,6 @@ onMounted(() => {
     }
   })
 })
-
 // ✅ 點餐模式切換（需確認）
 function setOrderMode(mode) {
   if (orderMode.value && orderMode.value !== mode) {
@@ -218,6 +217,16 @@ function setOrderMode(mode) {
     }
   } else if (mode === 'individual') {
     form.orders.push({ main: '', drink: '', side: '', addons: [] })
+  }
+}
+
+// ✅ ⬇⬇⬇ 補上這段 ⬇⬇⬇
+function confirmSwitchMode(mode) {
+  if (orderMode.value && orderMode.value !== mode) {
+    pendingMode.value = mode
+    showConfirmModal.value = true
+  } else {
+    setOrderMode(mode)
   }
 }
 
