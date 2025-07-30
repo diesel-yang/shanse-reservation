@@ -19,11 +19,11 @@
     </RouterLink>
 
     <a
-      href="https://reserve.shanse.tw" target="_blank" rel="noopener noreferrer"
+      href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84" target="_blank" rel="noopener noreferrer"
       class="group flex flex-col items-center text-gray-500 hover:text-orange-500 transition"
     >
       <BookOpenIcon class="w-6 h-6" />
-      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">餐桌與閱讀</span>
+      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">餐桌予約</span>
     </a>
 
     <RouterLink
