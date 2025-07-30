@@ -1,90 +1,124 @@
+<script setup>
+import { inject, computed, ref } from 'vue'
+import SectionCard from './SectionCard.vue'
+import ModalItemPreview from './ModalItemPreview.vue'
+import { calcPriceBreakdown } from '@/utils/helpers'
+
+const props = defineProps({
+  index: Number,
+  order: Object,
+  hideTitle: Boolean
+})
+const emit = defineEmits(['update:order'])
+
+const menu = inject('menu', {
+  main: [],
+  drink: [],
+  side: [],
+  addon: []
+})
+
+// Modal 控制
+const previewItem = ref(null)
+const previewType = ref('')
+
+// 單選項目（主餐/飲品/副餐）
+function selectItem(type, code) {
+  emit('update:order', { ...props.order, [type]: code })
+}
+
+// 多選加點
+function toggleAddon(code) {
+  const current = props.order.addons || []
+  const updated = current.includes(code)
+    ? current.filter(c => c !== code)
+    : [...current, code]
+  emit('update:order', { ...props.order, addons: updated })
+}
+
+// 預覽觸發
+function handlePreview(item, type) {
+  previewItem.value = item
+  previewType.value = type
+}
+
+// Modal 選取
+function handleSelectItem(item) {
+  if (previewType.value === 'addon') {
+    toggleAddon(item.code)
+  } else {
+    selectItem(previewType.value, item.code)
+  }
+  previewItem.value = null
+}
+</script>
+
 <template>
-  <div>
+  <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
+    <h3 v-if="!props.hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
+      第 {{ index + 1 }} 位顧客
+    </h3>
+
     <!-- 主餐 -->
     <SectionCard
       title="主餐"
       :items="menu.main"
-      :selectedCode="order.main"
+      :selectedCode="props.order.main"
       type="main"
-      @select="selectItem('main', $event)"
+      @preview="item => handlePreview(item, 'main')"
     />
+    <p v-if="!props.order.main" class="text-red-500 text-sm mt-1">請選擇主餐</p>
 
     <!-- 飲品 -->
     <SectionCard
       title="飲品"
       :items="menu.drink"
-      :selectedCode="order.drink"
+      :selectedCode="props.order.drink"
       type="drink"
-      @select="selectItem('drink', $event)"
+      @preview="item => handlePreview(item, 'drink')"
     />
+    <p v-if="!props.order.drink" class="text-red-500 text-sm mt-1">請選擇飲品</p>
 
     <!-- 副餐 -->
     <SectionCard
       title="副餐"
       :items="menu.side"
-      :selectedCode="order.side"
+      :selectedCode="props.order.side"
       type="side"
-      @select="selectItem('side', $event)"
+      @preview="item => handlePreview(item, 'side')"
     />
+    <p v-if="!props.order.side" class="text-red-500 text-sm mt-1">請選擇副餐</p>
 
     <!-- 加點 -->
-    <div class="mt-6">
-      <h3 class="font-semibold text-gray-800 text-base mb-2">加點（可複選）</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        <SectionCard
-          v-for="item in menu.addon"
-          :key="item.code"
-          :item="item"
-          :selected="order.addons.includes(item.code)"
-          type="addon"
-          @click="toggleAddon(item.code)"
-          simple
-        />
-      </div>
-    </div>
+    <SectionCard
+      title="加點"
+      :items="menu.addon"
+      :selectedList="props.order.addons"
+      type="addon"
+      @toggle="toggleAddon"
+    />
+
+    <!-- Modal 預覽 -->
+    <ModalItemPreview
+      v-if="previewItem"
+      :item="previewItem"
+      @select="handleSelectItem"
+      @close="previewItem = null"
+    />
   </div>
 </template>
 
-<script setup>
-import { inject, watch } from 'vue'
-import SectionCard from './SectionCard.vue'
-
-const props = defineProps({
-  order: {
-    type: Object,
-    required: true
-  },
-  index: Number,
-  hideTitle: Boolean
-})
-
-const emit = defineEmits(['update:order'])
-
-const menu = inject('menu')
-
-function selectItem(type, code) {
-  emit('update:order', { ...props.order, [type]: code })
-}
-
-function toggleAddon(code) {
-  const addons = props.order.addons || []
-  const index = addons.indexOf(code)
-  if (index === -1) {
-    addons.push(code)
-  } else {
-    addons.splice(index, 1)
-  }
-  emit('update:order', { ...props.order, addons })
-}
-</script>
-
 <style>
-/* 確保卡片排版在小螢幕上也清晰可見 */
-@media (max-width: 640px) {
-  .grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.card-item {
+  @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
 }
-
-/* 卡片共用樣式應寫在 SectionCard.vue 中 */
+.card-item:hover {
+  @apply border-orange-400 shadow-md;
+}
+.card-item.selected {
+  @apply border-orange-500 bg-orange-50 shadow-inner;
+}
+.card-item.disabled {
+  @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
+}
 </style>
