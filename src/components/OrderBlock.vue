@@ -1,56 +1,124 @@
-<template>
-  <div
-    class="order-card w-full sm:w-48 md:w-44 rounded border text-center p-2 cursor-pointer shadow-sm transition-transform duration-200 hover:scale-105"
-    :class="[
-      selected ? 'ring-2 ring-orange-500' : 'border-gray-300',
-      item.disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'bg-white'
-    ]"
-    @click="handleClick"
-  >
-    <div v-if="type !== 'addon'">
-      <img
-        :src="item.image"
-        alt="item.name"
-        class="w-full h-24 object-cover rounded mb-1"
-        @error="onImageError"
-      />
-      <div class="text-sm font-semibold truncate">{{ item.name }}</div>
-      <div class="text-xs text-orange-500" v-if="item.price > 0">+{{ item.price }} 元</div>
-      <div class="text-xs text-gray-500" v-if="item.note">{{ item.note }}</div>
-    </div>
-
-    <div v-else class="flex flex-col justify-center items-center h-full">
-      <div class="text-sm font-medium">{{ item.name }}</div>
-      <div v-if="item.price > 0" class="text-xs text-orange-500">+{{ item.price }} 元</div>
-      <div v-if="item.disabled" class="text-xs text-red-600 font-semibold mt-1">補貨中</div>
-    </div>
-  </div>
-</template>
-
 <script setup>
-defineProps({
-  item: Object,
-  selected: Boolean,
-  type: String
-})
-const emit = defineEmits(['click'])
+import { inject, computed, ref } from 'vue'
+import SectionCard from './SectionCard.vue'
+import ModalItemPreview from './ModalItemPreview.vue'
+import { calcPriceBreakdown } from '@/utils/helpers'
 
-function handleClick() {
-  if (!item.disabled) {
-    emit('click', item)
-  }
+const props = defineProps({
+  index: Number,
+  order: Object,
+  hideTitle: Boolean
+})
+const emit = defineEmits(['update:order'])
+
+const menu = inject('menu', {
+  main: [],
+  drink: [],
+  side: [],
+  addon: []
+})
+
+// Modal 控制
+const previewItem = ref(null)
+const previewType = ref('')
+
+// 單選項目（主餐/飲品/副餐）
+function selectItem(type, code) {
+  emit('update:order', { ...props.order, [type]: code })
 }
 
-function onImageError(e) {
-  e.target.src = '/default.png'
+// 多選加點
+function toggleAddon(code) {
+  const current = props.order.addons || []
+  const updated = current.includes(code)
+    ? current.filter(c => c !== code)
+    : [...current, code]
+  emit('update:order', { ...props.order, addons: updated })
+}
+
+// 預覽觸發
+function handlePreview(item, type) {
+  previewItem.value = item
+  previewType.value = type
+}
+
+// Modal 選取
+function handleSelectItem(item) {
+  if (previewType.value === 'addon') {
+    toggleAddon(item.code)
+  } else {
+    selectItem(previewType.value, item.code)
+  }
+  previewItem.value = null
 }
 </script>
 
+<template>
+  <div class="bg-white rounded-lg shadow-md p-4 mb-6 border border-gray-200">
+    <h3 v-if="!props.hideTitle" class="text-lg font-semibold text-gray-800 mb-3">
+      第 {{ index + 1 }} 位顧客
+    </h3>
+
+    <!-- 主餐 -->
+    <SectionCard
+      title="主餐"
+      :items="menu.main"
+      :selectedCode="props.order.main"
+      type="main"
+      @preview="item => handlePreview(item, 'main')"
+    />
+    <p v-if="!props.order.main" class="text-red-500 text-sm mt-1">請選擇主餐</p>
+
+    <!-- 飲品 -->
+    <SectionCard
+      title="飲品"
+      :items="menu.drink"
+      :selectedCode="props.order.drink"
+      type="drink"
+      @preview="item => handlePreview(item, 'drink')"
+    />
+    <p v-if="!props.order.drink" class="text-red-500 text-sm mt-1">請選擇飲品</p>
+
+    <!-- 副餐 -->
+    <SectionCard
+      title="副餐"
+      :items="menu.side"
+      :selectedCode="props.order.side"
+      type="side"
+      @preview="item => handlePreview(item, 'side')"
+    />
+    <p v-if="!props.order.side" class="text-red-500 text-sm mt-1">請選擇副餐</p>
+
+    <!-- 加點 -->
+    <SectionCard
+      title="加點"
+      :items="menu.addon"
+      :selectedList="props.order.addons"
+      type="addon"
+      @toggle="toggleAddon"
+    />
+
+    <!-- Modal 預覽 -->
+    <ModalItemPreview
+      v-if="previewItem"
+      :item="previewItem"
+      @select="handleSelectItem"
+      @close="previewItem = null"
+    />
+  </div>
+</template>
+
 <style>
-.order-card {
-  transition: transform 0.2s ease;
+.card-item {
+  @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
 }
-.order-card:hover {
-  transform: scale(1.03);
+.card-item:hover {
+  @apply border-orange-400 shadow-md;
+}
+.card-item.selected {
+  @apply border-orange-500 bg-orange-50 shadow-inner;
+}
+.card-item.disabled {
+  @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
 }
 </style>
