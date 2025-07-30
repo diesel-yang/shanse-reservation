@@ -16,7 +16,7 @@
       <li>
         <RouterLink to="/reserve" class="flex flex-col items-center">
           <CalendarIcon class="w-6 h-6" />
-          餐桌與閱讀
+          餐桌予約
         </RouterLink>
       </li>
       <li>
