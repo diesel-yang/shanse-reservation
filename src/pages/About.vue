@@ -8,7 +8,7 @@
     />
     <!-- 背景影片 -->
     <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0">
-      <source src="/山色 about us.mp4" type="video/mp4" />
+      <source src="/shanse-about-us.mp4" type="video/mp4" />
       您的瀏覽器不支援影片播放
     </video>
 
