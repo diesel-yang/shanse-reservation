@@ -1,46 +1,26 @@
 <template>
-  <nav
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-md bg-white shadow-lg rounded-full px-3 py-2 flex justify-around items-center"
-  >
-    <RouterLink
-      to="/"
-      class="group flex flex-col items-center text-gray-500 hover:text-orange-500 transition"
-    >
-      <HomeIcon class="w-6 h-6" />
-      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">首頁</span>
-    </RouterLink>
+  <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white border border-gray-200 shadow-xl rounded-full px-4 py-1 flex justify-around items-center z-50">
+    <div v-for="item in navItems" :key="item.name" class="relative group">
+      <RouterLink
+        v-if="!item.external"
+        :to="item.to"
+        class="flex flex-col items-center text-gray-600 hover:text-orange-500 transition"
+      >
+        <component :is="item.icon" class="w-6 h-6" />
+        <span class="text-xs opacity-0 group-hover:opacity-100 mt-1 transition duration-300">{{ item.label }}</span>
+      </RouterLink>
 
-    <RouterLink
-      to="/about"
-      class="group flex flex-col items-center text-gray-500 hover:text-orange-500 transition"
-    >
-      <UserIcon class="w-6 h-6" />
-      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">關於我們</span>
-    </RouterLink>
-
-    <a
-      href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84" target="_blank" rel="noopener noreferrer"
-      class="group flex flex-col items-center text-gray-500 hover:text-orange-500 transition"
-    >
-      <BookOpenIcon class="w-6 h-6" />
-      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">餐桌予約</span>
-    </a>
-
-    <RouterLink
-      to="/menu"
-      class="group flex flex-col items-center text-gray-500 hover:text-orange-500 transition"
-    >
-      <ClipboardDocumentListIcon class="w-6 h-6" />
-      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">預先點餐</span>
-    </RouterLink>
-
-    <RouterLink
-      to="/faq"
-      class="group flex flex-col items-center text-gray-500 hover:text-orange-500 transition"
-    >
-      <QuestionMarkCircleIcon class="w-6 h-6" />
-      <span class="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition">訂位問題</span>
-    </RouterLink>
+      <a
+        v-else
+        :href="item.to"
+        class="flex flex-col items-center text-gray-600 hover:text-orange-500 transition"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <component :is="item.icon" class="w-6 h-6" />
+        <span class="text-xs opacity-0 group-hover:opacity-100 mt-1 transition duration-300">{{ item.label }}</span>
+      </a>
+    </div>
   </nav>
 </template>
 
@@ -49,10 +29,23 @@ import {
   HomeIcon,
   UserIcon,
   BookOpenIcon,
-  ClipboardDocumentListIcon,
+  CalendarDaysIcon,
   QuestionMarkCircleIcon
 } from '@heroicons/vue/24/outline'
-import { RouterLink } from 'vue-router'
+
+const navItems = [
+  { name: 'home', label: '首頁', to: '/', icon: HomeIcon, external: false },
+  { name: 'about', label: '關於我們', to: '/about', icon: UserIcon, external: false },
+  {
+    name: 'reserve',
+    label: '餐桌予約',
+    to: 'https://instantfood.store/collections/餐桌予約',
+    icon: CalendarDaysIcon,
+    external: true
+  },
+  { name: 'order', label: '預先點餐', to: '/menu', icon: BookOpenIcon, external: false },
+  { name: 'faq', label: '訂位問題', to: '/faq', icon: QuestionMarkCircleIcon, external: false }
+]
 </script>
 
 <style scoped>
