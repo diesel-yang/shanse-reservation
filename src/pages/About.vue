@@ -1,49 +1,41 @@
 <template>
-  <div
-    class="min-h-screen bg-gradient-to-b from-[#dc5f20] to-[#e26a1e] flex flex-col items-center px-6 py-10 text-black"
-  >
-    <!-- LOGO -->
+  <div class="relative min-h-screen w-full text-white font-sans">
+      <!-- LOGO -->
     <img
       src="/hero-transparent.png"
       alt="山色主視覺"
       class="w-[70px] h-auto mb-10 object-contain bg-transparent"
     />
+    <!-- 背景影片 -->
+    <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0">
+      <source src="/山色 about us.mp4" type="video/mp4" />
+      您的瀏覽器不支援影片播放
+    </video>
 
-    <!-- 影片播放 -->
-    <video
-      src="/shanse-about-us.mp4"
-      controls
-      class="w-full max-w-sm aspect-video rounded-lg shadow mb-6"
-    ></video>
+    <!-- 疊加圖片層 -->
+    <div
+      class="absolute inset-0 z-10 bg-no-repeat bg-cover bg-center opacity-30"
+      style="background-image: url('/山色-about-us-2.WEBP')"
+    ></div>
 
-    <!-- 關於我們說明 -->
-    <p class="text-lg leading-relaxed max-w-xl text-center mb-10 font-semibold tracking-wide">
-      山色是一間以完全預約制方式運作的小餐館，我們以選用在地與東方風味為基礎，傳遞季節與心意。
-      <br /><br />
-      謝謝您每一次的到來。<br />
-      ขอขอบคุณค่ะ 🌿
-    </p>
-
-    <!-- 分散對齊按鈕 -->
-    <div class="w-full max-w-sm space-y-5">
-      <router-link to="/" class="block">
-        <div
-          class="flex justify-between items-center w-full bg-white/80 backdrop-blur-sm text-black px-6 py-4 rounded-lg border border-black shadow hover:scale-[1.02] transition font-medium"
-        >
-          <span>回首頁</span>
-          <span>→</span>
-        </div>
-      </router-link>
-      <router-link to="/menu" class="block">
-        <div
-          class="flex justify-between items-center w-full bg-white/80 backdrop-blur-sm text-black px-6 py-4 rounded-lg border border-black shadow hover:scale-[1.02] transition font-medium"
-        >
-          <span>預先點餐</span>
-          <span>→</span>
-        </div>
-      </router-link>
+    <!-- 文字區塊 -->
+    <div class="relative z-20 flex flex-col items-center justify-center h-screen text-center px-6">
+      <h1 class="text-3xl tracking-widest mb-4">山色 Shān Sè</h1>
+      <p class="max-w-xl text-base leading-relaxed text-white/80">
+        山色，是一段旅程的中繼，<br />
+        我們以餐桌連接季節、風土與情感，<br />
+        邀請你靜下來，與時間一起品嚐生活。
+      </p>
     </div>
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+// 無需額外 JS
+</script>
+
+<style>
+body {
+  font-family: 'DM Sans', sans-serif;
+}
+</style>
