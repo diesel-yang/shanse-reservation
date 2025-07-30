@@ -1,57 +1,36 @@
 <template>
-  <div class="space-y-6">
+  <div>
     <!-- 主餐 -->
-    <div>
-      <h3 class="text-sm font-semibold mb-2 text-gray-700">主餐</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        <SectionCard
-          v-for="item in menu.main"
-          :key="item.code"
-          :item="item"
-          :selected="order.main === item.code"
-          type="main"
-          @preview="openPreview"
-          @click="selectItem('main', item.code)"
-        />
-      </div>
-    </div>
+    <SectionCard
+      title="主餐"
+      :items="menu.main"
+      :selectedCode="order.main"
+      type="main"
+      @select="selectItem('main', $event)"
+    />
 
     <!-- 飲品 -->
-    <div>
-      <h3 class="text-sm font-semibold mb-2 text-gray-700">飲品</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        <SectionCard
-          v-for="item in menu.drink"
-          :key="item.code"
-          :item="item"
-          :selected="order.drink === item.code"
-          type="drink"
-          @preview="openPreview"
-          @click="selectItem('drink', item.code)"
-        />
-      </div>
-    </div>
+    <SectionCard
+      title="飲品"
+      :items="menu.drink"
+      :selectedCode="order.drink"
+      type="drink"
+      @select="selectItem('drink', $event)"
+    />
 
     <!-- 副餐 -->
-    <div>
-      <h3 class="text-sm font-semibold mb-2 text-gray-700">副餐</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        <SectionCard
-          v-for="item in menu.side"
-          :key="item.code"
-          :item="item"
-          :selected="order.side === item.code"
-          type="side"
-          @preview="openPreview"
-          @click="selectItem('side', item.code)"
-        />
-      </div>
-    </div>
+    <SectionCard
+      title="副餐"
+      :items="menu.side"
+      :selectedCode="order.side"
+      type="side"
+      @select="selectItem('side', $event)"
+    />
 
     <!-- 加點 -->
-    <div>
-      <h3 class="text-sm font-semibold mb-2 text-gray-700">加點</h3>
-      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+    <div class="mt-6">
+      <h3 class="font-semibold text-gray-800 text-base mb-2">加點（可複選）</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
         <SectionCard
           v-for="item in menu.addon"
           :key="item.code"
@@ -59,72 +38,53 @@
           :selected="order.addons.includes(item.code)"
           type="addon"
           @click="toggleAddon(item.code)"
+          simple
         />
       </div>
     </div>
-
-    <!-- 預覽彈窗 -->
-    <ModalItemPreview
-      v-if="showModal"
-      :item="modalItem"
-      @close="closePreview"
-      @select="handleSelect"
-    />
   </div>
 </template>
 
 <script setup>
-import { inject, ref } from 'vue'
+import { inject, watch } from 'vue'
 import SectionCard from './SectionCard.vue'
-import ModalItemPreview from './ModalItemPreview.vue'
 
 const props = defineProps({
   order: {
     type: Object,
     required: true
-  }
+  },
+  index: Number,
+  hideTitle: Boolean
 })
 
 const emit = defineEmits(['update:order'])
 
 const menu = inject('menu')
 
-// 👉 選擇主餐、飲品、副餐
 function selectItem(type, code) {
-  emit('update:order', {
-    ...props.order,
-    [type]: code
-  })
+  emit('update:order', { ...props.order, [type]: code })
 }
 
-// 👉 切換加點
 function toggleAddon(code) {
-  const newAddons = [...props.order.addons]
-  const i = newAddons.indexOf(code)
-  if (i === -1) newAddons.push(code)
-  else newAddons.splice(i, 1)
-
-  emit('update:order', {
-    ...props.order,
-    addons: newAddons
-  })
-}
-
-// 👉 預覽彈窗
-const showModal = ref(false)
-const modalItem = ref(null)
-
-function openPreview(item) {
-  modalItem.value = item
-  showModal.value = true
-}
-
-function closePreview() {
-  showModal.value = false
-}
-
-function handleSelect(type, code) {
-  selectItem(type, code)
-  closePreview()
+  const addons = props.order.addons || []
+  const index = addons.indexOf(code)
+  if (index === -1) {
+    addons.push(code)
+  } else {
+    addons.splice(index, 1)
+  }
+  emit('update:order', { ...props.order, addons })
 }
 </script>
+
+<style>
+/* 確保卡片排版在小螢幕上也清晰可見 */
+@media (max-width: 640px) {
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 卡片共用樣式應寫在 SectionCard.vue 中 */
+</style>
