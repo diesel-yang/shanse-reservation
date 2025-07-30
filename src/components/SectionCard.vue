@@ -1,79 +1,56 @@
 <template>
-  <div class="mb-4">
-    <h4 class="text-sm font-semibold mb-2 text-gray-700">{{ title }}</h4>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <div
-        v-for="item in filteredItems"
-        :key="item.code"
-        @click="handleClick(item)"
-        class="card-item"
-        :class="{
-          selected: isSelected(item.code),
-          disabled: item.disabled
-        }"
-      >
-        <img
-          v-if="item.image"
-          :src="item.image"
-          alt=""
-          class="w-full h-24 object-cover rounded mb-1"
-          @error="handleImgError"
-        />
-        <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
-        <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
-          {{ item.price }} 元
-        </div>
-        <div v-if="item.disabled" class="text-xs text-red-500 mt-1">售完／補貨中</div>
-      </div>
+  <div
+    class="order-card w-full sm:w-48 md:w-44 rounded border text-center p-2 cursor-pointer shadow-sm transition-transform duration-200 hover:scale-105"
+    :class="[
+      selected ? 'ring-2 ring-orange-500' : 'border-gray-300',
+      item.disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'bg-white'
+    ]"
+    @click="handleClick"
+  >
+    <div v-if="type !== 'addon'">
+      <img
+        :src="item.image"
+        alt="item.name"
+        class="w-full h-24 object-cover rounded mb-1"
+        @error="onImageError"
+      />
+      <div class="text-sm font-semibold truncate">{{ item.name }}</div>
+      <div class="text-xs text-orange-500" v-if="item.price > 0">+{{ item.price }} 元</div>
+      <div class="text-xs text-gray-500" v-if="item.note">{{ item.note }}</div>
+    </div>
+
+    <div v-else class="flex flex-col justify-center items-center h-full">
+      <div class="text-sm font-medium">{{ item.name }}</div>
+      <div v-if="item.price > 0" class="text-xs text-orange-500">+{{ item.price }} 元</div>
+      <div v-if="item.disabled" class="text-xs text-red-600 font-semibold mt-1">補貨中</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
-  title: String,
-  items: Array,
-  selectedCode: String,
-  selectedList: Array,
+defineProps({
+  item: Object,
+  selected: Boolean,
   type: String
 })
-const emit = defineEmits(['select', 'toggle', 'preview'])
+const emit = defineEmits(['click'])
 
-const handleClick = item => {
-  if (!item || item.disabled) return
-
-  if (props.type === 'addon') {
-    emit('toggle', item.code)
-  } else {
-    emit('preview', item)
+function handleClick() {
+  if (!item.disabled) {
+    emit('click', item)
   }
 }
 
-const isSelected = code => {
-  return props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
-}
-
-const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
-
-function handleImgError(e) {
-  e.target.style.display = 'none'
+function onImageError(e) {
+  e.target.src = '/default.png'
 }
 </script>
 
 <style>
-.card-item {
-  @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
+.order-card {
+  transition: transform 0.2s ease;
 }
-.card-item:hover {
-  @apply border-orange-400 shadow-md;
-}
-.card-item.selected {
-  @apply border-orange-500 bg-orange-50 shadow-inner;
-}
-.card-item.disabled {
-  @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
+.order-card:hover {
+  transform: scale(1.03);
 }
 </style>
-
