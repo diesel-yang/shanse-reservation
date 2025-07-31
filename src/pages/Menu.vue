@@ -307,15 +307,15 @@ async function submitOrder() {
       body: payload.toString()
     })
 
-    const resultText = await res.text()
-    if (resultText.includes('成功')) {
-      submitMessage.value = '✅ 已成功送出訂單！'
+const result = await res.json()
+if (result?.result === 'success') {
+      submitMessage.value = '我們收到你的點餐囉！感謝預約 🌿'
       resetForm(form, orderMode) // 保留原有 resetForm
     } else {
-      submitMessage.value = '❌ 訂單送出失敗：' + resultText
+      submitMessage.value = '😢 訂單沒送成功耶…可以再試一次嗎？' + resultText
     }
   } catch (err) {
-    submitMessage.value = '❌ 發生錯誤：' + err.message
+    submitMessage.value = '⚠️ 系統好像出了一點狀況，稍後再試看看好嗎？' + err.message
   } finally {
     isSubmitting.value = false
     setTimeout(() => (submitMessage.value = ''), 3000)
