@@ -9,7 +9,7 @@
         class="card-item"
         :class="{
           selected: isSelected(item.code),
-          disabled: item.disabled
+          disabled: item.disabled,
           'as-button': type === 'addon'
         }"
       >
