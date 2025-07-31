@@ -12,13 +12,13 @@
           disabled: item.disabled
         }"
       >
-         <img
-          v-if="item.image"
-          :src="item.image"
-          alt=""
-          class="w-full h-24 object-cover rounded mb-1"
-          @error="handleImgError"
-        />
+       <img
+  v-if="type !== 'addon' && item.image"
+  :src="item.image"
+  alt=""
+  class="w-full h-24 object-cover rounded mb-1"
+  @error="handleImgError"
+/>
         <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
         <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
           {{ item.price }} 元
