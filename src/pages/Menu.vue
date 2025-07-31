@@ -1,9 +1,14 @@
 <template>
   <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
-    <!-- 標題 -->
-    <div class="flex flex-col items-center mb-6">
-      <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
-    </div>
+<!-- LOGO + 標題 -->
+<div class="flex flex-col items-center mb-6">
+  <img
+    src="/hero-transparent.png"
+    alt="山色主視覺"
+    class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
+  />
+  <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
+</div>
 
     <!-- 訂位資料 -->
     <section class="bg-white rounded-lg shadow-md p-4 mb-6">

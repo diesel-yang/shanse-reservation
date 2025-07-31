@@ -1,6 +1,6 @@
 <template>
   <div class="mb-4">
-    <h4 class="text-sm font-semibold mb-2 text-gray-700">{{ title }}</h4>
+<h4 class="text-xl font-bold text-orange-600 mb-3">{{ title }}</h4>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
@@ -12,13 +12,14 @@
           disabled: item.disabled
         }"
       >
-        <img
-          v-if="item.image"
-          :src="item.image"
-          alt=""
-          class="w-full h-24 object-cover rounded mb-1"
-          @error="handleImgError"
-        />
+   <!-- 只顯示圖片於非加點 -->
+<img
+  v-if="section.type !== 'addon' && item.image"
+  :src="item.image"
+  alt=""
+  class="w-full h-24 object-cover rounded mb-1"
+  @error="handleImgError"
+/>
         <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
         <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
           {{ item.price }} 元
