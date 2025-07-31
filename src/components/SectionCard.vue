@@ -1,29 +1,27 @@
 <template>
-  <div class="mb-4">
-    <h4 class="text-sm font-semibold mb-2 text-gray-700">{{ title }}</h4>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+  <div class="mb-6">
+    <h2 class="text-lg font-semibold mb-2">{{ section.title }}</h2>
+    <div class="grid grid-cols-2 gap-3">
       <div
-        v-for="item in filteredItems"
-        :key="item.code"
-        @click="handleClick(item)"
+        v-for="(item, idx) in section.items"
+        :key="idx"
         class="card-item"
         :class="{
-          selected: isSelected(item.code),
+          selected: isSelected(item),
           disabled: item.disabled
         }"
+        @click="toggleItem(item)"
       >
-        <img
-          v-if="item.image"
-          :src="item.image"
-          alt=""
-          class="w-full h-24 object-cover rounded mb-1"
-          @error="handleImgError"
-        />
-        <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
-        <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
+        <div class="font-medium">{{ item.name }}</div>
+        <div class="text-sm text-gray-500" v-if="item.price && item.price > 0">
           {{ item.price }} 元
         </div>
-        <div v-if="item.disabled" class="text-xs text-red-500 mt-1">售完／補貨中</div>
+        <div
+          v-if="item.disabled"
+          class="text-xs text-red-500 mt-1 border border-red-300 px-1 py-0.5 rounded inline-block bg-red-50"
+        >
+          補貨中
+        </div>
       </div>
     </div>
   </div>
@@ -31,46 +29,42 @@
 
 <script setup>
 import { computed } from 'vue'
-
 const props = defineProps({
-  title: String,
-  items: Array,
-  selectedCode: String,
-  selectedList: Array,
-  type: String
+  section: Object,
+  modelValue: [String, Array]
 })
-const emit = defineEmits(['select', 'toggle', 'preview'])
+const emit = defineEmits(['update:modelValue'])
 
-const handleClick = item => {
-  if (!item || item.disabled) return
+const isMultiple = computed(() => Array.isArray(props.modelValue))
 
-  if (props.type === 'addon') {
-    emit('toggle', item.code)
+const isSelected = (item) => {
+  if (isMultiple.value) return props.modelValue.includes(item.name)
+  return props.modelValue === item.name
+}
+
+const toggleItem = (item) => {
+  if (item.disabled) return
+  if (isMultiple.value) {
+    const next = [...props.modelValue]
+    const index = next.indexOf(item.name)
+    if (index >= 0) {
+      next.splice(index, 1)
+    } else {
+      next.push(item.name)
+    }
+    emit('update:modelValue', next)
   } else {
-    emit('preview', item)
+    emit('update:modelValue', item.name)
   }
-}
-
-const isSelected = code => {
-  return props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
-}
-
-const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
-
-function handleImgError(e) {
-  e.target.style.display = 'none'
 }
 </script>
 
-<style>
+<style scoped>
 .card-item {
-  @apply cursor-pointer border rounded-lg p-2 shadow-sm transition duration-150 bg-white;
-}
-.card-item:hover {
-  @apply border-orange-400 shadow-md;
+  @apply border rounded p-3 cursor-pointer transition;
 }
 .card-item.selected {
-  @apply border-orange-500 bg-orange-50 shadow-inner;
+  @apply bg-orange-500 text-white;
 }
 .card-item.disabled {
   @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
