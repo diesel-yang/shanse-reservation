@@ -10,7 +10,7 @@
       <input v-model="form.name" type="text" placeholder="訂位姓名" class="input" required />
       <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
      <!-- 用餐時段標題 -->
-<p class="text-sm font-medium text-gray-700 mb-1">用餐時段：</p>
+<p class="text-3xl font-bold text-blue-900 mb-1">用餐時段</p>
 
 <!-- 用餐時段選擇按鈕群 -->
       <div class="flex flex-wrap gap-2 my-2">
@@ -30,7 +30,7 @@
       <select v-model.number="form.people" class="input" required>
         <option disabled value="">用餐人數</option>
         <option v-for="n in 6" :key="n" :value="n">{{ n }} 位</option>
-      </select>」‘
+      </select>
     </section>
 
     <!-- 點餐模式切換區塊 -->
