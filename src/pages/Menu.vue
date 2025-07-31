@@ -1,43 +1,86 @@
 <template>
   <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
-<!-- LOGO + 標題 -->
-<div class="flex flex-col items-center mb-6">
-  <img
-    src="/hero-transparent.png"
-    alt="山色主視覺"
-    class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
-  />
-  <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
-</div>
+    <!-- LOGO + 標題 -->
+    <div class="flex flex-col items-center mb-6">
+      <img
+        src="/hero-transparent.png"
+        alt="山色主視覺"
+        h
+        class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
+      />
+      <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
+    </div>
 
-    <!-- 訂位資料 -->
-    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
-      <input v-model="form.name" type="text" placeholder="訂位姓名" class="input" required />
-      <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
-    
-    <!-- 用餐時段 -->
-<label class="block font-medium">用餐時段</label>
-<!-- 用餐時段選擇按鈕群 -->
-      <div class="flex flex-wrap gap-2 my-2">
-        <button
-          v-for="slot in timeSlots"
-          :key="slot"
-          type="button"
+    <!-- 訂位資料（圖示搭配欄位） -->
+    <section class="bg-white rounded-lg shadow-md p-4 mb-6 space-y-4">
+      <!-- 訂位姓名 -->
+      <div class="flex items-center gap-2">
+        <span class="text-gray-500 text-xl">
+          <i class="fa-solid fa-user"></i>
+        </span>
+        <input
+          v-model="form.name"
+          type="text"
+          placeholder="訂位姓名"
+          class="w-full border p-3 rounded text-sm text-gray-900 placeholder-gray-400"
+          required
+        />
+      </div>
+
+      <!-- 用餐日期 -->
+      <div class="flex items-center gap-2">
+        <span class="text-gray-500 text-xl">
+          <i class="fa-regular fa-calendar-days"></i>
+        </span>
+        <input
+          ref="dateInput"
+          v-model="form.date"
+          type="text"
+          placeholder="用餐日期"
+          class="w-full border p-3 rounded text-sm text-gray-900 placeholder-gray-400"
+          required
+        />
+      </div>
+
+      <!-- 用餐時段 -->
+      <div class="flex items-center gap-2">
+        <span class="text-gray-500 text-xl">
+          <i class="fa-regular fa-clock"></i>
+        </span>
+        <div class="flex flex-wrap gap-2 flex-1">
+          <button
+            v-for="slot in timeSlots"
+            :key="slot"
+            type="button"
+            :class="[
+              'px-4 py-3 rounded border text-sm font-medium',
+              form.time === slot ? 'bg-orange-500 text-white' : 'bg-white text-gray-800'
+            ]"
+            @click="form.time = slot"
+          >
+            {{ slot }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 用餐人數 -->
+      <div class="flex items-center gap-2">
+        <span class="text-gray-500 text-xl">
+          <i class="fa-solid fa-user-group"></i>
+        </span>
+        <select
+          v-model.number="form.people"
           :class="[
-            'px-3 py-2 rounded border',
-            form.time === slot ? 'bg-orange-500 text-white' : 'bg-white text-gray-800'
+            'w-full border p-3 rounded text-sm',
+            form.people ? 'text-gray-900' : 'text-gray-400'
           ]"
-          @click="form.time = slot"
+          required
         >
-          {{ slot }}
-        </button>
-</div>
-      <select v-model.number="form.people" class="input" required>
-        <option disabled value="">用餐人數</option>
-        <option v-for="n in 8" :key="n" :value="n">{{ n }} 位</option>
-      </select>
+          <option disabled value="">用餐人數</option>
+          <option v-for="n in 6" :key="n" :value="n">{{ n }} 位</option>
+        </select>
+      </div>
     </section>
-
     <!-- 點餐模式切換區塊 -->
     <section v-if="form.people > 1" class="bg-white rounded-lg shadow-md p-4 mb-6">
       <h2 class="text-center text-gray-800 text-base font-semibold mb-2">請選擇點餐方式</h2>
@@ -141,18 +184,20 @@
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm">
         <h2 class="text-lg font-semibold mb-4 text-gray-800">切換點餐模式</h2>
-        <p class="text-gray-700 mb-6 text-sm">
-          您將更換點餐模式，已點餐資料將清除，是否確定更改？
-        </p>
+        <p class="text-gray-700 mb-6 text-sm">您將更換點餐模式，已點餐資料將清除，是否確定更改？</p>
         <div class="flex justify-end gap-3">
           <button
             class="px-4 py-2 bg-gray-200 rounded text-gray-700 hover:bg-gray-300"
             @click="cancelSwitch"
-          >取消</button>
+          >
+            取消
+          </button>
           <button
             class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
             @click="applySwitchMode"
-          >確定</button>
+          >
+            確定
+          </button>
         </div>
       </div>
     </div>
@@ -214,15 +259,18 @@ onMounted(() => {
 })
 
 // ✅ 當人數變動時，自動初始化點餐資料
-watch(() => form.people, (newVal) => {
-  if (newVal === 1) {
-    orderMode.value = 'individual'
-    form.orders = [{ main: '', drink: '', side: '', addons: [] }]
-  } else {
-    orderMode.value = ''
-    form.orders = []
+watch(
+  () => form.people,
+  newVal => {
+    if (newVal === 1) {
+      orderMode.value = 'individual'
+      form.orders = [{ main: '', drink: '', side: '', addons: [] }]
+    } else {
+      orderMode.value = ''
+      form.orders = []
+    }
   }
-})
+)
 
 // ✅ 計算總金額
 const totalPrice = computed(() => {
@@ -307,8 +355,8 @@ async function submitOrder() {
       body: payload.toString()
     })
 
-const result = await res.json()
-if (result?.result === 'success') {
+    const result = await res.json()
+    if (result?.result === 'success') {
       submitMessage.value = '我們收到你的點餐囉！感謝預約 🌿'
       resetForm(form, orderMode) // 保留原有 resetForm
     } else {
@@ -321,7 +369,6 @@ if (result?.result === 'success') {
     setTimeout(() => (submitMessage.value = ''), 3000)
   }
 }
-
 </script>
 
 <style>
