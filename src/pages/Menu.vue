@@ -9,6 +9,10 @@
     <section class="bg-white rounded-lg shadow-md p-4 mb-6">
       <input v-model="form.name" type="text" placeholder="訂位姓名" class="input" required />
       <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
+     <!-- 用餐時段標題 -->
+<p class="text-sm font-medium text-gray-700 mb-1">用餐時段：</p>
+
+<!-- 用餐時段選擇按鈕群 -->
       <div class="flex flex-wrap gap-2 my-2">
         <button
           v-for="slot in timeSlots"
@@ -25,8 +29,8 @@
       </div>
       <select v-model.number="form.people" class="input" required>
         <option disabled value="">用餐人數</option>
-        <option v-for="n in 8" :key="n" :value="n">{{ n }} 位</option>
-      </select>
+        <option v-for="n in 6" :key="n" :value="n">{{ n }} 位</option>
+      </select>」‘
     </section>
 
     <!-- 點餐模式切換區塊 -->
@@ -259,19 +263,26 @@ function cancelSwitch() {
 
 // ✅ 送出訂單
 async function submitOrder() {
-  const isFormComplete =
-    form.name &&
-    form.date &&
-    form.time &&
-    form.people &&
-    form.orders.length > 0 &&
-    form.orders.every(o => o.main && o.drink && o.side)
+  const missing = []
 
-  if (!isFormComplete) {
-    submitMessage.value = '❌ 請填寫所有必填欄位'
+  if (!form.name.trim()) missing.push('訂位人姓名')
+  if (!form.date.trim()) missing.push('用餐日期')
+  if (!form.time.trim()) missing.push('用餐時段')
+  if (!form.people) missing.push('用餐人數')
+
+  // 檢查每一位顧客的主餐、飲品、副餐是否都有選擇
+  form.orders.forEach((order, idx) => {
+    if (!order.main) missing.push(`第 ${idx + 1} 位顧客的主餐`)
+    if (!order.drink) missing.push(`第 ${idx + 1} 位顧客的飲品`)
+    if (!order.side) missing.push(`第 ${idx + 1} 位顧客的副餐`)
+  })
+
+  if (missing.length > 0) {
+    alert(`⚠️ 以下欄位尚未填寫：\n\n${missing.join('\n')}`)
     return
   }
 
+  // ✅ 原本送出流程繼續執行
   isSubmitting.value = true
   submitMessage.value = ''
 
@@ -292,20 +303,11 @@ async function submitOrder() {
     })
 
     const resultText = await res.text()
-    let resultJson = {}
-
-    try {
-      resultJson = JSON.parse(resultText)
-    } catch (e) {
-      submitMessage.value = '❌ 後端回傳格式錯誤'
-      return
-    }
-
-    if (resultJson.result === 'success') {
+    if (resultText.includes('成功')) {
       submitMessage.value = '✅ 已成功送出訂單！'
-      resetForm(form, orderMode, dateInput)
+      resetForm(form, orderMode) // 保留原有 resetForm
     } else {
-      submitMessage.value = '❌ 訂單送出失敗：' + (resultJson.message || resultText)
+      submitMessage.value = '❌ 訂單送出失敗：' + resultText
     }
   } catch (err) {
     submitMessage.value = '❌ 發生錯誤：' + err.message

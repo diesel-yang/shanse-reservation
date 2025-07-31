@@ -67,7 +67,6 @@ function handleSelectItem(item) {
       type="main"
       @preview="item => handlePreview(item, 'main')"
     />
-    <p v-if="!props.order.main" class="text-red-500 text-sm mt-1">請選擇主餐</p>
 
     <!-- 飲品 -->
     <SectionCard
@@ -77,7 +76,6 @@ function handleSelectItem(item) {
       type="drink"
       @preview="item => handlePreview(item, 'drink')"
     />
-    <p v-if="!props.order.drink" class="text-red-500 text-sm mt-1">請選擇飲品</p>
 
     <!-- 副餐 -->
     <SectionCard
@@ -87,7 +85,6 @@ function handleSelectItem(item) {
       type="side"
       @preview="item => handlePreview(item, 'side')"
     />
-    <p v-if="!props.order.side" class="text-red-500 text-sm mt-1">請選擇副餐</p>
 
     <!-- 加點 -->
     <SectionCard
