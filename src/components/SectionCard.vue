@@ -1,34 +1,29 @@
 <template>
-  <div class="mb-6">
-    <h2 class="text-lg font-semibold mb-2">{{ section.title }}</h2>
-<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-  <div
-    v-for="(item, idx) in section.items"
-    :key="idx"
-    v-if="item"
-    @click="toggleItem(item)"
-    class="card-item"
-    :class="{
-      selected: isSelected(item),
-      disabled: item.disabled,
-      'as-button': section.type === 'addon'
-    }"
-  >
-    <!-- ✅ 只顯示品名與價格 -->
-    <div class="text-sm font-semibold text-center">{{ item.name }}</div>
-    <div
-      v-if="item.price && item.price > 0"
-      class="text-xs text-gray-700 text-center"
-    >
-      {{ item.price }} 元
+  <div class="mb-4">
+    <h4 class="text-sm font-semibold mb-2 text-gray-700">{{ title }}</h4>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div
+        v-for="item in filteredItems"
+        :key="item.code"
+        @click="handleClick(item)"
+        class="card-item"
+        :class="{
+          selected: isSelected(item.code),
+          disabled: item.disabled
+        }"
+      >
+        <img
+          v-if="item.image"
+          :src="item.image"
+          alt=""
+          class="w-full h-24 object-cover rounded mb-1"
+          @error="handleImgError"
+        />
+        <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
+        <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
+          {{ item.price }} 元
         </div>
-         <!-- ✅ 顯示補貨中 -->
-        <div
-          v-if="item.disabled"
-          class="text-xs text-red-500 mt-1 border border-red-300 px-1 py-0.5 rounded inline-block bg-red-50"
-        >
-          補貨中
-        </div>
+        <div v-if="item.disabled" class="text-xs text-red-500 mt-1">售完／補貨中</div>
       </div>
     </div>
   </div>
@@ -36,35 +31,37 @@
 
 <script setup>
 import { computed } from 'vue'
+
 const props = defineProps({
-  section: Object,
-  modelValue: [String, Array]
+  title: String,
+  items: Array,
+  selectedCode: String,
+  selectedList: Array,
+  type: String
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['select', 'toggle', 'preview'])
 
-const isMultiple = computed(() => Array.isArray(props.modelValue))
+const handleClick = item => {
+  if (!item || item.disabled) return
 
-const isSelected = (item) => {
-  if (isMultiple.value) return props.modelValue.includes(item.name)
-  return props.modelValue === item.name
-}
-
-const toggleItem = (item) => {
-  if (item.disabled) return
-  if (isMultiple.value) {
-    const next = [...props.modelValue]
-    const index = next.indexOf(item.name)
-    if (index >= 0) {
-      next.splice(index, 1)
-    } else {
-      next.push(item.name)
-    }
-    emit('update:modelValue', next)
+  if (props.type === 'addon') {
+    emit('toggle', item.code)
   } else {
-    emit('update:modelValue', item.name)
+    emit('preview', item)
   }
 }
+
+const isSelected = code => {
+  return props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
+}
+
+const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
+
+function handleImgError(e) {
+  e.target.style.display = 'none'
+}
 </script>
+
 
 <style scoped>
 .card-item {

@@ -11,7 +11,7 @@
       <input ref="dateInput" type="text" placeholder="用餐日期" class="input" required />
     
     <!-- 用餐時段 -->
-<label class="block font-medium">用餐時段：</label>
+<label class="block font-medium">用餐時段</label>
 <!-- 用餐時段選擇按鈕群 -->
       <div class="flex flex-wrap gap-2 my-2">
         <button
