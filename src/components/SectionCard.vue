@@ -10,6 +10,7 @@
         :class="{
           selected: isSelected(item.code),
           disabled: item.disabled
+          'as-button': type === 'addon'
         }"
       >
        <img
@@ -68,7 +69,7 @@ function handleImgError(e) {
   @apply border rounded p-3 cursor-pointer transition bg-white text-left;
 }
 .card-item.selected {
-  @apply bg-orange-500 text-white;
+  @apply bg-orange-100 border-orange-400 text-orange-800;
 }
 .card-item.disabled {
   @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
@@ -77,6 +78,6 @@ function handleImgError(e) {
   @apply text-center py-2 px-3 bg-white border border-gray-300 rounded font-medium;
 }
 .card-item.as-button.selected {
-  @apply bg-orange-500 text-white border-orange-500;
+  @apply bg-orange-100 text-orange-800 border-orange-400;
 }
 </style>
