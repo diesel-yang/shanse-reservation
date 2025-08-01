@@ -184,7 +184,7 @@
     >
       <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm">
         <h2 class="text-lg font-semibold mb-4 text-gray-800">切換點餐模式</h2>
-        <p class="text-gray-700 mb-6 text-sm">您將更換點餐模式，已點餐資料將清除，是否確定更改？</p>
+        <p class="text-gray-700 mb-6 text-sm">您將更換點餐方式，已點餐資料將清除，是否確定更改？</p>
         <div class="flex justify-end gap-3">
           <button
             class="px-4 py-2 bg-gray-200 rounded text-gray-700 hover:bg-gray-300"
@@ -339,6 +339,12 @@ async function submitOrder() {
   isSubmitting.value = true
   submitMessage.value = ''
 
+  // ✅ 將每筆訂單加上 price 明細（base, addon, service, total）
+  form.orders.forEach(order => {
+    order.price = calcPriceBreakdown(order, menu)
+  })
+
+  // 建立 payload 傳給 GAS
   const payload = new URLSearchParams()
   payload.append('name', form.name)
   payload.append('date', form.date)
