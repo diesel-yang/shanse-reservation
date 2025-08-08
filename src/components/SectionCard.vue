@@ -34,7 +34,7 @@
           v-else-if="item.note?.includes('熱飲')"
           src="/icon/hot-drink.svg"
           alt="熱飲"
-          class="w-14 h-14 absolute top-1 left-1 z-10"
+          class="w-10 h-10 absolute top-1 left-1 z-10"
         />
 
         <!-- 品項圖片 -->
