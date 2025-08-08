@@ -18,7 +18,7 @@
     <img
       src="/icon/ins-q.svg"
       alt="IG"
-      class="absolute bottom-[122px] left-1/2 transform -translate-x-[80px] w-18 h-18 z-20"
+      class="absolute bottom-[122px] left-1/2 transform -translate-x-[80px] w-14 h-14 z-20"
     />
   </div>
 </template>

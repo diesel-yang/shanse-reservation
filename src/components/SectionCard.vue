@@ -18,7 +18,7 @@
           v-if="item.note?.includes('限預訂') || item.note?.includes('限訂')"
           src="/icon/limited.svg"
           alt="限訂"
-          class="w-15 h-15 absolute top-1 right-1 z-10"
+          class="w-12 h-12 absolute top-1 right-1 z-10"
         />
 
         <!-- 熱湯 ICON -->
@@ -26,7 +26,7 @@
           v-else-if="item.note?.includes('熱湯')"
           src="/icon/hot-soup.svg"
           alt="熱湯"
-          class="w-15 h-15 absolute top-1 left-1 z-10"
+          class="w-12 h-12 absolute top-1 left-1 z-10"
         />
 
         <!-- 熱飲 ICON -->
@@ -34,7 +34,7 @@
           v-else-if="item.note?.includes('熱飲')"
           src="/icon/hot-drink.svg"
           alt="熱飲"
-          class="w-15 h-15 absolute top-1 left-1 z-10"
+          class="w-14 h-14 absolute top-1 left-1 z-10"
         />
 
         <!-- 品項圖片 -->
