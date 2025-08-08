@@ -18,7 +18,7 @@
           v-if="item.note?.includes('熱湯')"
           src="/icon/hot-soup.svg"
           alt="熱湯"
-          class="w-8 h-8 absolute top-1 left-1 z-10 bg-white rounded"
+          class="w-12 h-12 absolute top-1 left-1 z-10 bg-white rounded"
         />
 
         <!-- ✅ 熱飲圖示 -->
@@ -26,7 +26,7 @@
           v-else-if="item.note?.includes('熱飲')"
           src="/icon/hot.svg"
           alt="熱飲"
-          class="w-8 h-8 absolute top-1 left-1 z-10 bg-white rounded"
+          class="w-10 h-10 absolute top-1 left-1 z-10 bg-white rounded"
         />
 
         <!-- 商品圖片 -->
