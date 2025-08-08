@@ -16,7 +16,7 @@
         rel="noopener noreferrer"
         class="flex items-center gap-3 bg-white/20 hover:bg-white/30 px-6 py-3 rounded-full backdrop-blur-md transition"
       >
-        <img src="/icon/ins-q" alt="IG訊息" class="w-6 h-6" />
+        <img src="/icon/ins-q.svg" alt="IG訊息" class="w-6 h-6" />
         <span class="text-lg font-medium tracking-wide">與我們聊聊</span>
       </a>
     </div>
