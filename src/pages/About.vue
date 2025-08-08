@@ -7,7 +7,7 @@
 
     <!-- IG 私訊按鈕 -->
     <a
-      href="https://www.instagram.com/mmshanse"
+      href="https://ig.me/m/mmshanse"
       target="_blank"
       class="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center px-6 py-3 rounded-full bg-white/30 backdrop-blur-sm text-white font-medium shadow-lg"
     >
