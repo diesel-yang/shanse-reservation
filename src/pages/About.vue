@@ -1,30 +1,37 @@
 <template>
-  <div class="relative w-full h-screen overflow-hidden">
+  <div class="relative min-h-screen w-full overflow-hidden text-white">
     <!-- 背景影片 -->
     <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0">
       <source src="/shanse.mp4" type="video/mp4" />
       您的瀏覽器不支援影片播放
     </video>
-    <!-- 半透明遮罩可選（可移除） -->
-    <div class="absolute inset-0 bg-black/30 z-10"></div>
 
-    <!-- IG 私訊區塊 -->
-    <div class="relative z-20 flex flex-col items-center justify-center h-full text-white px-6">
+    <!-- IG 聯絡按鈕區塊 -->
+    <div class="absolute bottom-28 w-full flex justify-center z-10">
       <a
-        href="https://instagram.com/_u/mmshanse/"
+        href="https://www.instagram.com/mmshanse"
         target="_blank"
-        rel="noopener noreferrer"
-        class="flex items-center gap-3 bg-white/20 hover:bg-white/30 px-6 py-3 rounded-full backdrop-blur-md transition"
+        rel="noopener"
+        class="flex items-center px-5 py-3 rounded-full bg-white/40 backdrop-blur text-white text-lg font-semibold shadow-md hover:scale-105 transition"
       >
-        <img src="/icon/ins-q.svg" alt="IG訊息" class="w-6 h-6" />
-        <span class="text-lg font-medium tracking-wide">與我們聊聊</span>
+        <img src="/icon/ins-q.svg" alt="IG" class="w-6 h-6 mr-2" />
+        與我們聊聊
       </a>
+    </div>
+
+    <!-- LOGO（可選）-->
+    <div class="absolute top-6 w-full flex justify-center z-10">
+      <img
+        src="/hero-transparent.png"
+        alt="山色主視覺"
+        class="w-[70px] h-auto object-contain bg-transparent"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-// 無需 JS 處理
+// 無需 script，除非你要動態處理 IG 連結
 </script>
 
 <style>
