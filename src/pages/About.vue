@@ -15,7 +15,7 @@
         class="relative inline-flex items-center justify-center px-6 py-3 rounded-full bg-white/40 backdrop-blur-md text-white text-base font-semibold shadow-md hover:scale-105 transition"
       >
         <!-- icon：左側，放大，不影響文字 -->
-        <img src="/icon/ins-q.svg" alt="Instagram" class="absolute left-4 w-28 h-28" />
+        <img src="/icon/ins-q.svg" alt="Instagram" class="absolute left-2 w-28 h-28" />
 
         <!-- 標題文字：右邊正常顯示，避開 icon -->
         <span class="pl-10">與我們聊聊</span>
