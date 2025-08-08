@@ -2,10 +2,9 @@
   <div class="relative w-full h-screen overflow-hidden">
     <!-- 背景影片 -->
     <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0">
-      <source src="/山色.mp4" type="video/mp4" />
+      <source src="/shanse-about-us.mp4" type="video/mp4" />
       您的瀏覽器不支援影片播放
     </video>
-
     <!-- 半透明遮罩可選（可移除） -->
     <div class="absolute inset-0 bg-black/30 z-10"></div>
 
