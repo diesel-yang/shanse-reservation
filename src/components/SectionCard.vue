@@ -6,30 +6,38 @@
         v-for="item in filteredItems"
         :key="item.code"
         @click="handleClick(item)"
-        class="card-item relative"
+        class="relative card-item"
         :class="{
           selected: isSelected(item.code),
           disabled: item.disabled,
           'as-button': type === 'addon'
         }"
       >
-        <!-- ✅ 熱湯圖示 -->
+        <!-- 限訂 ICON -->
         <img
-          v-if="item.note?.includes('熱湯')"
+          v-if="item.note?.includes('限預訂') || item.note?.includes('限訂')"
+          src="/icon/limited.svg"
+          alt="限訂"
+          class="w-15 h-15 absolute top-1 right-1 z-10"
+        />
+
+        <!-- 熱湯 ICON -->
+        <img
+          v-else-if="item.note?.includes('熱湯')"
           src="/icon/hot-soup.svg"
           alt="熱湯"
-          class="w-12 h-12 absolute top-1 left-1 z-10 bg-white rounded"
+          class="w-15 h-15 absolute top-1 left-1 z-10"
         />
 
-        <!-- ✅ 熱飲圖示 -->
+        <!-- 熱飲 ICON -->
         <img
           v-else-if="item.note?.includes('熱飲')"
-          src="/icon/hot.svg"
+          src="/icon/hot-drink.svg"
           alt="熱飲"
-          class="w-10 h-10 absolute top-1 left-1 z-10 bg-white rounded"
+          class="w-15 h-15 absolute top-1 left-1 z-10"
         />
 
-        <!-- 商品圖片 -->
+        <!-- 品項圖片 -->
         <img
           v-if="type !== 'addon' && item.image"
           :src="item.image"
@@ -38,7 +46,7 @@
           @error="handleImgError"
         />
 
-        <!-- 商品名稱 -->
+        <!-- 名稱文字 -->
         <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
 
         <!-- 加點價格 -->

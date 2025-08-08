@@ -11,14 +11,14 @@
       target="_blank"
       class="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-10 flex items-center justify-center px-6 py-3 rounded-full bg-white/30 backdrop-blur-sm text-white font-medium shadow-lg"
     >
-      <span class="text-lg">與我們聊聊</span>
+      <span class="text-lg"> 聯絡我們 </span>
     </a>
 
     <!-- 放大 ICON：絕對定位在按鈕左側 -->
     <img
       src="/icon/ins-q.svg"
       alt="IG"
-      class="absolute bottom-[122px] left-1/2 transform -translate-x-[80px] w-24 h-24 z-20"
+      class="absolute bottom-[122px] left-1/2 transform -translate-x-[80px] w-22 h-22 z-20"
     />
   </div>
 </template>
