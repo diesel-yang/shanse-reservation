@@ -1,37 +1,31 @@
 <template>
-  <div class="relative min-h-screen w-full text-white font-sans">
-      <!-- LOGO -->
-    <img
-      src="/hero-transparent.png"
-      alt="山色主視覺"
-      class="w-[70px] h-auto mb-10 object-contain bg-transparent"
-    />
+  <div class="relative w-full h-screen overflow-hidden">
     <!-- 背景影片 -->
     <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover z-0">
-      <source src="/shanse-about-us.mp4" type="video/mp4" />
+      <source src="/山色.mp4" type="video/mp4" />
       您的瀏覽器不支援影片播放
     </video>
 
-    <!-- 疊加圖片層 -->
-    <div
-      class="absolute inset-0 z-10 bg-no-repeat bg-cover bg-center opacity-30"
-      style="background-image: url('/山色-about-us-2.WEBP')"
-    ></div>
+    <!-- 半透明遮罩可選（可移除） -->
+    <div class="absolute inset-0 bg-black/30 z-10"></div>
 
-    <!-- 文字區塊 -->
-    <div class="relative z-20 flex flex-col items-center justify-center h-screen text-center px-6">
-      <h1 class="text-3xl tracking-widest mb-4">山色 Shān Sè</h1>
-      <p class="max-w-xl text-base leading-relaxed text-white/80">
-        山色，是一段旅程的中繼，<br />
-        我們以餐桌連接季節、風土與情感，<br />
-        邀請你靜下來，與時間一起品嚐生活。
-      </p>
+    <!-- IG 私訊區塊 -->
+    <div class="relative z-20 flex flex-col items-center justify-center h-full text-white px-6">
+      <a
+        href="https://instagram.com/_u/mmshanse/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center gap-3 bg-white/20 hover:bg-white/30 px-6 py-3 rounded-full backdrop-blur-md transition"
+      >
+        <img src="/icon/instagram-message.svg" alt="IG訊息" class="w-6 h-6" />
+        <span class="text-lg font-medium tracking-wide">與我們聊聊</span>
+      </a>
     </div>
   </div>
 </template>
 
 <script setup>
-// 無需額外 JS
+// 無需 JS 處理
 </script>
 
 <style>
