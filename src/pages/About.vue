@@ -14,7 +14,7 @@
         rel="noopener"
         class="flex items-center px-5 py-3 rounded-full bg-white/40 backdrop-blur text-white text-lg font-semibold shadow-md hover:scale-105 transition"
       >
-        <img src="/icon/ins-q.svg" alt="IG" class="w-30 h-30 mr-2" />
+        <img src="/icon/ins-q.svg" alt="IG" class="w-12 h-12 mr-2" />
         與我們聊聊
       </a>
     </div>
