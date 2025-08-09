@@ -18,7 +18,7 @@
           v-if="item.note?.includes('限預訂') || item.note?.includes('限訂')"
           src="/icon/limited.svg"
           alt="限訂"
-          class="w-12 h-12 absolute top-1 right-1 z-10"
+          class="w-12 h-12 absolute top-1 left-1 z-10"
         />
 
         <!-- 熱湯 ICON -->
