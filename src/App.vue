@@ -1,16 +1,13 @@
 <template>
-  <div v-if="!loading" class="min-h-screen bg-orange-50 text-gray-800 font-sans relative pb-16">
-    <RouterView />
-    <BottomNav v-if="showNav" />
-  </div>
-  <div v-else class="flex items-center justify-center h-screen text-gray-500">載入中...</div>
+  <RouterView />
+  <FloatingNav />
 </template>
 
 <script setup>
 import { reactive, provide, ref, onMounted, computed } from 'vue'
 import { fetchMenu, fetchHolidays } from '@/utils/dataLoaders'
 import { useRoute } from 'vue-router'
-import BottomNav from '@/components/BottomNav.vue'
+import FloatingNav from '@/components/FloatingNav.vue'
 
 const menu = reactive({ main: [], drink: [], side: [], addon: [] })
 const holidays = reactive([])
