@@ -14,7 +14,7 @@
           aria-label="首頁"
         >
           <!-- 換成你的 LOGO（建議用實心版 or 圓形裁切 PNG/SVG） -->
-          <img src="/hero-transparent.png" alt="山色" class="w-9 h-9 object-contain" />
+          <img src="/icon/shane-logo-orange" alt="山色" class="w-9 h-9 object-contain" />
         </RouterLink>
 
         <!-- 中：橢圓形群組 -->
