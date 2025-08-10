@@ -1,5 +1,7 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800">
+  <div
+    class="max-w-5xl mx-auto px-4 py-8 text-gray-800 pb-[calc(84px+env(safe-area-inset-bottom))]"
+  >
     <!-- LOGO + 標題 -->
     <div class="flex flex-col items-center mb-6">
       <img
