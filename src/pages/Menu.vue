@@ -7,13 +7,12 @@
       <img
         src="/hero-transparent.png"
         alt="山色主視覺"
-        h
         class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
       />
       <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
     </div>
 
-    <!-- 訂位資料（圖示搭配欄位） -->
+    <!-- 訂位資料 -->
     <section class="bg-white rounded-lg shadow-md p-4 mb-6 space-y-4">
       <!-- 訂位姓名 -->
       <div class="flex items-center gap-2">
@@ -83,7 +82,8 @@
         </select>
       </div>
     </section>
-    <!-- 點餐模式切換區塊 -->
+
+    <!-- 點餐模式切換 -->
     <section v-if="form.people > 1" class="bg-white rounded-lg shadow-md p-4 mb-6">
       <h2 class="text-center text-gray-800 text-base font-semibold mb-2">請選擇點餐方式</h2>
       <div class="flex justify-center gap-4 flex-wrap">
@@ -117,7 +117,7 @@
       </div>
     </section>
 
-    <!-- 每位顧客點餐區塊 -->
+    <!-- 每位顧客點餐區 -->
     <section v-if="form.orders.length">
       <div
         v-for="(order, idx) in form.orders"
@@ -132,7 +132,6 @@
 
         <!-- 顧客明細摘要 -->
         <div class="text-sm text-gray-800 mt-4">
-          <!-- ✅ 顧客 title -->
           <h3
             v-if="!(orderMode === 'individual' || form.people === 1)"
             class="font-semibold text-blue-800 mb-1"
@@ -179,7 +178,7 @@
       </p>
     </div>
 
-    <!-- ✅ 點餐模式切換確認彈窗 -->
+    <!-- 點餐模式切換確認彈窗 -->
     <div
       v-if="showConfirmModal"
       class="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center"
@@ -203,6 +202,57 @@
         </div>
       </div>
     </div>
+
+    <!-- ✅ 送單成功 + 下載 PDF 彈窗 -->
+    <div v-if="showReceiptModal" class="fixed inset-0 z-50 bg-black/40 grid place-items-center">
+      <div class="w-[92%] max-w-md bg-white rounded-2xl p-5">
+        <h3 class="text-lg font-semibold mb-3">訂單已送出</h3>
+
+        <!-- 收據內容（轉成 PDF） -->
+        <div id="receipt" class="bg-gray-50 border rounded p-4 text-sm">
+          <!-- 🔹 店 Logo + 店名 -->
+          <div class="flex flex-col items-center mb-4">
+            <img src="/hero-transparent.png" alt="山色 ShanSe" class="w-[100px] h-auto mb-1" />
+            <p class="font-bold text-gray-800 text-base">山色 ShanSe</p>
+            <p class="text-xs text-gray-500">收據 Receipt</p>
+          </div>
+
+          <p>訂單編號：{{ receipt.orderId }}</p>
+          <p>姓名：{{ receipt.name }}</p>
+          <p>用餐日期/時段：{{ receipt.date }} {{ receipt.time }}</p>
+          <p>人數：{{ receipt.people }}</p>
+          <hr class="my-2" />
+
+          <div v-for="(o, i) in receipt.items" :key="i" class="mb-2">
+            <p class="font-medium text-gray-800">第 {{ i + 1 }} 位</p>
+            <p>主餐：{{ o.mainName }}</p>
+            <p>飲品：{{ o.drinkName }}</p>
+            <p>副餐：{{ o.sideName }}</p>
+            <p v-if="o.addonNames?.length">加點：{{ o.addonNames.join('、') }}</p>
+            <div class="flex justify-between mt-1">
+              <span class="text-gray-600">小計（含服務費）</span>
+              <span class="font-medium">{{ o.total }} 元</span>
+            </div>
+            <hr class="my-2" />
+          </div>
+
+          <div class="flex justify-between font-semibold">
+            <span>合計</span>
+            <span>{{ receipt.total }} 元</span>
+          </div>
+          <p class="mt-2 text-xs text-gray-500">建立時間：{{ receipt.ts }}</p>
+        </div>
+
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <button @click="downloadPDF" class="bg-black text-white rounded-full py-2.5">
+            下載 PDF
+          </button>
+          <button @click="closeReceipt" class="border border-black rounded-full py-2.5">
+            關閉
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -216,12 +266,11 @@ import OrderBlock from '@/components/OrderBlock.vue'
 import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
 import { resetForm } from '@/utils/resetForm'
 
-const menu = inject('menu', {
-  main: [],
-  drink: [],
-  side: [],
-  addon: []
-})
+/* ✅ 新增：PDF 相關套件 */
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
+
+const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
 const holidays = inject('holidays', [])
 const dateInput = ref(null)
 
@@ -229,6 +278,19 @@ const timeSlots = ['11:30–13:00', '12:30–13:50', '13:10–14:40', '14:00–1
 const isSubmitting = ref(false)
 const submitMessage = ref('')
 const orderMode = ref('') // group 或 individual
+
+/* ✅ 新增：送單成功彈窗狀態與收據資料 */
+const showReceiptModal = ref(false)
+const receipt = reactive({
+  orderId: '',
+  name: '',
+  date: '',
+  time: '',
+  people: 0,
+  items: [], // [{mainName, drinkName, sideName, addonNames, total}]
+  total: 0,
+  ts: ''
+})
 
 const form = reactive({
   name: '',
@@ -238,10 +300,9 @@ const form = reactive({
   orders: []
 })
 
-// ✅ 初始化日期選擇器
+// 初始化日期
 onMounted(() => {
   flatpickr.localize({ ...FlatpickrLanguages['zh_tw'], firstDayOfWeek: 0 })
-
   flatpickr(dateInput.value, {
     dateFormat: 'Y-m-d',
     minDate: 'today',
@@ -260,7 +321,7 @@ onMounted(() => {
   })
 })
 
-// ✅ 當人數變動時，自動初始化點餐資料
+// 人數變動初始化 orders
 watch(
   () => form.people,
   newVal => {
@@ -274,17 +335,16 @@ watch(
   }
 )
 
-// ✅ 計算總金額
+// 總金額
 const totalPrice = computed(() => {
   const all = form.orders.map(order => calcPriceBreakdown(order, menu).total || 0)
   return all.reduce((a, b) => a + b, 0)
 })
 
-// ✅ 設定點餐模式並初始化 orders
+// 設定點餐模式
 function setOrderMode(mode) {
   orderMode.value = mode
   form.orders = []
-
   if (mode === 'group' && form.people) {
     for (let i = 0; i < form.people; i++) {
       form.orders.push({ main: '', drink: '', side: '', addons: [] })
@@ -294,7 +354,7 @@ function setOrderMode(mode) {
   }
 }
 
-// ✅ 自訂 modal 控制
+// 模式切換確認
 const showConfirmModal = ref(false)
 const pendingMode = ref('')
 
@@ -306,12 +366,10 @@ function confirmSwitchMode(mode) {
     setOrderMode(mode)
   }
 }
-
 function applySwitchMode() {
   setOrderMode(pendingMode.value)
   showConfirmModal.value = false
 }
-
 function cancelSwitch() {
   showConfirmModal.value = false
 }
@@ -319,34 +377,29 @@ function cancelSwitch() {
 // ✅ 送出訂單
 async function submitOrder() {
   const missing = []
-
   if (!form.name.trim()) missing.push('訂位人姓名')
   if (!form.date.trim()) missing.push('用餐日期')
   if (!form.time.trim()) missing.push('用餐時段')
   if (!form.people) missing.push('用餐人數')
 
-  // 檢查每一位顧客的主餐、飲品、副餐是否都有選擇
   form.orders.forEach((order, idx) => {
     if (!order.main) missing.push(`第 ${idx + 1} 位顧客的主餐`)
     if (!order.drink) missing.push(`第 ${idx + 1} 位顧客的飲品`)
     if (!order.side) missing.push(`第 ${idx + 1} 位顧客的副餐`)
   })
-
   if (missing.length > 0) {
     alert(`⚠️ 以下欄位尚未填寫：\n\n${missing.join('\n')}`)
     return
   }
 
-  // ✅ 原本送出流程繼續執行
   isSubmitting.value = true
   submitMessage.value = ''
 
-  // ✅ 將每筆訂單加上 price 明細（base, addon, service, total）
+  // 附上每位的金額拆解
   form.orders.forEach(order => {
     order.price = calcPriceBreakdown(order, menu)
   })
 
-  // 建立 payload 傳給 GAS
   const payload = new URLSearchParams()
   payload.append('name', form.name)
   payload.append('date', form.date)
@@ -357,18 +410,18 @@ async function submitOrder() {
   try {
     const res = await fetch(import.meta.env.VITE_GAS_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: payload.toString()
     })
-
     const result = await res.json()
+
     if (result?.result === 'success') {
+      // ✅ 準備收據資料（等使用者下載或關閉後再 reset）
+      buildReceipt()
+      showReceiptModal.value = true
       submitMessage.value = '我們收到你的點餐囉！感謝預約 🌿'
-      resetForm(form, orderMode) // 保留原有 resetForm
     } else {
-      submitMessage.value = '😢 訂單沒送成功耶…可以再試一次嗎？' + resultText
+      submitMessage.value = '😢 訂單沒送成功耶…可以再試一次嗎？'
     }
   } catch (err) {
     submitMessage.value = '⚠️ 系統好像出了一點狀況，稍後再試看看好嗎？' + err.message
@@ -376,6 +429,49 @@ async function submitOrder() {
     isSubmitting.value = false
     setTimeout(() => (submitMessage.value = ''), 3000)
   }
+}
+
+/* ✅ 建立收據資料（前端生成 orderId） */
+function buildReceipt() {
+  receipt.orderId = 'R' + Date.now().toString(36).toUpperCase()
+  receipt.name = form.name
+  receipt.date = form.date
+  receipt.time = form.time
+  receipt.people = form.people
+  receipt.ts = new Date().toISOString().slice(0, 19).replace('T', ' ')
+  receipt.items = form.orders.map(o => ({
+    mainName: getItemByCode('main', o.main, menu)?.name || '—',
+    drinkName: getItemByCode('drink', o.drink, menu)?.name || '—',
+    sideName: getItemByCode('side', o.side, menu)?.name || '—',
+    addonNames: (o.addons || [])
+      .map(code => getItemByCode('addon', code, menu)?.name)
+      .filter(Boolean),
+    total: (o.price?.total ?? calcPriceBreakdown(o, menu).total) || 0
+  }))
+  receipt.total = receipt.items.reduce((s, i) => s + (i.total || 0), 0)
+}
+
+/* ✅ 下載 PDF */
+async function downloadPDF() {
+  const el = document.getElementById('receipt')
+  if (!el) return
+  const canvas = await html2canvas(el, { scale: 2 })
+  const imgData = canvas.toDataURL('image/png')
+
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
+  const pageW = pdf.internal.pageSize.getWidth()
+  const imgW = pageW - 48 // 左右邊距 24pt
+  const imgH = canvas.height * (imgW / canvas.width)
+
+  pdf.addImage(imgData, 'PNG', 24, 24, imgW, imgH)
+  const fname = `receipt-${receipt.ts.replace(/[: ]/g, '-')}-${receipt.orderId}.pdf`
+  pdf.save(fname)
+}
+
+/* ✅ 關閉彈窗後再清空表單 */
+function closeReceipt() {
+  showReceiptModal.value = false
+  resetForm(form, orderMode)
 }
 </script>
 

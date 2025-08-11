@@ -18,6 +18,8 @@
     "@heroicons/vue": "^2.2.0",
     "axios": "^1.9.0",
     "flatpickr": "^4.6.13",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
     "sharp": "^0.34.3",
     "vue": "^3.4.21",
     "vue-router": "^4.5.1",
