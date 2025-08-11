@@ -5,7 +5,12 @@ import './index.css'
 
 // 只有在安裝了 vite-plugin-pwa 時才需要
 import { registerSW } from 'virtual:pwa-register'
-
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, reg) {
+    reg && setInterval(() => reg.update(), 60 * 60 * 1000)
+  }
+})
 // 由外掛產生並自動更新（你在 vite.config.js 已設 registerType: 'autoUpdate'）
 const updateSW = registerSW({
   immediate: true, // 首次就註冊

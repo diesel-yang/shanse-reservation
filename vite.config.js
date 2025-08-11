@@ -4,71 +4,58 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// 產生版本號（時間戳），用來破壞快取
+const buildId = new Date().toISOString().replace(/[-:T.Z]/g, '')
+
 export default defineConfig({
   plugins: [
     vue(),
+    // ✅ 把 %BUILD_ID% 替換進 index.html
+    {
+      name: 'inject-build-id-into-html',
+      transformIndexHtml(html) {
+        return html.replaceAll('%BUILD_ID%', buildId)
+      }
+    },
     VitePWA({
-      registerType: 'autoUpdate', // 自動更新 SW
+      registerType: 'autoUpdate',
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true /* 其餘同你現有 */
+      },
       includeAssets: [
-        'favicon.ico',
-        'apple-touch-icon.png',
-        'icons/icon-192.png',
-        'icons/icon-512.png',
-        'icons/maskable-512.png'
+        `favicon.ico?v=${buildId}`,
+        `apple-touch-icon.png?v=${buildId}`,
+        `icons/icon-192.png?v=${buildId}`,
+        `icons/icon-512.png?v=${buildId}`,
+        `icons/maskable-512.png?v=${buildId}`
       ],
       manifest: {
-        name: '山色 予約系統',
-        short_name: '山色予約',
+        name: '山色',
+        short_name: '山色',
         description: '山色餐桌預約與預先點餐',
-        start_url: '/',
+        start_url: `/?v=${buildId}`,
         scope: '/',
         display: 'standalone',
         theme_color: '#ed8a3f',
         background_color: '#ffffff',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: `/icons/icon-192.png?v=${buildId}`, sizes: '192x192', type: 'image/png' },
+          { src: `/icons/icon-512.png?v=${buildId}`, sizes: '512x512', type: 'image/png' },
           {
-            src: '/icons/maskable-512.png',
+            src: `/icons/maskable-512.png?v=${buildId}`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
           }
         ]
       },
-      workbox: {
-        // 預設已幫你快取打包出的資產；這裡補動態資源策略
-        runtimeCaching: [
-          // 你的 GAS API（寫入 / 讀菜單都會用到）
-          {
-            urlPattern: ({ url }) =>
-              url.origin === 'https://script.google.com' ||
-              url.origin === 'https://script.googleusercontent.com',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-gas',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 }, // 1 小時
-              cacheableResponse: { statuses: [0, 200] }
-            }
-          },
-          // 圖片（商品圖、icon 等）
-          {
-            urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'images',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 } // 7 天
-            }
-          }
-        ]
-      },
-      devOptions: {
-        enabled: true // 開發模式也啟用，方便你本機測
-      }
+      devOptions: { enabled: true }
     })
   ],
-  base: '/', // 若部署在子路徑再改
+  define: { __BUILD_ID__: JSON.stringify(buildId) },
+  base: '/',
   resolve: {
     alias: {
       vue: 'vue/dist/vue.esm-bundler.js',
@@ -90,4 +77,4 @@ export default defineConfig({
     },
     commonjsOptions: { include: [/node_modules/] }
   }
-})
+}) // vite.config.js
