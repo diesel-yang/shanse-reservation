@@ -213,8 +213,8 @@
           <!-- 🔹 店 Logo + 店名 -->
           <div class="flex flex-col items-center mb-4">
             <img src="/hero-transparent.png" alt="山色 ShanSe" class="w-[100px] h-auto mb-1" />
-            <p class="font-bold text-gray-800 text-base">山色 ShanSe</p>
-            <p class="text-xs text-gray-500">收據 Receipt</p>
+            <p class="font-bold text-gray-800 text-base">消 費 明 細</p>
+            <p class="text-xs text-gray-500">Receipt</p>
           </div>
 
           <p>訂單編號：{{ receipt.orderId }}</p>
