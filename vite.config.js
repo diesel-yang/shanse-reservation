@@ -1,60 +1,87 @@
-// vite.config.js
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'child_process'
 
-// 產生版本號（時間戳），用來破壞快取
-const buildId = new Date().toISOString().replace(/[-:T.Z]/g, '')
+// 🔹 安全的 build id 插件（用 git commit hash）
+function injectBuildId() {
+  return {
+    name: 'inject-build-id',
+    transformIndexHtml(html) {
+      let buildId = 'dev'
+      try {
+        buildId = execSync('git rev-parse --short HEAD').toString().trim()
+      } catch (e) {
+        console.warn('⚠️ 無法取得 git commit hash，改用 dev')
+      }
+      return html.replace(/__BUILD_ID__/g, buildId)
+    }
+  }
+}
 
 export default defineConfig({
   plugins: [
     vue(),
-    // ✅ 把 %BUILD_ID% 替換進 index.html
-    {
-      name: 'inject-build-id-into-html',
-      transformIndexHtml(html) {
-        return html.replaceAll('%BUILD_ID%', buildId)
-      }
-    },
+    injectBuildId(), // 放在 PWA 前面
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: {
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true /* 其餘同你現有 */
-      },
       includeAssets: [
-        `favicon.ico?v=${buildId}`,
-        `apple-touch-icon.png?v=${buildId}`,
-        `icons/icon-192.png?v=${buildId}`,
-        `icons/icon-512.png?v=${buildId}`,
-        `icons/maskable-512.png?v=${buildId}`
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+        'icons/maskable-512.png'
       ],
       manifest: {
-        name: '山色',
-        short_name: '山色',
+        name: '山色 予約系統',
+        short_name: '山色予約',
         description: '山色餐桌預約與預先點餐',
-        start_url: `/?v=${buildId}`,
+        start_url: '/',
         scope: '/',
         display: 'standalone',
         theme_color: '#ed8a3f',
         background_color: '#ffffff',
         icons: [
-          { src: `/icons/icon-192.png?v=${buildId}`, sizes: '192x192', type: 'image/png' },
-          { src: `/icons/icon-512.png?v=${buildId}`, sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: `/icons/maskable-512.png?v=${buildId}`,
+            src: '/icons/maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
           }
         ]
       },
-      devOptions: { enabled: true }
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              url.origin === 'https://script.google.com' ||
+              url.origin === 'https://script.googleusercontent.com',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-gas',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }
+            }
+          }
+        ]
+      },
+      devOptions: {
+        enabled: true
+      }
     })
   ],
-  define: { __BUILD_ID__: JSON.stringify(buildId) },
   base: '/',
   resolve: {
     alias: {
@@ -77,4 +104,4 @@ export default defineConfig({
     },
     commonjsOptions: { include: [/node_modules/] }
   }
-}) // vite.config.js
+})
