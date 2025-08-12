@@ -59,9 +59,9 @@
           </RouterLink>
 
           <RouterLink
-            to="/faq"
+            to="/notice"
             class="flex items-center gap-2 text-gray-800 hover:opacity-80"
-            aria-label="常見問題"
+            aria-label="須知"
           >
             <QuestionMarkCircleIcon class="w-6 h-6" />
             <span class="hidden sm:inline text-sm font-medium">FAQ</span>
