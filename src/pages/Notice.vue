@@ -21,7 +21,7 @@ import { onMounted, ref, computed } from 'vue'
 const items = ref([])
 
 onMounted(async () => {
-  const api = import.meta.env.VITE_API
+  const api = import.meta.env.VITE_GAS_URL
   const res = await fetch(`${api}/exec?type=notice`)
   const json = await res.json()
   items.value = json?.data || []
