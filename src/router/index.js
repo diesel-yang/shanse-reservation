@@ -5,14 +5,15 @@ import Home from '@/pages/Home.vue'
 import About from '@/pages/About.vue'
 import Reserve from '@/pages/Reserve.vue'
 import Menu from '@/pages/Menu.vue'
-import Faq from '@/pages/Faq.vue'
+import Notice from '@/pages/Notice.vue' // ⬅️ 新增
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/about', name: 'About', component: About },
   { path: '/reserve', name: 'Reserve', component: Reserve },
   { path: '/menu', name: 'Menu', component: Menu },
-  { path: '/faq', name: 'Faq', component: Faq },
+  // ⬇️ 新的名稱與路徑
+  { path: '/notice', name: 'Notice', component: Notice },
   { path: '/:catchAll(.*)', redirect: '/' }
 ]
 
