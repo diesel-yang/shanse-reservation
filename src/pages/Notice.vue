@@ -11,22 +11,20 @@
       訂位及用餐須知
     </h1>
 
-    <!-- 內容：不再有 loading gate，進頁立即渲染 -->
+    <!-- template 內資料區：移除 v-if loading，直接用 hasData / 骨架畫面 -->
     <main class="w-full max-w-xl mx-auto px-4 pb-28 space-y-4">
-      <!-- 有資料時顯示 Accordion -->
+      <!-- 有資料：正常 Accordion -->
       <section
         v-if="hasData"
         v-for="(group, cat) in groupedItems"
         :key="cat"
-        class="rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] bg-white/95 backdrop-blur-sm border border-black/10 overflow-hidden"
+        class="rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.15)] bg-white/95 border border-black/10 overflow-hidden"
       >
-        <!-- 分類標題（置中），Chevron 在右 -->
         <button
           type="button"
           class="relative w-full flex items-center justify-center px-6 py-4"
           @click="toggleCategory(cat)"
           :aria-expanded="isOpen(cat)"
-          :aria-controls="`panel-${slug(cat)}`"
         >
           <span class="text-lg sm:text-xl font-semibold text-gray-800 text-center">{{ cat }}</span>
           <svg
@@ -40,18 +38,17 @@
             <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
-
-        <!-- 條文內容：支援粗體（**粗體** 或 <b>粗體</b>）與換行 -->
-        <div :id="`panel-${slug(cat)}`" v-show="isOpen(cat)" class="px-6 pb-5">
+        <div v-show="isOpen(cat)" class="px-6 pb-5">
           <ul
             class="list-disc pl-5 space-y-2 leading-relaxed text-base sm:text-[17px] text-gray-800"
           >
+            <!-- 支援 **粗體** / <b>粗體</b> / 換行 -->
             <li v-for="(rule, i) in group" :key="i" v-html="renderRule(rule.rule)"></li>
           </ul>
         </div>
       </section>
 
-      <!-- 沒快取而且資料還沒回來：骨架畫面 -->
+      <!-- 沒有快取且資料未回來：骨架 -->
       <section
         v-else
         v-for="n in 4"
@@ -72,9 +69,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
-const items = ref([]) // [{ category, rule }, ...]
+const items = ref([]) // [{category, rule}, ...]
 const openCategories = ref([]) // 預設閉合
 const hasData = computed(() => items.value.length > 0)
 
@@ -101,52 +98,32 @@ const slug = s =>
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9\-]/g, '')
 
-/**
- * 讓條文支援粗體
- * - 允許寫法：
- *   1) **重要文字**（Markdown 風格）
- *   2) <b>重要文字</b> 或 <strong>重要文字</strong>
- * - 其他內容全部 escape，避免 XSS
- * - 換行 \n -> <br />
- */
+// 條文渲染：只允許 <b>/<strong>，支援 **粗體** 與 \n
 function renderRule(input) {
   const text = String(input ?? '')
-
-  // 先把 HTML 字元轉義（全部當純文字）
   const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-  // 轉換 **粗體** 成 <b>粗體</b>
-  const withMarkdownBold = escaped.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-
-  // 把已被轉義的 <b> 與 <strong> 還原（只還原開/閉標籤，其他標籤不允許）
-  const allowB = withMarkdownBold
+  const mdBold = escaped.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+  const allowBold = mdBold
     .replace(/&lt;b&gt;/g, '<b>')
     .replace(/&lt;\/b&gt;/g, '</b>')
     .replace(/&lt;strong&gt;/g, '<strong>')
     .replace(/&lt;\/strong&gt;/g, '</strong>')
-
-  // \n 換行
-  return allowB.replace(/\n/g, '<br />')
+  return allowBold.replace(/\n/g, '<br />')
 }
 
 // —— SWR：先讀快取立即顯示，再背景更新 —— //
 const CACHE_KEY = 'noticeCache:v1'
 
-// 1) 立即讀快取（若有）
+// 1) 讀快取
 try {
   const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
-  if (cached && Array.isArray(cached.data)) {
-    items.value = cached.data
-  }
-} catch (e) {
-  /* ignore */
-}
+  if (cached && Array.isArray(cached.data)) items.value = cached.data
+} catch {}
 
-// 2) 背景更新（含逾時，避免長時間卡住）
+// 2) 背景更新（加逾時）
 onMounted(async () => {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), 8000)
-
   try {
     const res = await fetch(`${import.meta.env.VITE_GAS_URL}?type=notice`, {
       cache: 'no-store',
@@ -163,12 +140,28 @@ onMounted(async () => {
     clearTimeout(id)
   }
 })
+
+// —— 保留開合狀態：重新整理也不會收回 —— //
+const OPEN_KEY = 'notice:openCats'
+onMounted(() => {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(OPEN_KEY) || '[]')
+    if (Array.isArray(saved)) openCategories.value = saved
+  } catch {}
+})
+watch(
+  openCategories,
+  v => {
+    sessionStorage.setItem(OPEN_KEY, JSON.stringify(v))
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
 @media (max-width: 640px) {
   .pb-28 {
     padding-bottom: 7rem;
-  } /* 預留底部導覽列距離 */
+  } /* 避開底部導覽列 */
 }
 </style>
