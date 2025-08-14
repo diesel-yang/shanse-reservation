@@ -16,9 +16,8 @@ const routes = [
   { path: '/menu', name: 'Menu', component: Menu },
   // ⬇️ 新的名稱與路徑
   { path: '/notice', name: 'Notice', component: Notice },
-  { path: '/:catchAll(.*)', redirect: '/' }
   { path: '/retail', name: 'Retail', component: Retail },
-  { path: '/:pathMatch(.*)*', redirect: '/' }
+  { path: '/:catchAll(.*)', redirect: '/' }
 ]
 
 const router = createRouter({
