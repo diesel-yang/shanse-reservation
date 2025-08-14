@@ -52,18 +52,21 @@
           <span class="block text-center tracking-[0.2em]">預先點餐</span>
         </button>
       </router-link>
+
+      <!-- 🆕 新增零售商品按鈕 -->
+      <router-link to="/retail" class="block">
+        <button
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
+          <span class="block text-center tracking-[0.2em]">零售商品</span>
+        </button>
+      </router-link>
+
       <router-link to="/notice" class="block">
         <button
           class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
         >
           <span class="block text-center tracking-[0.2em]">訂位及用餐須知</span>
-        </button>
-      </router-link>
-      <router-link to="/notice" class="block">
-        <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
-        >
-          <span class="block text-center tracking-[0.2em]">零售商品</span>
         </button>
       </router-link>
     </div>
