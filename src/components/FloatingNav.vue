@@ -101,7 +101,7 @@ import {
   UserIcon,
   BookOpenIcon,
   CalendarDaysIcon,
-  QuestionMarkCircleIcon
+  QuestionMarkCircleIcon,
   ShoppingBagIcon
 } from '@heroicons/vue/24/outline'
 
