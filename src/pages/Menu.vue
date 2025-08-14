@@ -245,7 +245,7 @@
 
         <div class="mt-5 grid grid-cols-2 gap-3">
           <button @click="downloadPDF" class="bg-black text-white rounded-full py-2.5">
-            下載 PDF
+            下載 消費明細
           </button>
           <button @click="closeReceipt" class="border border-black rounded-full py-2.5">
             關閉
@@ -274,7 +274,7 @@ const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
 const holidays = inject('holidays', [])
 const dateInput = ref(null)
 
-const timeSlots = ['11:30–13:00', '12:30–13:50', '13:10–14:40', '14:00–15:30']
+const timeSlots = ['11:30–13:00', '12:20–13:50', '13:10–14:40', '14:00–15:30']
 const isSubmitting = ref(false)
 const submitMessage = ref('')
 const orderMode = ref('') // group 或 individual

@@ -69,14 +69,16 @@ const props = defineProps({
   items: Array,
   selectedCode: String,
   selectedList: Array,
-  type: String
+  type: String,
+  mode: { type: String, default: 'menu' } // 'menu' | 'retail'
 })
-const emit = defineEmits(['select', 'toggle', 'preview'])
+const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart'])
 
 const handleClick = item => {
   if (!item || item.disabled) return
-
-  if (props.type === 'addon') {
+  if (props.mode === 'retail') {
+    emit('add-to-cart', item)
+  } else if (props.type === 'addon') {
     emit('toggle', item.code)
   } else {
     emit('preview', item)

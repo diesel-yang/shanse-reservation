@@ -7,6 +7,7 @@
         <router-link to="/reserve" class="hover:underline">餐桌予約</router-link>
         <router-link to="/menu" class="hover:underline">預先點餐</router-link>
         <router-link to="/notice" class="hover:underline">訂位及用餐須知</router-link>
+        <router-link to="/retail" class="hover:underline">零售商品</router-link>
       </div>
     </div>
   </nav>

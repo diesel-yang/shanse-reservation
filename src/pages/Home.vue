@@ -1,4 +1,3 @@
-<
 <template>
   <div
     class="min-h-screen bg-gradient-to-b from-[#e5712f] to-[#f39532] flex flex-col items-center px-6 text-black"
@@ -58,6 +57,13 @@
           class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
         >
           <span class="block text-center tracking-[0.2em]">訂位及用餐須知</span>
+        </button>
+      </router-link>
+      <router-link to="/notice" class="block">
+        <button
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
+          <span class="block text-center tracking-[0.2em]">零售商品</span>
         </button>
       </router-link>
     </div>

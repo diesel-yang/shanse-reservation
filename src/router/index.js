@@ -6,6 +6,8 @@ import About from '@/pages/About.vue'
 import Reserve from '@/pages/Reserve.vue'
 import Menu from '@/pages/Menu.vue'
 import Notice from '@/pages/Notice.vue' // ⬅️ 新增
+// 新增：
+import Retail from '@/pages/Retail.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -15,6 +17,8 @@ const routes = [
   // ⬇️ 新的名稱與路徑
   { path: '/notice', name: 'Notice', component: Notice },
   { path: '/:catchAll(.*)', redirect: '/' }
+  { path: '/retail', name: 'Retail', component: Retail },
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({

@@ -141,7 +141,7 @@ onMounted(async () => {
   }
 })
 
-// —— 保留開合狀態：重新整理也不會收回 —— //
+// —— 保留開合狀態：重新整理也不會收回 —— //q
 const OPEN_KEY = 'notice:openCats'
 onMounted(() => {
   try {

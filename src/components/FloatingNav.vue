@@ -66,6 +66,15 @@
             <QuestionMarkCircleIcon class="w-6 h-6" />
             <span class="hidden sm:inline text-sm font-medium">須知</span>
           </RouterLink>
+
+          <RouterLink
+            to="/retail"
+            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+            aria-label="零售商品"
+          >
+            <ShoppingBagIcon class="w-6 h-6" />
+            <span class="hidden sm:inline text-sm font-medium">零售</span>
+          </RouterLink>
         </div>
 
         <!-- 右：圓形 IG 私訊 -->
@@ -93,6 +102,7 @@ import {
   BookOpenIcon,
   CalendarDaysIcon,
   QuestionMarkCircleIcon
+  ShoppingBagIcon
 } from '@heroicons/vue/24/outline'
 
 const VISIBLE_ON_MOUNT_MS = 0 // 初次載入是否要先顯示，可改 1500
