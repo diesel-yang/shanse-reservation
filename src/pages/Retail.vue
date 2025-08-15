@@ -1,20 +1,95 @@
+<script setup lang="ts">
+import { onMounted, ref, computed } from 'vue'
+import SectionCard from '@/components/SectionCard.vue'
+import ModalCheckout from '@/components/ModalCheckout.vue'
+
+const tab = ref<'frozen' | 'dessert'>('frozen')
+const raw = ref<{ frozen: any[]; dessert: any[] }>({ frozen: [], dessert: [] })
+const loading = ref(true)
+
+const cart = ref<any[]>([])
+const openCart = ref(false)
+const openCheckout = ref(false)
+
+onMounted(async () => {
+  try {
+    const url = `${import.meta.env.VITE_GAS_URL}?type=retail`
+    const json = await fetch(url).then(r => r.json())
+    console.log('🛰️ retail api response:', json)
+    raw.value = json && json.data ? json.data : { frozen: [], dessert: [] }
+  } catch (e) {
+    console.error('❌ load retail error:', e)
+    raw.value = { frozen: [], dessert: [] }
+  } finally {
+    loading.value = false
+  }
+})
+
+const groups = computed(() => ({
+  title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
+  items: Array.isArray(raw.value[tab.value]) ? raw.value[tab.value] : []
+}))
+
+const displayItems = computed(() =>
+  groups.value.items.map(i => ({
+    ...i,
+    disabled: Boolean(i.stop || Number(i.stock ?? 0) <= 0)
+  }))
+)
+
+const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
+const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
+
+const addToCart = (item: any) => {
+  if (!item || item.disabled) return
+  const idx = cart.value.findIndex(x => x.code === item.code)
+  if (idx > -1) cart.value[idx].qty++
+  else
+    cart.value.push({
+      code: item.code,
+      name: item.name,
+      price: Number(item.price || 0),
+      qty: 1,
+      unit: item.unit || '份',
+      lead_days: Number(item.lead_days || 0)
+    })
+}
+const inc = (idx: number) => {
+  cart.value[idx].qty++
+}
+const dec = (idx: number) => {
+  if (cart.value[idx].qty > 1) cart.value[idx].qty--
+}
+const remove = (idx: number) => {
+  cart.value.splice(idx, 1)
+}
+
+const earliestPickupDate = computed(() => {
+  const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
+  const d = new Date()
+  d.setDate(d.getDate() + maxLead)
+  return d
+})
+
+const tabBtn = (t: 'frozen' | 'dessert') =>
+  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
+const currency = (n: number) => `NT$ ${Number(n || 0).toLocaleString()}`
+</script>
+
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6">
-    <!-- 標題 -->
     <header class="mb-4">
       <h1 class="text-2xl font-bold">零售商店</h1>
       <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
     </header>
 
-    <!-- 分頁 -->
     <nav class="flex gap-2 mb-4">
       <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
-    <!-- 商品群組（沿用 SectionCard 樣式；mode='retail' 會改成加入購物車） -->
     <SectionCard
-      v-if="groups.items.length"
+      v-if="displayItems.length"
       :title="groups.title"
       :items="displayItems"
       :selectedList="[]"
@@ -22,9 +97,10 @@
       mode="retail"
       @add-to-cart="addToCart"
     />
-    <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
+    <div v-else class="text-center text-gray-500 py-10">
+      {{ loading ? '載入中…' : '目前沒有可販售商品' }}
+    </div>
 
-    <!-- 浮動購物車 -->
     <div
       v-if="cartCount > 0"
       class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl"
@@ -45,7 +121,6 @@
         </div>
       </div>
 
-      <!-- 展開清單 -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in cart"
@@ -68,96 +143,18 @@
       </div>
     </div>
 
-    <!-- 結帳 Modal -->
     <ModalCheckout
       v-if="openCheckout"
       :cart="cart"
       :subtotal="subtotal"
       :earliest-pickup-date="earliestPickupDate"
       @close="openCheckout = false"
-      @submit="submitOrder"
+      @submit="
+        () => {
+          openCheckout = false
+          cart = []
+        }
+      "
     />
   </div>
 </template>
-
-<script setup>
-import { onMounted, ref, computed } from 'vue'
-import SectionCard from '@/components/SectionCard.vue'
-import ModalCheckout from '@/components/ModalCheckout.vue'
-
-/** 狀態 */
-const tab = ref('frozen')
-const raw = ref({ frozen: [], dessert: [] })
-const loading = ref(true)
-
-const cart = ref([]) // {code, name, price, qty, unit, lead_days?}
-const openCart = ref(false)
-const openCheckout = ref(false)
-
-/** 取得資料 */
-onMounted(async () => {
-  try {
-    const url = `${import.meta.env.VITE_GAS_URL}?type=retail`
-    const data = await fetch(url).then(r => r.json())
-    raw.value = data?.data || { frozen: [], dessert: [] }
-  } catch (e) {
-    console.error(e)
-    raw.value = { frozen: [], dessert: [] }
-  } finally {
-    loading.value = false
-  }
-})
-
-/** 顯示群組/分頁 */
-const groups = computed(() => ({
-  title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
-  items: raw.value[tab.value] || []
-}))
-const displayItems = computed(() =>
-  groups.value.items.map(i => ({
-    ...i,
-    disabled: Boolean(i.stop || Number(i.stock ?? 0) <= 0)
-  }))
-)
-
-/** 購物車 */
-const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
-const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
-
-const addToCart = item => {
-  if (!item || item.disabled) return
-  const idx = cart.value.findIndex(x => x.code === item.code)
-  if (idx > -1) cart.value[idx].qty++
-  else
-    cart.value.push({
-      code: item.code,
-      name: item.name,
-      price: Number(item.price || 0),
-      qty: 1,
-      unit: item.unit || '份',
-      lead_days: Number(item.lead_days || 0)
-    })
-}
-const inc = idx => {
-  cart.value[idx].qty++
-}
-const dec = idx => {
-  if (cart.value[idx].qty > 1) cart.value[idx].qty--
-}
-const remove = idx => {
-  cart.value.splice(idx, 1)
-}
-
-/** 最早可取貨日（取購物車中最大 lead_days） */
-const earliestPickupDate = computed(() => {
-  const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
-  const d = new Date()
-  d.setDate(d.getDate() + maxLead)
-  return d
-})
-
-/** UI 小函式 */
-const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-</script>
