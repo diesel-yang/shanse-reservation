@@ -2,13 +2,13 @@
   <div class="max-w-3xl mx-auto px-4 py-6">
     <!-- 標題 -->
     <header class="mb-4">
-      <h1 class="text-2xl font-bold">外帶商店</h1>
-      <p class="text-sm text-gray-500">冷凍調理包與甜點，可到店自取或宅配</p>
+      <h1 class="text-2xl font-bold">零售商店</h1>
+      <p class="text-sm text-gray-500">冷凍即食與甜點，可到店自取或宅配</p>
     </header>
 
     <!-- 分頁 -->
     <nav class="flex gap-2 mb-4">
-      <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍調理包</button>
+      <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食包</button>
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
@@ -110,7 +110,7 @@ onMounted(async () => {
 
 /** 顯示群組/分頁 */
 const groups = computed(() => ({
-  title: tab.value === 'frozen' ? '冷凍調理包' : '甜點',
+  title: tab.value === 'frozen' ? '冷凍即食包' : '甜點',
   items: raw.value[tab.value] || []
 }))
 const displayItems = computed(() =>
