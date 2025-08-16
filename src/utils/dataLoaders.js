@@ -3,7 +3,7 @@
 export const fetchMenu = async () => {
   try {
     const res = await fetch(
-      'https://script.google.com/macros/s/AKfycbyR0PeoibqPUMowv40Mye6EeSnMznuj0hNfLdaLpkgW9eNeLH8AvhQvwLkJTJI5nOLtPA/exec'
+      'https://script.google.com/macros/s/AKfycbyL5huyc0KwHc4JOYSC6kgi_b2dMblpCtg0vSbnpwKbYIMukuHDF53JmTlY7rlHIOTdqg/exec'
     )
     const json = await res.json()
     console.log('🚀 後端回傳資料：', json)
