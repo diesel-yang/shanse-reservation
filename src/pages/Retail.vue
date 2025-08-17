@@ -1,23 +1,19 @@
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6">
-    <!-- 標題 -->
     <header class="mb-4">
       <h1 class="text-2xl font-bold">零售商店</h1>
       <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
     </header>
 
-    <!-- 分頁 -->
     <nav class="flex gap-2 mb-4">
       <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
-    <!-- 骨架畫面 -->
     <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div v-for="n in 6" :key="n" class="h-28 rounded-lg bg-gray-100 animate-pulse"></div>
     </div>
 
-    <!-- 商品群組 -->
     <SectionCard
       v-else-if="groups.items.length"
       :title="groups.title"
@@ -29,7 +25,6 @@
     />
     <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
-    <!-- 浮動購物車 -->
     <div
       v-if="cartCount > 0"
       class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl"
@@ -50,7 +45,6 @@
         </div>
       </div>
 
-      <!-- 展開清單 -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in cart"
@@ -73,7 +67,6 @@
       </div>
     </div>
 
-    <!-- 結帳 Modal（你的元件會在 submit 觸發 submitOrder） -->
     <ModalCheckout
       v-if="openCheckout"
       :cart="cart"
@@ -89,11 +82,8 @@
 import { onMounted, ref, computed } from 'vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
+import { gasGet, gasPost } from '@/utils/gas'
 
-/** 使用環境變數（請在 .env 設定 VITE_GAS_URL） */
-const GAS_BASE = import.meta.env.VITE_GAS_URL
-
-/** 狀態 */
 const tab = ref('frozen')
 const raw = ref({ frozen: [], dessert: [] })
 const loading = ref(true)
@@ -105,9 +95,8 @@ const openCheckout = ref(false)
 /** 取得資料 */
 onMounted(async () => {
   try {
-    const url = `${GAS_BASE}?type=retail`
-    const data = await fetch(url).then(r => r.json())
-    raw.value = data?.data || { frozen: [], dessert: [] }
+    const json = await gasGet({ type: 'retail' })
+    raw.value = json?.data || { frozen: [], dessert: [] }
   } catch (e) {
     console.error('❌ 載入零售資料失敗', e)
     raw.value = { frozen: [], dessert: [] }
@@ -156,7 +145,7 @@ const remove = idx => {
   cart.value.splice(idx, 1)
 }
 
-/** 最早可取貨日（取購物車中最大 lead_days） */
+/** 最早可取貨日 */
 const earliestPickupDate = computed(() => {
   const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -164,26 +153,13 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** UI 小函式 */
+/** UI */
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
-/** 下單：呼叫 GAS (type=retailOrder) */
+/** 下單到 GAS：type=retailOrder */
 async function submitOrder({ customer }) {
-  // 假設 ModalCheckout 會傳入 { customer: { name, phone, method, pickup_date, note } }
-  const payload = new URLSearchParams()
-  payload.append('type', 'retailOrder')
-  payload.append('name', customer?.name || '')
-  payload.append('phone', customer?.phone || '')
-  payload.append('method', customer?.method || '自取')
-  payload.append(
-    'pickup_date',
-    customer?.pickup_date || earliestPickupDate.value.toISOString().slice(0, 10)
-  )
-  payload.append('note', customer?.note || '')
-
-  // 品項
   const items = cart.value.map(i => ({
     code: i.code,
     name: i.name,
@@ -191,30 +167,29 @@ async function submitOrder({ customer }) {
     qty: Number(i.qty || 1),
     unit: i.unit || '份'
   }))
-  payload.append('items', JSON.stringify(items))
-
-  // 金額
   const subtotalNum = Number(subtotal.value || 0)
-  const shippingNum = customer?.method === '宅配' ? 160 : 0 // 依你的規則調整
-  const totalNum = subtotalNum + shippingNum
-  payload.append('subtotal', String(subtotalNum))
-  payload.append('shipping', String(shippingNum))
-  payload.append('total', String(totalNum))
+  const shippingNum = customer?.method === '宅配' ? 160 : 0
 
-  try {
-    const res = await fetch(GAS_BASE, { method: 'POST', body: payload })
-    const json = await res.json()
-    if (json?.result === 'success') {
-      alert(`下單成功！訂單編號：${json.orderId}`)
-      cart.value = []
-      openCart.value = false
-      openCheckout.value = false
-    } else {
-      alert('下單失敗，請稍後再試。')
-    }
-  } catch (err) {
-    console.error('零售下單失敗：', err)
-    alert('系統暫時無法下單，請稍後再試。')
+  const out = await gasPost({
+    type: 'retailOrder',
+    name: customer?.name || '',
+    phone: customer?.phone || '',
+    method: customer?.method || '自取',
+    pickup_date: customer?.pickup_date || earliestPickupDate.value.toISOString().slice(0, 10),
+    note: customer?.note || '',
+    items: JSON.stringify(items),
+    subtotal: String(subtotalNum),
+    shipping: String(shippingNum),
+    total: String(subtotalNum + shippingNum)
+  })
+
+  if (out?.result === 'success') {
+    alert(`下單成功！訂單編號：${out.orderId}`)
+    cart.value = []
+    openCart.value = false
+    openCheckout.value = false
+  } else {
+    alert('下單失敗，請稍後再試。')
   }
 }
 </script>

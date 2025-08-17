@@ -1,10 +1,11 @@
+// vite.config.js
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
+import { fileURLToPath, URL } from 'node:url' // ✅ 你原本沒匯入這兩個
 
-// 🔹 安全的 build id 插件（用 git commit hash）
+// 🔹 建置版號（git commit 短哈希）
 function injectBuildId() {
   return {
     name: 'inject-build-id',
@@ -12,7 +13,7 @@ function injectBuildId() {
       let buildId = 'dev'
       try {
         buildId = execSync('git rev-parse --short HEAD').toString().trim()
-      } catch (e) {
+      } catch {
         console.warn('⚠️ 無法取得 git commit hash，改用 dev')
       }
       return html.replace(/__BUILD_ID__/g, buildId)
@@ -77,16 +78,14 @@ export default defineConfig({
           }
         ]
       },
-      devOptions: {
-        enabled: true
-      }
+      devOptions: { enabled: true }
     })
   ],
   base: '/',
   resolve: {
     alias: {
-      vue: 'vue/dist/vue.esm-bundler.js',
-      '@': resolve(__dirname, './src')
+      '@': fileURLToPath(new URL('./src', import.meta.url)), // ✅ 只留一種寫法
+      vue: 'vue/dist/vue.esm-bundler.js' // ✅ 如需 runtime compiler 才保留
     }
   },
   optimizeDeps: { include: ['vue'] },

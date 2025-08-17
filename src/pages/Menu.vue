@@ -265,6 +265,7 @@ import FlatpickrLanguages from 'flatpickr/dist/l10n'
 import OrderBlock from '@/components/OrderBlock.vue'
 import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
 import { resetForm } from '@/utils/resetForm'
+import { gasGet, gasPost } from '@/utils/gas' // ★ 新增
 
 /* ✅ 新增：PDF 相關套件 */
 import { jsPDF } from 'jspdf'
@@ -408,13 +409,7 @@ async function submitOrder() {
   payload.append('orders', JSON.stringify(form.orders))
 
   try {
-    const res = await fetch(import.meta.env.VITE_GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: payload.toString()
-    })
-    const result = await res.json()
-
+    const result = await gasPost(payload)
     if (result?.result === 'success') {
       // ✅ 準備收據資料（等使用者下載或關閉後再 reset）
       buildReceipt()
