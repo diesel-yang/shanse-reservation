@@ -1,30 +1,52 @@
 // src/utils/gas.js
-export const GAS_BASE = (import.meta.env.VITE_GAS_URL || '').trim()
 
-if (!GAS_BASE) {
-  console.error('❌ VITE_GAS_URL 未設定，請到 .env / Vercel 設定並重新部署')
-}
-if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(GAS_BASE)) {
-  console.warn('⚠️ VITE_GAS_URL 看起來不像 Apps Script 的 exec URL：', GAS_BASE)
+// 🔹 從環境變數取出 GAS URL
+//   在 .env 中設定： VITE_GAS_URL=https://script.google.com/macros/s/xxxx/exec
+const GAS_BASE = import.meta.env.VITE_GAS_URL
+
+/**
+ * GET 請求
+ * @param {Object} params - 查詢參數 { key: value }
+ * @param {Object} options - 可選設定，如 { signal }
+ */
+export async function gasGet(params = {}, options = {}) {
+  const url = new URL(GAS_BASE)
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) {
+      url.searchParams.append(k, v)
+    }
+  })
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    signal: options.signal || undefined // ✅ 支援 AbortController
+  })
+
+  if (!res.ok) throw new Error(`GAS GET error: ${res.status}`)
+  return res.json()
 }
 
-export function buildGasUrl(params = {}) {
-  // 剃掉 .env 內不小心殘留的 ?type
-  const base = GAS_BASE.replace(/[?&]\s*type=?.*$/i, '')
-  const qs = new URLSearchParams(params)
-  return `${base}${base.includes('?') ? '&' : '?'}${qs.toString()}`
-}
+/**
+ * POST 請求
+ * @param {URLSearchParams|FormData|Object} payload - 傳送資料
+ * @param {Object} options - 可選設定，如 { signal }
+ */
+export async function gasPost(payload, options = {}) {
+  let body
+  if (payload instanceof URLSearchParams || payload instanceof FormData) {
+    body = payload
+  } else if (typeof payload === 'object') {
+    body = new URLSearchParams(payload)
+  } else {
+    throw new Error('gasPost payload 必須是 URLSearchParams/FormData/Object')
+  }
 
-export async function gasGet(params = {}) {
-  const url = buildGasUrl(params)
-  console.log('🔎 GAS GET:', url)
-  const r = await fetch(url, { cache: 'no-store' })
-  return r.json() // 預期 {result:'success', data:...}
-}
+  const res = await fetch(GAS_BASE, {
+    method: 'POST',
+    body,
+    signal: options.signal || undefined // ✅ 支援 AbortController
+  })
 
-export async function gasPost(body = {}) {
-  const payload = body instanceof URLSearchParams ? body : new URLSearchParams(body)
-  console.log('🔎 GAS POST:', GAS_BASE)
-  const r = await fetch(GAS_BASE, { method: 'POST', body: payload })
-  return r.json() // 預期 {result:'success', ...}
+  if (!res.ok) throw new Error(`GAS POST error: ${res.status}`)
+  return res.json()
 }

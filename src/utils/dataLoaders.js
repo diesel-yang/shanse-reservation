@@ -1,11 +1,14 @@
 // src/utils/dataLoaders.js
 import { gasGet } from '@/utils/gas'
 
-// 取得菜單（從 GAS: ?type=menu）
-export const fetchMenu = async () => {
+/** =========================
+ *  菜單（GAS: ?type=menu）
+ *  支援 AbortController.signal
+ * ========================= */
+export const fetchMenu = async signal => {
   try {
-    const json = await gasGet({ type: 'menu' }) // ← 統一走 gasGet
-    if (json.result !== 'success' || !json.data) throw new Error('資料格式錯誤')
+    const json = await gasGet({ type: 'menu' }, { signal })
+    if (json.result !== 'success' || !json.data) throw new Error('menu 資料格式錯誤')
 
     const convert = (arr = []) =>
       arr.map(r => ({
@@ -25,13 +28,16 @@ export const fetchMenu = async () => {
       addon: convert(json.data.addon)
     }
   } catch (err) {
-    console.error('❌ 載入菜單失敗', err)
+    if (err?.name !== 'AbortError') console.error('❌ 載入菜單失敗', err)
     return { main: [], drink: [], side: [], addon: [] }
   }
 }
 
-// 取得台灣當年度國定假日（Google Calendar API）
-export const fetchHolidays = async () => {
+/** =========================
+ *  假日（Google Calendar API）
+ *  支援 AbortController.signal
+ * ========================= */
+export const fetchHolidays = async signal => {
   try {
     const year = new Date().getFullYear()
     const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY || '').trim()
@@ -45,28 +51,57 @@ export const fetchHolidays = async () => {
     const timeMax = `${year}-12-31T23:59:59Z`
     const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}&timeMin=${timeMin}&timeMax=${timeMax}`
 
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, { cache: 'no-store', signal })
     const data = await res.json()
-
-    if (!Array.isArray(data.items)) {
-      console.warn('⚠️ Google 回傳資料沒有 items:', data)
-      return []
-    }
-
-    return data.items.filter(e => e?.start?.date).map(e => e.start.date)
+    return Array.isArray(data.items)
+      ? data.items.filter(e => e?.start?.date).map(e => e.start.date)
+      : []
   } catch (err) {
-    console.error('❌ 假日載入失敗', err)
+    if (err?.name !== 'AbortError') console.error('❌ 假日載入失敗', err)
     return []
   }
 }
 
-// 取得零售商品（給 Retail.vue 用；也可直接在頁面裡呼叫 gasGet({type:'retail'})）
-export const fetchRetail = async () => {
+/** =========================
+ *  零售清單（GAS: ?type=retail）
+ *  支援 AbortController.signal
+ * ========================= */
+export const fetchRetail = async signal => {
   try {
-    const json = await gasGet({ type: 'retail' })
+    const json = await gasGet({ type: 'retail' }, { signal })
+    // 後端約定：{ frozen: [], dessert: [] }
     return json?.data || { frozen: [], dessert: [] }
-  } catch (e) {
-    console.error('❌ 載入零售資料失敗', e)
+  } catch (err) {
+    if (err?.name !== 'AbortError') console.error('❌ 載入零售資料失敗', err)
     return { frozen: [], dessert: [] }
   }
+}
+
+/** （可選）訂位/用餐須知（GAS: ?type=notice） */
+export const fetchNotice = async signal => {
+  try {
+    const json = await gasGet({ type: 'notice' }, { signal })
+    return Array.isArray(json?.data) ? json.data : []
+  } catch (err) {
+    if (err?.name !== 'AbortError') console.error('❌ 取得 notice 失敗', err)
+    return []
+  }
+}
+
+/** ============================================================
+ *  一鍵預載：App 啟動時一次抓齊資料
+ *  @param {Object} options
+ *  @param {AbortSignal} [options.signal] - 傳遞給子請求
+ * ============================================================ */
+export const preloadAll = async (options = {}) => {
+  const signal = options.signal
+
+  const [menu, holidays, retail, notice] = await Promise.all([
+    fetchMenu(signal),
+    fetchHolidays(signal),
+    fetchRetail(signal),
+    fetchNotice(signal) // 若目前未用到，可移除
+  ])
+
+  return { menu, holidays, retail, notice }
 }

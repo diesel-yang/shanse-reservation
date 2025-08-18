@@ -16,9 +16,7 @@
     <section class="bg-white rounded-lg shadow-md p-4 mb-6 space-y-4">
       <!-- 訂位姓名 -->
       <div class="flex items-center gap-2">
-        <span class="text-gray-500 text-xl">
-          <i class="fa-solid fa-user"></i>
-        </span>
+        <span class="text-gray-500 text-xl"><i class="fa-solid fa-user"></i></span>
         <input
           v-model="form.name"
           type="text"
@@ -30,9 +28,7 @@
 
       <!-- 用餐日期 -->
       <div class="flex items-center gap-2">
-        <span class="text-gray-500 text-xl">
-          <i class="fa-regular fa-calendar-days"></i>
-        </span>
+        <span class="text-gray-500 text-xl"><i class="fa-regular fa-calendar-days"></i></span>
         <input
           ref="dateInput"
           v-model="form.date"
@@ -45,9 +41,7 @@
 
       <!-- 用餐時段 -->
       <div class="flex items-center gap-2">
-        <span class="text-gray-500 text-xl">
-          <i class="fa-regular fa-clock"></i>
-        </span>
+        <span class="text-gray-500 text-xl"><i class="fa-regular fa-clock"></i></span>
         <div class="flex flex-wrap gap-2 flex-1">
           <button
             v-for="slot in timeSlots"
@@ -66,9 +60,7 @@
 
       <!-- 用餐人數 -->
       <div class="flex items-center gap-2">
-        <span class="text-gray-500 text-xl">
-          <i class="fa-solid fa-user-group"></i>
-        </span>
+        <span class="text-gray-500 text-xl"><i class="fa-solid fa-user-group"></i></span>
         <select
           v-model.number="form.people"
           :class="[
@@ -210,7 +202,6 @@
 
         <!-- 收據內容（轉成 PDF） -->
         <div id="receipt" class="bg-gray-50 border rounded p-4 text-sm">
-          <!-- 🔹 店 Logo + 店名 -->
           <div class="flex flex-col items-center mb-4">
             <img src="/hero-transparent.png" alt="山色 ShanSe" class="w-[100px] h-auto mb-1" />
             <p class="font-bold text-gray-800 text-base">消 費 明 細</p>
@@ -261,26 +252,24 @@ import { ref, reactive, computed, watch, onMounted, inject, toRaw } from 'vue'
 import flatpickr from 'flatpickr'
 import 'flatpickr/dist/flatpickr.min.css'
 import FlatpickrLanguages from 'flatpickr/dist/l10n'
-
 import OrderBlock from '@/components/OrderBlock.vue'
-import { getItemByCode, calcTotal, calcPriceBreakdown } from '@/utils/helpers'
+import { getItemByCode, calcPriceBreakdown } from '@/utils/helpers'
 import { resetForm } from '@/utils/resetForm'
-import { gasGet, gasPost } from '@/utils/gas' // ★ 新增
-
-/* ✅ 新增：PDF 相關套件 */
+import { gasPost } from '@/utils/gas'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
+/** 從 App.vue 注入共用資料 */
 const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
 const holidays = inject('holidays', [])
-const dateInput = ref(null)
 
+const dateInput = ref(null)
 const timeSlots = ['11:30–13:00', '12:20–13:50', '13:10–14:40', '14:00–15:30']
 const isSubmitting = ref(false)
 const submitMessage = ref('')
-const orderMode = ref('') // group 或 individual
+const orderMode = ref('') // 'group' | 'individual'
 
-/* ✅ 新增：送單成功彈窗狀態與收據資料 */
+/** 收據彈窗資料 */
 const showReceiptModal = ref(false)
 const receipt = reactive({
   orderId: '',
@@ -293,6 +282,7 @@ const receipt = reactive({
   ts: ''
 })
 
+/** 表單 */
 const form = reactive({
   name: '',
   date: '',
@@ -301,7 +291,7 @@ const form = reactive({
   orders: []
 })
 
-// 初始化日期
+/** 日期選擇器設定 */
 onMounted(() => {
   flatpickr.localize({ ...FlatpickrLanguages['zh_tw'], firstDayOfWeek: 0 })
   flatpickr(dateInput.value, {
@@ -322,7 +312,7 @@ onMounted(() => {
   })
 })
 
-// 人數變動初始化 orders
+/** 人數變動 → 初始化 orders */
 watch(
   () => form.people,
   newVal => {
@@ -336,13 +326,13 @@ watch(
   }
 )
 
-// 總金額
+/** 總金額 */
 const totalPrice = computed(() => {
   const all = form.orders.map(order => calcPriceBreakdown(order, menu).total || 0)
   return all.reduce((a, b) => a + b, 0)
 })
 
-// 設定點餐模式
+/** 切換點餐模式 */
 function setOrderMode(mode) {
   orderMode.value = mode
   form.orders = []
@@ -355,7 +345,7 @@ function setOrderMode(mode) {
   }
 }
 
-// 模式切換確認
+/** 點餐模式切換確認彈窗 */
 const showConfirmModal = ref(false)
 const pendingMode = ref('')
 
@@ -375,7 +365,7 @@ function cancelSwitch() {
   showConfirmModal.value = false
 }
 
-// ✅ 送出訂單
+/** 送出訂單 */
 async function submitOrder() {
   const missing = []
   if (!form.name.trim()) missing.push('訂位人姓名')
@@ -396,7 +386,7 @@ async function submitOrder() {
   isSubmitting.value = true
   submitMessage.value = ''
 
-  // 附上每位的金額拆解
+  // 金額拆解放到每位 order.price
   form.orders.forEach(order => {
     order.price = calcPriceBreakdown(order, menu)
   })
@@ -411,7 +401,6 @@ async function submitOrder() {
   try {
     const result = await gasPost(payload)
     if (result?.result === 'success') {
-      // ✅ 準備收據資料（等使用者下載或關閉後再 reset）
       buildReceipt()
       showReceiptModal.value = true
       submitMessage.value = '我們收到你的點餐囉！感謝預約 🌿'
@@ -426,7 +415,7 @@ async function submitOrder() {
   }
 }
 
-/* ✅ 建立收據資料（前端生成 orderId） */
+/** 建立收據資料 */
 function buildReceipt() {
   receipt.orderId = 'R' + Date.now().toString(36).toUpperCase()
   receipt.name = form.name
@@ -446,7 +435,7 @@ function buildReceipt() {
   receipt.total = receipt.items.reduce((s, i) => s + (i.total || 0), 0)
 }
 
-/* ✅ 下載 PDF */
+/** 下載 PDF */
 async function downloadPDF() {
   const el = document.getElementById('receipt')
   if (!el) return
@@ -455,7 +444,7 @@ async function downloadPDF() {
 
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
   const pageW = pdf.internal.pageSize.getWidth()
-  const imgW = pageW - 48 // 左右邊距 24pt
+  const imgW = pageW - 48
   const imgH = canvas.height * (imgW / canvas.width)
 
   pdf.addImage(imgData, 'PNG', 24, 24, imgW, imgH)
@@ -463,7 +452,7 @@ async function downloadPDF() {
   pdf.save(fname)
 }
 
-/* ✅ 關閉彈窗後再清空表單 */
+/** 關閉彈窗後重置表單 */
 function closeReceipt() {
   showReceiptModal.value = false
   resetForm(form, orderMode)

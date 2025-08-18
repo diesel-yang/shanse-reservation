@@ -10,12 +10,8 @@
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
-    <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <div v-for="n in 6" :key="n" class="h-28 rounded-lg bg-gray-100 animate-pulse"></div>
-    </div>
-
     <SectionCard
-      v-else-if="groups.items.length"
+      v-if="groups.items.length"
       :title="groups.title"
       :items="displayItems"
       :selectedList="[]"
@@ -25,6 +21,7 @@
     />
     <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
+    <!-- 浮動購物車 -->
     <div
       v-if="cartCount > 0"
       class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl"
@@ -79,45 +76,32 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { inject, ref, computed } from 'vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
-import { gasGet, gasPost } from '@/utils/gas'
+import { gasPost } from '@/utils/gas'
 
+/** 🔸 改這裡：直接用 App.vue provide 的零售資料 */
+const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const tab = ref('frozen')
-const raw = ref({ frozen: [], dessert: [] })
-const loading = ref(true)
 
-const cart = ref([]) // {code, name, price, qty, unit, lead_days?}
-const openCart = ref(false)
-const openCheckout = ref(false)
-
-/** 取得資料 */
-onMounted(async () => {
-  try {
-    const json = await gasGet({ type: 'retail' })
-    raw.value = json?.data || { frozen: [], dessert: [] }
-  } catch (e) {
-    console.error('❌ 載入零售資料失敗', e)
-    raw.value = { frozen: [], dessert: [] }
-  } finally {
-    loading.value = false
-  }
-})
-
-/** 顯示群組/分頁 */
+/** 🔸 顯示資料改讀 providedRetail */
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
-  items: raw.value[tab.value] || []
+  items: providedRetail[tab.value] || []
 }))
 const displayItems = computed(() =>
-  groups.value.items.map(i => ({
+  (groups.value.items || []).map(i => ({
     ...i,
     disabled: Boolean(i.stop || Number(i.stock ?? 0) <= 0)
   }))
 )
 
-/** 購物車 */
+/** 購物車邏輯（在頁面內處理即可） */
+const cart = ref([]) // {code, name, price, qty, unit, lead_days?}
+const openCart = ref(false)
+const openCheckout = ref(false)
+
 const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
 
@@ -158,7 +142,7 @@ const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
-/** 下單到 GAS：type=retailOrder */
+/** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {
   const items = cart.value.map(i => ({
     code: i.code,
