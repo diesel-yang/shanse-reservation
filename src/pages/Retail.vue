@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-3xl mx-auto px-4 py-6">
+  <!-- ✅ 加上 pagePadStyle，避免被 FloatingNav 擋住 -->
+  <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
     <header class="mb-4">
       <h1 class="text-2xl font-bold">零售商店</h1>
       <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
@@ -24,7 +25,7 @@
     <!-- 浮動購物車 -->
     <div
       v-if="cartCount > 0"
-      class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl"
+      class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl z-40"
     >
       <div class="bg-black text-white rounded-full flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-3">
@@ -97,8 +98,8 @@ const displayItems = computed(() =>
   }))
 )
 
-/** 購物車邏輯（在頁面內處理即可） */
-const cart = ref([]) // {code, name, price, qty, unit, lead_days?}
+/** 購物車邏輯 */
+const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
 
@@ -141,6 +142,11 @@ const earliestPickupDate = computed(() => {
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+
+/** ✅ 與 Menu.vue 同步：底部留白用 CSS 變數 */
+const pagePadStyle = {
+  'padding-bottom': 'var(--nav-height, 100px)'
+}
 
 /** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {

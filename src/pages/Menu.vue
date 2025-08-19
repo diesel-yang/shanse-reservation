@@ -269,10 +269,9 @@ import { gasPost } from '@/utils/gas'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
-/** 與 FloatingNav 共存：頁面底部動態留白（fallback 88px） */
-const pagePadStyle = computed(() => ({
-  paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + var(--floating-nav-offset, 88px))`
-}))
+const pagePadStyle = {
+  'padding-bottom': 'var(--nav-height, 100px)' // 預設 100px，若有定義就用 FloatingNav 的
+}
 
 /** 從 App.vue 注入共用資料 */
 const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })
