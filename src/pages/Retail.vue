@@ -1,37 +1,30 @@
 <template>
-  <!-- 整頁可捲動，並預留 bottomNav + 安全區 -->
-  <main class="min-h-screen bg-white" :style="pagePaddingStyle">
-    <div class="max-w-3xl mx-auto px-4 py-6">
-      <header class="mb-4">
-        <h1 class="text-2xl font-bold">零售商店</h1>
-        <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
-      </header>
+  <div class="max-w-3xl mx-auto px-4 py-6">
+    <header class="mb-4">
+      <h1 class="text-2xl font-bold">零售商店</h1>
+      <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
+    </header>
 
-      <nav class="flex gap-2 mb-4">
-        <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
-        <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
-      </nav>
+    <nav class="flex gap-2 mb-4">
+      <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
+      <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
+    </nav>
 
-      <SectionCard
-        v-if="groups.items.length"
-        :title="groups.title"
-        :items="displayItems"
-        :selectedList="[]"
-        type="addon"
-        mode="retail"
-        @add-to-cart="addToCart"
-      />
-      <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
+    <SectionCard
+      v-if="groups.items.length"
+      :title="groups.title"
+      :items="displayItems"
+      :selectedList="[]"
+      type="addon"
+      mode="retail"
+      @add-to-cart="addToCart"
+    />
+    <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
-      <!-- 與 bottomNav 共存的保險 spacer（避免尾端內容被擋） -->
-      <div aria-hidden="true" :style="bottomSpacerStyle"></div>
-    </div>
-
-    <!-- 浮動購物車：固定在畫面底，但永遠在 bottomNav 之上 -->
+    <!-- 浮動購物車 -->
     <div
       v-if="cartCount > 0"
-      class="fixed left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl z-40"
-      :style="cartBarStyle"
+      class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl"
     >
       <div class="bg-black text-white rounded-full flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-3">
@@ -79,7 +72,7 @@
       @close="openCheckout = false"
       @submit="submitOrder"
     />
-  </main>
+  </div>
 </template>
 
 <script setup>
@@ -88,27 +81,11 @@ import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
-/** ⬇️ 依你的 bottomNav 視覺高度微調（含外距/陰影），常見為 80–96px */
-const BOTTOM_NAV_PX = 88
-/** 與 bottomNav/螢幕底部之間留一點縫隙（讓卡片不貼邊） */
-const CART_BAR_GAP = 8
-
-/** 🔸 直接用 App.vue provide 的零售資料 */
+/** 🔸 改這裡：直接用 App.vue provide 的零售資料 */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const tab = ref('frozen')
 
-/** UI：整頁與購物車列的動態樣式 */
-const pagePaddingStyle = computed(() => ({
-  paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${BOTTOM_NAV_PX}px)`
-}))
-const cartBarStyle = computed(() => ({
-  bottom: `calc(env(safe-area-inset-bottom, 0px) + ${BOTTOM_NAV_PX + CART_BAR_GAP}px)`
-}))
-const bottomSpacerStyle = computed(() => ({
-  height: `calc(env(safe-area-inset-bottom, 0px) + ${BOTTOM_NAV_PX + 12}px)`
-}))
-
-/** 顯示資料 */
+/** 🔸 顯示資料改讀 providedRetail */
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
   items: providedRetail[tab.value] || []
@@ -120,10 +97,11 @@ const displayItems = computed(() =>
   }))
 )
 
-/** 購物車邏輯 */
+/** 購物車邏輯（在頁面內處理即可） */
 const cart = ref([]) // {code, name, price, qty, unit, lead_days?}
 const openCart = ref(false)
 const openCheckout = ref(false)
+
 const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
 
@@ -159,7 +137,7 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** UI helpers */
+/** UI */
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
