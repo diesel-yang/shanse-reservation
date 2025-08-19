@@ -1,13 +1,11 @@
 <template>
-  <div
-    class="max-w-5xl mx-auto px-4 py-8 text-gray-800 pb-[calc(84px+env(safe-area-inset-bottom))]"
-  >
+  <div class="max-w-5xl mx-auto px-4 py-8 text-gray-800" :style="pagePadStyle">
     <!-- LOGO + 標題 -->
     <div class="flex flex-col items-center mb-6">
       <img
         src="/hero-transparent.png"
         alt="山色主視覺"
-        class="w-[140px] h-auto mt-6 mb-4 object-contain bg-transparent"
+        class="w-[140px] h-auto mt-6 mb-4 object-contain"
       />
       <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
     </div>
@@ -195,55 +193,67 @@
       </div>
     </div>
 
-    <!-- ✅ 送單成功 + 下載 PDF 彈窗 -->
-    <div v-if="showReceiptModal" class="fixed inset-0 z-50 bg-black/40 grid place-items-center">
-      <div class="w-[92%] max-w-md bg-white rounded-2xl p-5">
-        <h3 class="text-lg font-semibold mb-3">訂單已送出</h3>
+    <!-- ✅ 送單成功 + 下載 PDF 彈窗（可上滑 + 底部按鈕固定） -->
+    <div v-if="showReceiptModal" class="fixed inset-0 z-50 bg-black/40 overflow-y-auto">
+      <!-- 外層用 grid 置中 + p-4 邊距，確保小螢幕能捲動 -->
+      <div class="min-h-full grid place-items-center p-4">
+        <div
+          class="w-[92%] max-w-md bg-white rounded-2xl p-5 flex flex-col max-h-[min(90vh,720px)]"
+        >
+          <h3 class="text-lg font-semibold mb-3">訂單已送出</h3>
 
-        <!-- 收據內容（轉成 PDF） -->
-        <div id="receipt" class="bg-gray-50 border rounded p-4 text-sm">
-          <div class="flex flex-col items-center mb-4">
-            <img src="/hero-transparent.png" alt="山色 ShanSe" class="w-[100px] h-auto mb-1" />
-            <p class="font-bold text-gray-800 text-base">消 費 明 細</p>
-            <p class="text-xs text-gray-500">Receipt</p>
-          </div>
+          <!-- 可捲動的收據內容 -->
+          <div class="flex-1 overflow-y-auto">
+            <div id="receipt" class="bg-gray-50 border rounded p-4 text-sm">
+              <div class="flex flex-col items-center mb-4">
+                <img src="/hero-transparent.png" alt="山色 ShanSe" class="w-[100px] h-auto mb-1" />
+                <p class="font-bold text-gray-800 text-base">消 費 明 細</p>
+                <p class="text-xs text-gray-500">Receipt</p>
+              </div>
 
-          <p>訂單編號：{{ receipt.orderId }}</p>
-          <p>姓名：{{ receipt.name }}</p>
-          <p>用餐日期/時段：{{ receipt.date }} {{ receipt.time }}</p>
-          <p>人數：{{ receipt.people }}</p>
-          <hr class="my-2" />
+              <p>訂單編號：{{ receipt.orderId }}</p>
+              <p>姓名：{{ receipt.name }}</p>
+              <p>用餐日期/時段：{{ receipt.date }} {{ receipt.time }}</p>
+              <p>人數：{{ receipt.people }}</p>
+              <hr class="my-2" />
 
-          <div v-for="(o, i) in receipt.items" :key="i" class="mb-2">
-            <p class="font-medium text-gray-800">第 {{ i + 1 }} 位</p>
-            <p>主餐：{{ o.mainName }}</p>
-            <p>飲品：{{ o.drinkName }}</p>
-            <p>副餐：{{ o.sideName }}</p>
-            <p v-if="o.addonNames?.length">加點：{{ o.addonNames.join('、') }}</p>
-            <div class="flex justify-between mt-1">
-              <span class="text-gray-600">小計（含服務費）</span>
-              <span class="font-medium">{{ o.total }} 元</span>
+              <div v-for="(o, i) in receipt.items" :key="i" class="mb-2">
+                <p class="font-medium text-gray-800">第 {{ i + 1 }} 位</p>
+                <p>主餐：{{ o.mainName }}</p>
+                <p>飲品：{{ o.drinkName }}</p>
+                <p>副餐：{{ o.sideName }}</p>
+                <p v-if="o.addonNames?.length">加點：{{ o.addonNames.join('、') }}</p>
+                <div class="flex justify-between mt-1">
+                  <span class="text-gray-600">小計（含服務費）</span>
+                  <span class="font-medium">{{ o.total }} 元</span>
+                </div>
+                <hr class="my-2" />
+              </div>
+
+              <div class="flex justify-between font-semibold">
+                <span>合計</span>
+                <span>{{ receipt.total }} 元</span>
+              </div>
+              <p class="mt-2 text-xs text-gray-500">建立時間：{{ receipt.ts }}</p>
             </div>
-            <hr class="my-2" />
           </div>
 
-          <div class="flex justify-between font-semibold">
-            <span>合計</span>
-            <span>{{ receipt.total }} 元</span>
+          <!-- 底部操作列：永遠可按（此層是卡片的直層子元素，要在 scroll 區塊外） -->
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <button @click="downloadPDF" class="bg-black text-white rounded-full py-2.5">
+              下載 消費明細
+            </button>
+            <button @click="closeReceipt" class="border border-black rounded-full py-2.5">
+              關閉
+            </button>
           </div>
-          <p class="mt-2 text-xs text-gray-500">建立時間：{{ receipt.ts }}</p>
         </div>
-
-        <div class="mt-5 grid grid-cols-2 gap-3">
-          <button @click="downloadPDF" class="bg-black text-white rounded-full py-2.5">
-            下載 消費明細
-          </button>
-          <button @click="closeReceipt" class="border border-black rounded-full py-2.5">
-            關閉
-          </button>
-        </div>
+        <!-- 關閉卡片 -->
       </div>
+      <!-- 置中容器 -->
     </div>
+    <!-- overlay -->
+    <!-- /收據彈窗 -->
   </div>
 </template>
 
@@ -258,6 +268,11 @@ import { resetForm } from '@/utils/resetForm'
 import { gasPost } from '@/utils/gas'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
+
+/** 與 FloatingNav 共存：頁面底部動態留白（fallback 88px） */
+const pagePadStyle = computed(() => ({
+  paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + var(--floating-nav-offset, 88px))`
+}))
 
 /** 從 App.vue 注入共用資料 */
 const menu = inject('menu', { main: [], drink: [], side: [], addon: [] })

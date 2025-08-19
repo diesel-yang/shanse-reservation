@@ -2,6 +2,7 @@
 <template>
   <transition name="fade-slide-up">
     <nav
+      ref="navEl"
       v-show="visible"
       class="fixed inset-x-0 bottom-5 z-50 flex items-end justify-center pointer-events-none"
       aria-label="Floating navigation"
@@ -94,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import {
   HomeIcon,
@@ -106,13 +107,15 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const VISIBLE_ON_MOUNT_MS = 0 // 初次載入是否要先顯示，可改 1500
-const IDLE_HIDE_MS = 20000 // 靜止多久自動隱藏（20 秒）
+const IDLE_HIDE_MS = 10000 // 靜止多久自動隱藏（10 秒）
 const visible = ref(false)
 let hideTimer = null
 let ticking = false
 
 // 你的 IG 私訊連結：把 USERNAME 改為你的帳號
 const igDmUrl = 'https://ig.me/m/mmshanse'
+
+const navEl = ref(null)
 
 function showNav() {
   visible.value = true
@@ -155,21 +158,38 @@ function onScroll() {
   }
 }
 
-onMounted(() => {
+/** ⭐ 寫入 CSS 變數：導覽列實際高度 + bottom-5 的 20px */
+function writeOffsets() {
+  if (!navEl.value) return
+  const rect = navEl.value.getBoundingClientRect()
+  const bottomSpacing = 20 // bottom-5
+  const offset = Math.round(rect.height + bottomSpacing)
+  document.documentElement.style.setProperty('--floating-nav-offset', `${offset}px`)
+  document.documentElement.style.setProperty('--floating-nav-gap', `8px`)
+}
+
+let ro
+onMounted(async () => {
   if (VISIBLE_ON_MOUNT_MS > 0) {
     visible.value = true
     setTimeout(() => (visible.value = false), VISIBLE_ON_MOUNT_MS)
   }
+  await nextTick()
+  writeOffsets()
+
+  ro = new ResizeObserver(writeOffsets)
+  if (navEl.value) ro.observe(navEl.value)
+  window.addEventListener('resize', writeOffsets)
 
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('mousemove', onActivity, { passive: true })
   window.addEventListener('touchstart', onActivity, { passive: true })
   window.addEventListener('keydown', onActivity)
-
-  // 首次互動前保持隱藏；若想一載入就顯示可改成 showNav()
 })
 
 onBeforeUnmount(() => {
+  if (ro && navEl.value) ro.unobserve(navEl.value)
+  window.removeEventListener('resize', writeOffsets)
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('mousemove', onActivity)
   window.removeEventListener('touchstart', onActivity)
