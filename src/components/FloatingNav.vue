@@ -96,53 +96,62 @@ import {
   ShoppingBagIcon
 } from '@heroicons/vue/24/outline'
 
-const VISIBLE_ON_MOUNT_MS = 0
-const IDLE_HIDE_MS = 20000
-const visible = ref(false)
-let hideTimer = null
+/** 規則：
+ * 1) 進頁顯示，先給 5 秒緩衝，不隱藏
+ * 2) 緩衝後：有操作 -> 立刻隱藏；無操作滿 10 秒 -> 顯示
+ */
+const INITIAL_GRACE_MS = 5000
+const IDLE_SHOW_MS = 10000
+
+const visible = ref(true) // 一進頁就顯示
+const armed = ref(false) // 是否已過緩衝期
+let graceTimer = null
+let idleTimer = null
 let ticking = false
 
 const igDmUrl = 'https://ig.me/m/mmshanse'
 
-function showNav() {
-  visible.value = true
-  resetIdleTimer()
-}
-
-function clearTimer() {
-  if (hideTimer) {
-    clearTimeout(hideTimer)
-    hideTimer = null
+function clearGrace() {
+  if (graceTimer) {
+    clearTimeout(graceTimer)
+    graceTimer = null
   }
 }
-
-function resetIdleTimer() {
-  clearTimer()
-  hideTimer = setTimeout(() => {
-    visible.value = false
-  }, IDLE_HIDE_MS)
+function clearIdle() {
+  if (idleTimer) {
+    clearTimeout(idleTimer)
+    idleTimer = null
+  }
+}
+function scheduleShow() {
+  clearIdle()
+  idleTimer = setTimeout(() => {
+    visible.value = true
+  }, IDLE_SHOW_MS)
 }
 
+/** 任一互動：緩衝後才生效；生效時 -> 立刻隱藏並重新排程顯示 */
 function onActivity() {
-  if (!visible.value) visible.value = true
-  resetIdleTimer()
+  if (!armed.value) return
+  if (visible.value) visible.value = false
+  scheduleShow()
 }
 
 function onScroll() {
-  if (!ticking) {
-    ticking = true
-    requestAnimationFrame(() => {
-      showNav()
-      ticking = false
-    })
-  }
+  if (!armed.value) return
+  if (ticking) return
+  ticking = true
+  requestAnimationFrame(() => {
+    onActivity()
+    ticking = false
+  })
 }
 
 onMounted(() => {
-  if (VISIBLE_ON_MOUNT_MS > 0) {
-    visible.value = true
-    setTimeout(() => (visible.value = false), VISIBLE_ON_MOUNT_MS)
-  }
+  // 緩衝期：前 5 秒不隱藏、不計時
+  graceTimer = setTimeout(() => {
+    armed.value = true
+  }, INITIAL_GRACE_MS)
 
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('mousemove', onActivity, { passive: true })
@@ -151,11 +160,12 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearGrace()
+  clearIdle()
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('mousemove', onActivity)
   window.removeEventListener('touchstart', onActivity)
   window.removeEventListener('keydown', onActivity)
-  clearTimer()
 })
 </script>
 
