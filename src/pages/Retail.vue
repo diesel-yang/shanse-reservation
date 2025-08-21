@@ -25,7 +25,8 @@
     <!-- 浮動購物車 -->
     <div
       v-if="cartCount > 0"
-      class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl z-40"
+      class="fixed left-1/2 -translate-x-1/2 w-[95%] max-w-3xl drop-shadow-xl z-40"
+      :style="cartBarStyle"
     >
       <div class="bg-black text-white rounded-full flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-3">
@@ -73,6 +74,9 @@
       @close="openCheckout = false"
       @submit="submitOrder"
     />
+
+    <!-- spacer，避免被 FloatingNav 擋住 -->
+    <div aria-hidden="true" :style="bottomSpacerStyle"></div>
   </div>
 </template>
 
@@ -81,6 +85,16 @@ import { inject, ref, computed } from 'vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
+
+// ✅ 讓購物車浮在導航列上方 8px，並吃到 iOS 安全區
+const cartBarStyle = {
+  bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 8px)'
+}
+
+// ✅ 頁面底部預留空間（避免最後一排內容被擋）
+const bottomSpacerStyle = {
+  height: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 12px)'
+}
 
 /** 🔸 改這裡：直接用 App.vue provide 的零售資料 */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
