@@ -1,18 +1,32 @@
+<!-- src/pages/Retail.vue -->
 <template>
-  <!-- ✅ 加上 pagePadStyle，避免被 FloatingNav 擋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
+    <!-- 標題 -->
     <header class="mb-4">
       <h1 class="text-2xl font-bold">零售商店</h1>
       <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
     </header>
 
+    <!-- 分頁 -->
     <nav class="flex gap-2 mb-4">
       <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
+    <!-- 骨架（載入中） -->
+    <div v-if="retailLoading" class="grid grid-cols-2 sm:grid-cols-3 gap-3" aria-live="polite">
+      <div v-for="n in 6" :key="n" class="rounded-lg border overflow-hidden bg-white">
+        <div class="skeleton h-24 w-full"></div>
+        <div class="p-3 space-y-2">
+          <div class="skeleton h-3 w-5/6"></div>
+          <div class="skeleton h-3 w-2/3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品群組 -->
     <SectionCard
-      v-if="groups.items.length"
+      v-else-if="groups.items.length"
       :title="groups.title"
       :items="displayItems"
       :selectedList="[]"
@@ -20,6 +34,8 @@
       mode="retail"
       @add-to-cart="addToCart"
     />
+
+    <!-- 無商品 -->
     <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
     <!-- 浮動購物車 -->
@@ -44,6 +60,7 @@
         </div>
       </div>
 
+      <!-- 展開清單 -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in cart"
@@ -66,6 +83,7 @@
       </div>
     </div>
 
+    <!-- 結帳 Modal -->
     <ModalCheckout
       v-if="openCheckout"
       :cart="cart"
@@ -86,21 +104,21 @@ import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
-// ✅ 讓購物車浮在導航列上方 8px，並吃到 iOS 安全區
+/** 與 FloatingNav 協作：使用 --nav-height 並吃到安全區 */
 const cartBarStyle = {
   bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 8px)'
 }
-
-// ✅ 頁面底部預留空間（避免最後一排內容被擋）
 const bottomSpacerStyle = {
   height: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 12px)'
 }
+const pagePadStyle = { paddingBottom: 'var(--nav-height, 100px)' }
 
-/** 🔸 改這裡：直接用 App.vue provide 的零售資料 */
+/** 從 App 注入資料與載入狀態 */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
-const tab = ref('frozen')
+const retailLoading = inject('retailLoading', ref(true))
 
-/** 🔸 顯示資料改讀 providedRetail */
+/** 分頁狀態 */
+const tab = ref('frozen')
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
   items: providedRetail[tab.value] || []
@@ -112,7 +130,7 @@ const displayItems = computed(() =>
   }))
 )
 
-/** 購物車邏輯 */
+/** 購物車 */
 const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
@@ -124,7 +142,7 @@ const addToCart = item => {
   if (!item || item.disabled) return
   const idx = cart.value.findIndex(x => x.code === item.code)
   if (idx > -1) cart.value[idx].qty++
-  else
+  else {
     cart.value.push({
       code: item.code,
       name: item.name,
@@ -133,18 +151,15 @@ const addToCart = item => {
       unit: item.unit || '份',
       lead_days: Number(item.lead_days || 0)
     })
+  }
 }
-const inc = idx => {
-  cart.value[idx].qty++
-}
+const inc = idx => cart.value[idx].qty++
 const dec = idx => {
   if (cart.value[idx].qty > 1) cart.value[idx].qty--
 }
-const remove = idx => {
-  cart.value.splice(idx, 1)
-}
+const remove = idx => cart.value.splice(idx, 1)
 
-/** 最早可取貨日 */
+/** 最早可取貨日（取購物車中最大 lead_days） */
 const earliestPickupDate = computed(() => {
   const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -152,17 +167,12 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** UI */
+/** UI 小函式 */
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
-/** ✅ 與 Menu.vue 同步：底部留白用 CSS 變數 */
-const pagePadStyle = {
-  'padding-bottom': 'var(--nav-height, 100px)'
-}
-
-/** 送出零售訂單（打 GAS） */
+/** 送出零售訂單（POST 到 GAS） */
 async function submitOrder({ customer }) {
   const items = cart.value.map(i => ({
     code: i.code,
@@ -197,3 +207,22 @@ async function submitOrder({ customer }) {
   }
 }
 </script>
+
+<style scoped>
+/* 骨架（shimmer） */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #eee 20%, #f5f5f5 40%, #eee 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+</style>
