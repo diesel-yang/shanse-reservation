@@ -1,30 +1,32 @@
 <!-- src/pages/Retail.vue -->
 <template>
+  <!-- 避免被 FloatingNav 擋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
-    <!-- 標題 -->
     <header class="mb-4">
       <h1 class="text-2xl font-bold">零售商店</h1>
       <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
     </header>
 
-    <!-- 分頁 -->
+    <!-- 類別切換 -->
     <nav class="flex gap-2 mb-4">
       <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
-    <!-- 骨架（載入中） -->
-    <div v-if="retailLoading" class="grid grid-cols-2 sm:grid-cols-3 gap-3" aria-live="polite">
-      <div v-for="n in 6" :key="n" class="rounded-lg border overflow-hidden bg-white">
-        <div class="skeleton h-24 w-full"></div>
-        <div class="p-3 space-y-2">
-          <div class="skeleton h-3 w-5/6"></div>
-          <div class="skeleton h-3 w-2/3"></div>
+    <!-- 載入骨架（配合 App.provide 的 retailLoading） -->
+    <div v-if="retailLoading?.value" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div v-for="i in 4" :key="i" class="p-4 rounded-2xl border bg-white overflow-hidden">
+        <div class="shimmer h-32 rounded-xl mb-3"></div>
+        <div class="shimmer h-4 w-3/4 rounded mb-2"></div>
+        <div class="shimmer h-4 w-1/2 rounded mb-4"></div>
+        <div class="flex gap-2">
+          <div class="shimmer h-9 w-20 rounded-full"></div>
+          <div class="shimmer h-9 w-9 rounded-full ml-auto"></div>
         </div>
       </div>
     </div>
 
-    <!-- 商品群組 -->
+    <!-- 商品清單 -->
     <SectionCard
       v-else-if="groups.items.length"
       :title="groups.title"
@@ -34,8 +36,6 @@
       mode="retail"
       @add-to-cart="addToCart"
     />
-
-    <!-- 無商品 -->
     <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
     <!-- 浮動購物車 -->
@@ -60,7 +60,6 @@
         </div>
       </div>
 
-      <!-- 展開清單 -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in cart"
@@ -83,7 +82,7 @@
       </div>
     </div>
 
-    <!-- 結帳 Modal -->
+    <!-- 結帳 -->
     <ModalCheckout
       v-if="openCheckout"
       :cart="cart"
@@ -104,24 +103,26 @@ import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
-/** 與 FloatingNav 協作：使用 --nav-height 並吃到安全區 */
+/** 讓購物車浮在導航列上方 8px，並吃到 iOS 安全區 */
 const cartBarStyle = {
   bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 8px)'
 }
+/** 頁面底部預留空間（避免最後一排內容被擋） */
 const bottomSpacerStyle = {
   height: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 12px)'
 }
-const pagePadStyle = { paddingBottom: 'var(--nav-height, 100px)' }
+/** 與 Menu.vue 同步：底部留白用 CSS 變數 */
+const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 
-/** 從 App 注入資料與載入狀態 */
+/** 由 App.vue 注入的資料與載入旗標 */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
-const retailLoading = inject('retailLoading', ref(true))
+const retailLoading = inject('retailLoading', ref(false))
 
-/** 分頁狀態 */
+/** 類別切換 */
 const tab = ref('frozen')
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
-  items: providedRetail[tab.value] || []
+  items: providedRetail?.[tab.value] || []
 }))
 const displayItems = computed(() =>
   (groups.value.items || []).map(i => ({
@@ -130,7 +131,7 @@ const displayItems = computed(() =>
   }))
 )
 
-/** 購物車 */
+/** 購物車邏輯 */
 const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
@@ -142,7 +143,7 @@ const addToCart = item => {
   if (!item || item.disabled) return
   const idx = cart.value.findIndex(x => x.code === item.code)
   if (idx > -1) cart.value[idx].qty++
-  else {
+  else
     cart.value.push({
       code: item.code,
       name: item.name,
@@ -151,15 +152,18 @@ const addToCart = item => {
       unit: item.unit || '份',
       lead_days: Number(item.lead_days || 0)
     })
-  }
 }
-const inc = idx => cart.value[idx].qty++
+const inc = idx => {
+  cart.value[idx].qty++
+}
 const dec = idx => {
   if (cart.value[idx].qty > 1) cart.value[idx].qty--
 }
-const remove = idx => cart.value.splice(idx, 1)
+const remove = idx => {
+  cart.value.splice(idx, 1)
+}
 
-/** 最早可取貨日（取購物車中最大 lead_days） */
+/** 最早可取貨日（依購物車最大前置天數） */
 const earliestPickupDate = computed(() => {
   const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -167,13 +171,36 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** UI 小函式 */
+/** 工具：把任何輸入轉成安全的 yyyy-mm-dd（本地時區，不會因為 toISOString 被 UTC 影響而前一天） */
+function toYMDLocal(dateLike) {
+  let d
+  if (!dateLike) d = new Date()
+  else if (dateLike instanceof Date) d = new Date(dateLike.getTime())
+  else d = new Date(dateLike)
+
+  // 若使用者輸入 '2024/08/22' 或 '2024.08.22'…再試一次解析
+  if (isNaN(d)) {
+    const m = String(dateLike)
+      .trim()
+      .match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
+    if (m) d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  }
+  if (isNaN(d)) d = new Date()
+
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** UI 輔助 */
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
-/** 送出零售訂單（POST 到 GAS） */
+/** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {
+  // 組品項
   const items = cart.value.map(i => ({
     code: i.code,
     name: i.name,
@@ -181,20 +208,27 @@ async function submitOrder({ customer }) {
     qty: Number(i.qty || 1),
     unit: i.unit || '份'
   }))
+
+  // 金額
   const subtotalNum = Number(subtotal.value || 0)
   const shippingNum = customer?.method === '宅配' ? 160 : 0
+  const totalNum = subtotalNum + shippingNum
 
+  // 取貨日期（防止 RangeError: Invalid time value）
+  const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
+
+  // 送出
   const out = await gasPost({
     type: 'retailOrder',
     name: customer?.name || '',
     phone: customer?.phone || '',
     method: customer?.method || '自取',
-    pickup_date: customer?.pickup_date || earliestPickupDate.value.toISOString().slice(0, 10),
+    pickup_date: pickupYmd,
     note: customer?.note || '',
     items: JSON.stringify(items),
     subtotal: String(subtotalNum),
     shipping: String(shippingNum),
-    total: String(subtotalNum + shippingNum)
+    total: String(totalNum)
   })
 
   if (out?.result === 'success') {
@@ -209,20 +243,23 @@ async function submitOrder({ customer }) {
 </script>
 
 <style scoped>
-/* 骨架（shimmer） */
-.skeleton {
+/* shimmer 骨架 */
+.shimmer {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(90deg, #eee 20%, #f5f5f5 40%, #eee 60%);
-  background-size: 200% 100%;
-  animation: shimmer 1.2s infinite linear;
+  background: #f3f4f6;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 1.2s infinite;
 }
 @keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
   100% {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
 </style>
