@@ -13,7 +13,7 @@ import { gasGet } from '@/utils/gas' // 用於 notice 背景更新（SWR）
 
 /** -------- 全域狀態（provide 給頁面 inject） -------- */
 const menu = reactive({ main: [], drink: [], side: [], addon: [] })
-const holidays = reactive([])                // 用 splice 維持同一個 array 參考
+const holidays = reactive([]) // 用 splice 維持同一個 array 參考
 const retail = reactive({ frozen: [], dessert: [] })
 const notice = reactive([])
 
@@ -25,8 +25,8 @@ const loading = reactive({
   notice: true
 })
 // 由細分旗標自動推導整體 loading
-const loadingAll = computed(() =>
-  loading.menu || loading.holidays || loading.retail || loading.notice
+const loadingAll = computed(
+  () => loading.menu || loading.holidays || loading.retail || loading.notice
 )
 
 // 給 Retail.vue 避免「瞬間空清單」的獨立旗標
@@ -44,7 +44,7 @@ const route = useRoute()
 const showNav = computed(() => route.path !== '/')
 
 /** -------- AbortController：可中止預載 -------- */
-let preloadController: AbortController | null = null
+let preloadController = null
 
 /** -------- Notice SWR（快取過舊就背景更新） -------- */
 const NOTICE_CACHE_KEY = 'noticeCache:v1'
@@ -63,10 +63,7 @@ function prefetchNoticeIfStale() {
     .then(json => {
       if (Array.isArray(json?.data)) {
         notice.splice(0, notice.length, ...json.data) // 更新全域狀態
-        localStorage.setItem(
-          NOTICE_CACHE_KEY,
-          JSON.stringify({ data: json.data, ts: Date.now() })
-        )
+        localStorage.setItem(NOTICE_CACHE_KEY, JSON.stringify({ data: json.data, ts: Date.now() }))
       }
     })
     .catch(err => {
@@ -128,7 +125,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (preloadController) {
-    try { preloadController.abort() } catch {}
+    try {
+      preloadController.abort()
+    } catch {}
     preloadController = null
   }
   window.removeEventListener('visibilitychange', onVisibility)
