@@ -1,4 +1,5 @@
 <template>
+  <!-- ✅ 加上 pagePadStyle，避免被 FloatingNav 擋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
     <header class="mb-4">
       <h1 class="text-2xl font-bold">零售商店</h1>
@@ -10,18 +11,8 @@
       <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
     </nav>
 
-    <!-- 🔸 載入中：骨架畫面 -->
-    <div v-if="retailLoading" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <div v-for="n in 6" :key="n" class="border rounded p-3 bg-white">
-        <div class="w-full h-24 rounded bg-gray-200 animate-pulse mb-2"></div>
-        <div class="h-4 w-3/4 bg-gray-200 rounded animate-pulse mb-1"></div>
-        <div class="h-3 w-1/3 bg-gray-200 rounded animate-pulse"></div>
-      </div>
-    </div>
-
-    <!-- 🔸 有資料 -->
     <SectionCard
-      v-else-if="groups.items.length"
+      v-if="groups.items.length"
       :title="groups.title"
       :items="displayItems"
       :selectedList="[]"
@@ -29,8 +20,6 @@
       mode="retail"
       @add-to-cart="addToCart"
     />
-
-    <!-- 🔸 非載入且沒有資料 -->
     <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
     <!-- 浮動購物車 -->
@@ -86,6 +75,7 @@
       @submit="submitOrder"
     />
 
+    <!-- spacer，避免被 FloatingNav 擋住 -->
     <div aria-hidden="true" :style="bottomSpacerStyle"></div>
   </div>
 </template>
@@ -96,19 +86,21 @@ import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
+// ✅ 讓購物車浮在導航列上方 8px，並吃到 iOS 安全區
 const cartBarStyle = {
   bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 8px)'
 }
+
+// ✅ 頁面底部預留空間（避免最後一排內容被擋）
 const bottomSpacerStyle = {
   height: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 12px)'
 }
 
-/** 🔸 從 App 注入資料與載入狀態 */
+/** 🔸 改這裡：直接用 App.vue provide 的零售資料 */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
-const retailLoading = inject('retailLoading', ref(true))
-
 const tab = ref('frozen')
 
+/** 🔸 顯示資料改讀 providedRetail */
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
   items: providedRetail[tab.value] || []
@@ -120,7 +112,7 @@ const displayItems = computed(() =>
   }))
 )
 
-/** 購物車 */
+/** 購物車邏輯 */
 const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
@@ -142,11 +134,15 @@ const addToCart = item => {
       lead_days: Number(item.lead_days || 0)
     })
 }
-const inc = idx => cart.value[idx].qty++
+const inc = idx => {
+  cart.value[idx].qty++
+}
 const dec = idx => {
   if (cart.value[idx].qty > 1) cart.value[idx].qty--
 }
-const remove = idx => cart.value.splice(idx, 1)
+const remove = idx => {
+  cart.value.splice(idx, 1)
+}
 
 /** 最早可取貨日 */
 const earliestPickupDate = computed(() => {
@@ -160,9 +156,13 @@ const earliestPickupDate = computed(() => {
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 
-/** 送出零售訂單 */
+/** ✅ 與 Menu.vue 同步：底部留白用 CSS 變數 */
+const pagePadStyle = {
+  'padding-bottom': 'var(--nav-height, 100px)'
+}
+
+/** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {
   const items = cart.value.map(i => ({
     code: i.code,

@@ -16,89 +16,46 @@ const holidays = reactive([]) // 陣列用 reactive/splice 保持原型
 const retail = reactive({ frozen: [], dessert: [] })
 const notice = reactive([])
 
-// 載入狀態（細分與總和）
-const loading = reactive({
-  menu: true,
-  holidays: true,
-  retail: true,
-  notice: true,
-  all: true
-})
-
-// 額外提供給零售頁用的載入旗標（避免閃出「沒有商品」）
-const retailLoading = ref(true)
-
-// ===== provide 到各頁 =====
 provide('menu', menu)
 provide('holidays', holidays)
 provide('retail', retail)
 provide('notice', notice)
-provide('retailLoading', retailLoading) // 給 Retail.vue 判斷是否顯示骨架
 
 /** -------- UI：非首頁才顯示底部導覽 -------- */
 const route = useRoute()
 const showNav = computed(() => route.path !== '/')
 
-// ===== AbortController：可中止預載請求 =====
-let preloadController = null
+/** -------- 啟動時預載所有資料（支援 AbortController） -------- */
+const loading = ref(true)
+let preloadController // 供卸載或切換時中止請求
 
 onMounted(async () => {
   try {
     preloadController = new AbortController()
     const { signal } = preloadController
 
-    // 這裡對齊你最新版 dataLoaders：回傳 { menuData, holidayList, retailData, noticeData }
-    const { menuData, holidayList, retailData, noticeData } = await preloadAll({ signal })
+    const { menu: m, holidays: h, retail: r, notice: n } = await preloadAll({ signal })
 
-    // 寫入 menu
-    Object.assign(menu, menuData || { main: [], drink: [], side: [], addon: [] })
-    loading.menu = false
-
-    // 寫入 holidays
-    holidays.splice(0, holidays.length, ...(holidayList || []))
-    loading.holidays = false
-
-    // 寫入 retail
-    retail.frozen = retailData?.frozen || []
-    retail.dessert = retailData?.dessert || []
-    loading.retail = false
-    retailLoading.value = false
-
-    // 寫入 notice
-    if (Array.isArray(noticeData)) {
-      notice.splice(0, notice.length, ...noticeData)
-    } else {
-      notice.splice(0, notice.length) // 清空
-    }
-    loading.notice = false
+    Object.assign(menu, m)
+    holidays.splice(0, holidays.length, ...(Array.isArray(h) ? h : []))
+    Object.assign(retail, r)
+    notice.splice(0, notice.length, ...(Array.isArray(n) ? n : []))
   } catch (err) {
-    // 若被中止或失敗，填預設值並關閉 loading 旗標，避免頁面卡住
-    console.error('❌ 預載失敗或中止：', err?.message || err)
-
-    Object.assign(menu, { main: [], drink: [], side: [], addon: [] })
-    holidays.splice(0, holidays.length)
-    retail.frozen = []
-    retail.dessert = []
-    notice.splice(0, notice.length)
-
-    loading.menu = false
-    loading.holidays = false
-    loading.retail = false
-    loading.notice = false
-    retailLoading.value = false
+    if (err?.name !== 'AbortError') console.error('❌ 預載資料失敗', err)
   } finally {
-    loading.all = false
+    loading.value = false
   }
+
+  // 啟動 SWR 預抓 notice（若快取過舊）
+  prefetchNoticeIfStale()
+  window.addEventListener('visibilitychange', onVisibility)
 })
 
 onBeforeUnmount(() => {
-  // 離開 App（或 HMR 重載）時，主動中止未完成請求，避免記憶體/網路浪費
-  if (preloadController) {
-    try {
-      preloadController.abort()
-    } catch {}
-    preloadController = null
-  }
+  try {
+    preloadController?.abort()
+  } catch {}
+  window.removeEventListener('visibilitychange', onVisibility)
 })
 
 /** -------- Notice SWR：快取過舊就背景更新 -------- */
