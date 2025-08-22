@@ -1,211 +1,256 @@
 <!-- src/components/ModalCheckout.vue -->
 <template>
-  <!-- Overlay -->
-  <div class="fixed inset-0 z-[70]">
-    <div class="absolute inset-0 bg-black/40" @click="$emit('close')" />
+  <div class="fixed inset-0 z-[100]">
+    <!-- 遮罩 -->
+    <div class="absolute inset-0 bg-black/50" @click.self="$emit('close')"></div>
 
-    <!-- Modal -->
-    <div class="relative mx-auto my-4 w-[92%] max-w-md max-h-[92vh]">
-      <div class="bg-white rounded-2xl shadow-xl flex flex-col h-full overflow-hidden">
-        <!-- Header (sticky) -->
-        <header class="px-5 py-4 border-b sticky top-0 bg-white z-10">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">結帳</h3>
-            <button
-              class="w-8 h-8 grid place-items-center rounded-full hover:bg-gray-100"
-              aria-label="關閉"
-              @click="$emit('close')"
-            >
-              ✕
-            </button>
-          </div>
-        </header>
+    <!-- 視窗 -->
+    <div
+      class="absolute left-1/2 top-6 -translate-x-1/2 w-[95%] max-w-3xl pointer-events-auto"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- 標題列 -->
+        <div class="px-5 py-4 border-b flex items-center justify-between">
+          <h2 class="text-lg font-semibold">結帳</h2>
+          <button class="text-gray-500 hover:text-black" @click="$emit('close')" aria-label="關閉">
+            ✕
+          </button>
+        </div>
 
-        <!-- Body (scrollable) -->
-        <main class="flex-1 overflow-y-auto ios-scroll px-5 py-4 space-y-4">
-          <!-- 訂購人 -->
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">訂購人姓名</label>
-            <input
-              v-model.trim="local.name"
-              type="text"
-              class="w-full border rounded px-3 py-2"
-              placeholder="姓名"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">聯絡電話</label>
-            <input
-              v-model.trim="local.phone"
-              inputmode="tel"
-              class="w-full border rounded px-3 py-2"
-              placeholder="09xxxxxxxx"
-            />
-          </div>
-
-          <!-- 取貨方式 -->
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">取貨方式</label>
-            <div class="flex items-center gap-6">
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" value="到店自取" v-model="local.method" />
-                <span>到店自取</span>
-              </label>
-              <label class="inline-flex items-center gap-2">
-                <input type="radio" value="宅配" v-model="local.method" />
-                <span>宅配</span>
-              </label>
+        <!-- 內容：獨立可捲動 -->
+        <div class="px-5 py-4 grid md:grid-cols-2 gap-6 modal-scroll">
+          <!-- 左：表單 -->
+          <form class="space-y-4" @submit.prevent="onSubmit">
+            <div>
+              <label class="block text-sm mb-1">訂購人姓名</label>
+              <input
+                v-model.trim="form.name"
+                type="text"
+                class="w-full input"
+                placeholder="王小明"
+              />
+              <p v-if="errors.name" class="text-xs text-red-500 mt-1">{{ errors.name }}</p>
             </div>
-          </div>
 
-          <!-- 取貨日期 -->
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">取貨日期</label>
-            <input
-              v-model="local.pickup_date"
-              :min="minDateStr"
-              type="date"
-              class="w-full border rounded px-3 py-2"
-            />
-            <p class="text-xs text-gray-500 mt-1">最早可取：{{ minDateStrZh }}</p>
-          </div>
+            <div>
+              <label class="block text-sm mb-1">聯絡電話</label>
+              <input
+                v-model.trim="form.phone"
+                type="tel"
+                class="w-full input"
+                placeholder="09xx-xxx-xxx"
+              />
+              <p v-if="errors.phone" class="text-xs text-red-500 mt-1">{{ errors.phone }}</p>
+            </div>
 
-          <!-- 備註 -->
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">備註</label>
-            <textarea
-              v-model.trim="local.note"
-              rows="3"
-              class="w-full border rounded px-3 py-2"
-              placeholder="過敏 / 抬頭 / 發票備註…（選填）"
-            />
-          </div>
-
-          <!-- 訂單明細（可自行調整樣式） -->
-          <section class="border rounded-lg">
-            <div class="px-4 py-3 border-b font-medium">訂單明細</div>
-            <div class="max-h-48 overflow-y-auto ios-scroll divide-y">
-              <div
-                v-for="(i, idx) in cart"
-                :key="i.code + '-' + idx"
-                class="px-4 py-3 flex items-center justify-between"
-              >
-                <div class="min-w-0">
-                  <div class="font-medium truncate">{{ i.name }}</div>
-                  <div class="text-xs text-gray-500">
-                    {{ currency(i.price) }} / {{ i.unit || '份' }} × {{ i.qty }}
-                  </div>
-                </div>
-                <div class="font-medium">{{ currency(i.price * i.qty) }}</div>
+            <div>
+              <label class="block text-sm mb-2">取貨方式</label>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2">
+                  <input type="radio" value="pickup" v-model="form.method" />
+                  <span>到店自取</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="radio" value="宅配" v-model="form.method" />
+                  <span>宅配</span>
+                </label>
               </div>
             </div>
-          </section>
-        </main>
 
-        <!-- Footer (sticky & safe-area) -->
-        <footer
-          class="sticky bottom-0 bg-white z-10 border-t px-5 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)]"
-        >
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-sm text-gray-600">小計</span>
-            <span class="text-lg font-semibold">{{ currency(subtotal) }}</span>
-          </div>
+            <div v-if="form.method === 'pickup' || form.method === '到店自取'">
+              <label class="block text-sm mb-1">取貨日期</label>
+              <input
+                v-model="form.pickup_date"
+                :min="minDateStr"
+                type="date"
+                class="w-full input"
+              />
+              <p class="text-xs text-gray-500 mt-1">最早可取：{{ displayMinDate }}</p>
+              <p v-if="errors.pickup_date" class="text-xs text-red-500 mt-1">
+                {{ errors.pickup_date }}
+              </p>
+            </div>
+
+            <div v-else>
+              <label class="block text-sm mb-1">收件地址（宅配）</label>
+              <textarea
+                v-model.trim="form.address"
+                rows="3"
+                class="w-full input"
+                placeholder="郵遞區號、縣市區路、門牌與樓層"
+              ></textarea>
+              <p v-if="errors.address" class="text-xs text-red-500 mt-1">{{ errors.address }}</p>
+            </div>
+
+            <div>
+              <label class="block text-sm mb-1">備註</label>
+              <textarea
+                v-model.trim="form.note"
+                rows="2"
+                class="w-full input"
+                placeholder="過敏 / 開立公司抬頭…（選填）"
+              ></textarea>
+            </div>
+          </form>
+
+          <!-- 右：清單摘要 -->
+          <aside class="space-y-4">
+            <div class="border rounded-xl overflow-hidden">
+              <div class="px-4 py-3 bg-gray-50 border-b font-medium">訂單明細</div>
+              <div class="p-4 max-h-80 overflow-auto divide-y">
+                <div v-for="c in cart" :key="c.code" class="py-3 flex items-center justify-between">
+                  <div class="min-w-0">
+                    <div class="font-medium truncate">{{ c.name }}</div>
+                    <div class="text-xs text-gray-500">
+                      {{ currency(c.price) }} / {{ c.unit || '份' }} × {{ c.qty }}
+                    </div>
+                  </div>
+                  <div class="font-semibold">{{ currency(c.price * c.qty) }}</div>
+                </div>
+              </div>
+              <div class="px-4 py-3 bg-gray-50 flex items-center justify-between">
+                <div class="text-sm text-gray-600">小計</div>
+                <div class="text-lg font-semibold">{{ currency(subtotal) }}</div>
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-500">
+              • 商品保存方式請依標示冷凍/冷藏。<br />
+              • 宅配以低溫配送計價（可貨到 / 到店付款）。<br />
+              • 若售完或缺貨，我們會與您聯繫協調。
+            </p>
+          </aside>
+        </div>
+
+        <!-- Sticky Footer（永遠在底部） -->
+        <div class="px-5 pb-4 pt-3 sticky bottom-0 bg-white border-t">
           <button
-            class="w-full rounded-full bg-black text-white py-3 text-center disabled:opacity-50"
-            :disabled="submitting || !canSubmit"
+            class="w-full bg-black text-white rounded-full py-3 font-semibold disabled:opacity-60"
+            :disabled="submitting"
             @click="onSubmit"
           >
             {{ submitting ? '送出中…' : '送出訂單' }}
           </button>
-        </footer>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, reactive, ref, watch, onMounted } from 'vue'
 
+/* Props / Emits */
 const props = defineProps({
-  cart: { type: Array, default: () => [] },
+  cart: { type: Array, default: () => [] }, // [{code,name,price,qty,unit,lead_days}]
   subtotal: { type: Number, default: 0 },
-  earliestPickupDate: { type: [Date, String], default: null }
+  earliestPickupDate: { type: Date, required: true }
 })
 const emit = defineEmits(['close', 'submit'])
 
-/* 本地表單狀態 */
-const local = reactive({
-  name: '',
-  phone: '',
-  method: '到店自取',
-  pickup_date: '',
-  note: ''
-})
-const submitting = reactive({ v: false })
-
-/* 取貨最早日：字串 YYYY-MM-DD（避免 RangeError: Invalid time value） */
-const minDate = computed(() => {
-  const d =
-    props.earliestPickupDate instanceof Date && !isNaN(props.earliestPickupDate)
-      ? props.earliestPickupDate
-      : new Date()
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-})
-const minDateStr = computed(() => {
-  const d = minDate.value
+/* 工具 */
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+const toDateStr = d => {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+/* 保障 earliestPickupDate 合法 */
+const baseDate = computed(() => {
+  const d = props.earliestPickupDate
+  return d instanceof Date && !isNaN(d) ? d : new Date()
 })
-const minDateStrZh = computed(() => {
-  const d = minDate.value
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+const minDateStr = computed(() => toDateStr(baseDate.value))
+const displayMinDate = computed(
+  () =>
+    `${baseDate.value.getFullYear()}年${baseDate.value.getMonth() + 1}月${baseDate.value.getDate()}日`
+)
+
+/* 表單 */
+const form = reactive({
+  name: '',
+  phone: '',
+  method: 'pickup', // 'pickup' | '宅配'
+  pickup_date: '', // YYYY-MM-DD
+  address: '',
+  note: ''
 })
 
-/* 預設填入最早日期 */
+/* 初始：預設取貨日為最早日期，避免 Invalid time value */
 onMounted(() => {
-  if (!local.pickup_date) local.pickup_date = minDateStr.value
-  // 鎖背景頁捲動
-  const prev = document.documentElement.style.overflow
-  document.documentElement.style.overflow = 'hidden'
-  // 還原
-  onBeforeUnmount(() => {
-    document.documentElement.style.overflow = prev
-  })
+  form.pickup_date = minDateStr.value
 })
 
-/* 送單資格 */
-const canSubmit = computed(() => {
-  return local.name.trim() && local.phone.trim() && local.pickup_date && props.cart.length > 0
-})
+watch(
+  () => form.method,
+  v => {
+    if (v === 'pickup' || v === '到店自取') {
+      form.address = ''
+      if (!form.pickup_date) form.pickup_date = minDateStr.value
+    } else {
+      form.pickup_date = ''
+    }
+  }
+)
 
-/* 幣別格式 */
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+/* 驗證 */
+const errors = reactive({ name: '', phone: '', pickup_date: '', address: '' })
+const validate = () => {
+  errors.name = form.name ? '' : '請輸入姓名'
+  errors.phone = /^0\d{1,2}-?\d{6,8}$|^09\d{2}-?\d{3}-?\d{3}$/.test(form.phone)
+    ? ''
+    : '請輸入有效電話'
+  if (form.method === 'pickup' || form.method === '到店自取') {
+    errors.pickup_date = form.pickup_date ? '' : '請選擇取貨日期'
+    errors.address = ''
+  } else {
+    errors.address = form.address ? '' : '請輸入收件地址'
+    errors.pickup_date = ''
+  }
+  return !errors.name && !errors.phone && !errors.pickup_date && !errors.address
+}
 
-/* 送出 */
-async function onSubmit() {
-  if (!canSubmit.value || submitting.v) return
-  submitting.v = true
+/* 送出（只把資料交給父層，實際打 GAS 在 Retail.vue） */
+const submitting = ref(false)
+const onSubmit = async () => {
+  if (!props.cart?.length) return alert('購物車是空的')
+  if (!validate()) return
+
   try {
-    emit('submit', {
-      customer: {
-        name: local.name,
-        phone: local.phone,
-        method: local.method,
-        pickup_date: local.pickup_date,
-        note: local.note
-      }
-    })
+    submitting.value = true
+    const customer = {
+      name: form.name,
+      phone: form.phone,
+      method: form.method === 'pickup' ? '自取' : '宅配',
+      pickup_date: form.pickup_date,
+      address: form.address,
+      note: form.note
+    }
+    // 交給父層處理（父層成功後會關閉彈窗並清空購物車）
+    await Promise.resolve(emit('submit', { customer }))
   } finally {
-    submitting.v = false
+    submitting.value = false
   }
 }
 </script>
 
 <style scoped>
-.ios-scroll {
+.input {
+  @apply rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black/20;
+}
+/* 讓中間內容能捲動（含 iOS） */
+.modal-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 768px) {
+  .modal-scroll {
+    max-height: 80vh;
+  }
 }
 </style>
