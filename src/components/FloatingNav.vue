@@ -96,20 +96,19 @@ import {
   ShoppingBagIcon
 } from '@heroicons/vue/24/outline'
 
-/** 規則：
- * 1) 進頁顯示，先給 5 秒緩衝，不隱藏
- * 2) 緩衝後：有操作 -> 立刻隱藏；無操作滿 10 秒 -> 顯示
- */
-const INITIAL_GRACE_MS = 5000
-const IDLE_SHOW_MS = 10000
+/** 行為參數（可依需求微調） */
+const GRACE_MS = 5000 // 進頁前 5s 不隱藏
+const IDLE_SHOW_MS = 10000 // 無操作 10s 自動顯示
+const MIN_DELTA = 8 // 需要至少位移 8px 才算一次方向改變
 
-const visible = ref(true) // 一進頁就顯示
+const visible = ref(true) // 進頁顯示
 const armed = ref(false) // 是否已過緩衝期
+const igDmUrl = 'https://ig.me/m/mmshanse'
+
+let lastY = 0
+let ticking = false
 let graceTimer = null
 let idleTimer = null
-let ticking = false
-
-const igDmUrl = 'https://ig.me/m/mmshanse'
 
 function clearGrace() {
   if (graceTimer) {
@@ -123,40 +122,59 @@ function clearIdle() {
     idleTimer = null
   }
 }
-function scheduleShow() {
+function scheduleIdleShow() {
   clearIdle()
   idleTimer = setTimeout(() => {
     visible.value = true
   }, IDLE_SHOW_MS)
 }
 
-/** 任一互動：緩衝後才生效；生效時 -> 立刻隱藏並重新排程顯示 */
+/** 任何互動都重置 idle 計時 */
 function onActivity() {
   if (!armed.value) return
-  if (visible.value) visible.value = false
-  scheduleShow()
+  scheduleIdleShow()
 }
 
+/** 依捲動方向切換顯示 */
 function onScroll() {
   if (!armed.value) return
   if (ticking) return
   ticking = true
+
   requestAnimationFrame(() => {
-    onActivity()
+    const y = window.scrollY || 0
+    const dy = y - lastY
+
+    if (Math.abs(dy) >= MIN_DELTA) {
+      if (dy > 0) {
+        // 下滑 -> 隱藏
+        if (visible.value) visible.value = false
+      } else {
+        // 上滑 -> 顯示
+        if (!visible.value) visible.value = true
+      }
+      onActivity() // 捲動亦重置 idle 計時
+      lastY = y
+    }
+
     ticking = false
   })
 }
 
 onMounted(() => {
-  // 緩衝期：前 5 秒不隱藏、不計時
+  lastY = window.scrollY || 0
+
+  // 緩衝：前 5 秒不隱藏
   graceTimer = setTimeout(() => {
     armed.value = true
-  }, INITIAL_GRACE_MS)
+  }, GRACE_MS)
 
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('mousemove', onActivity, { passive: true })
   window.addEventListener('touchstart', onActivity, { passive: true })
   window.addEventListener('keydown', onActivity)
+
+  scheduleIdleShow()
 })
 
 onBeforeUnmount(() => {
@@ -180,3 +198,4 @@ onBeforeUnmount(() => {
   transform: translateY(8px);
 }
 </style>
+<!-- src/App.vue -->

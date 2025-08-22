@@ -1,3 +1,4 @@
+<!-- src/App.vue -->
 <template>
   <!-- 需要全域 gate 的話可以改成 v-if="!loadingAll" 再渲染 RouterView -->
   <RouterView />
