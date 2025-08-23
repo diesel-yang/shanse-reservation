@@ -1,10 +1,11 @@
 <template>
   <!-- 避免被 FloatingNav 擋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
-    <!-- 品牌列：與點餐頁一致的 LOGO -->
-    <header class="mb-5 flex items-center gap-3">
-      <img src="/icon/shane-logo-orange.svg" alt="山色" class="w-10 h-10 rounded-full" />
-      <h1 class="text-2xl font-bold">零售商店</h1>
+    <!-- 頂部：LOGO + 類別切換 -->
+    <header class="mb-4">
+      <div class="flex items-center justify-between">
+        <img src="/icon/shane-logo-orange.svg" alt="山色" class="h-8" />
+      </div>
     </header>
 
     <!-- 類別切換 -->
@@ -14,25 +15,23 @@
     </nav>
 
     <!-- 載入骨架（配合 App.provide 的 retailLoading） -->
-    <div v-if="retailLoading?.value" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div v-for="i in 4" :key="i" class="p-4 rounded-2xl border bg-white overflow-hidden">
-        <div class="shimmer h-32 rounded-xl mb-3"></div>
+    <div v-if="retailLoading?.value" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div v-for="i in 6" :key="i" class="p-4 rounded-2xl border bg-white overflow-hidden">
+        <div class="shimmer h-40 rounded-xl mb-3"></div>
         <div class="shimmer h-4 w-3/4 rounded mb-2"></div>
         <div class="shimmer h-4 w-1/2 rounded mb-4"></div>
-        <div class="flex gap-2">
-          <div class="shimmer h-10 w-28 rounded-md"></div>
-        </div>
+        <div class="shimmer h-10 rounded-xl"></div>
       </div>
     </div>
 
-    <!-- 商品清單（關閉標題顯示） -->
+    <!-- 商品清單（title 傳空字串 => 不顯示「冷凍即食 / 甜點」字樣） -->
     <SectionCard
       v-else-if="groups.items.length"
-      :title="''"
-      :show-title="false"
+      title=""
       :items="displayItems"
+      :selectedList="[]"
+      type="addon"
       mode="retail"
-      :in-cart-codes="inCartCodes"
       @add-to-cart="addToCart"
       @open-detail="openDetail"
     />
@@ -92,87 +91,68 @@
       @submit="submitOrder"
     />
 
-    <!-- 商品詳細視窗 -->
+    <!-- 商品詳情（Bottom Sheet） -->
     <transition name="fade">
-      <div v-if="detailOpen" class="fixed left-0 right-0 bottom-0 top-0 z-50">
+      <div v-if="detailItem" class="fixed inset-0 z-[60]">
         <!-- 遮罩 -->
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
 
         <!-- 內容 -->
         <div
-          class="absolute left-1/2 bottom-0 -translate-x-1/2 w-[100%] sm:w-[95%] max-w-3xl rounded-t-2xl bg-white overflow-hidden"
-          :style="{ maxHeight: '85vh' }"
+          class="absolute left-0 right-0 bottom-0 md:left-1/2 md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-full md:w-[720px] bg-white rounded-t-3xl md:rounded-2xl overflow-hidden max-h-[85vh] flex flex-col"
         >
           <!-- 標題列 -->
           <div class="px-5 py-4 border-b flex items-center justify-between">
-            <h2 class="text-lg font-semibold truncate">{{ detailItem?.name }}</h2>
+            <h3 class="text-lg font-semibold leading-snug">{{ detailItem?.name }}</h3>
             <button class="text-gray-500 hover:text-black" @click="closeDetail">✕</button>
           </div>
 
-          <!-- 內容 -->
-          <div class="grid md:grid-cols-2 gap-0">
-            <!-- 圖片（支援多張） -->
-            <div class="p-4">
-              <div class="relative rounded-xl overflow-hidden border">
-                <img
-                  v-if="currentImage"
-                  :src="currentImage"
-                  class="w-full h-64 object-cover"
-                  @error="onImgErr"
-                />
-                <div v-else class="h-64 grid place-items-center text-gray-400">No Image</div>
-
-                <div
-                  v-if="detailImages.length > 1"
-                  class="absolute inset-x-0 bottom-2 flex justify-center gap-2"
-                >
-                  <button
-                    v-for="(img, i) in detailImages"
-                    :key="i"
-                    class="w-2.5 h-2.5 rounded-full"
-                    :class="i === imgIdx ? 'bg-white' : 'bg-white/50'"
-                    @click="imgIdx = i"
-                  />
-                </div>
-              </div>
-
-              <div
-                v-if="detailItem?.description"
-                class="text-sm text-gray-600 mt-3 whitespace-pre-line"
-              >
-                {{ detailItem.description }}
-              </div>
+          <!-- 可滾動內容 -->
+          <div class="flex-1 overflow-y-auto">
+            <img
+              v-if="detailImage"
+              :src="detailImage"
+              alt=""
+              class="w-full max-h-[360px] object-cover"
+              @error="onDetailImgError"
+            />
+            <div
+              v-if="detailItem?.description"
+              class="px-5 py-4 text-[15px] leading-relaxed text-gray-800 whitespace-pre-line"
+            >
+              {{ detailItem.description }}
             </div>
+          </div>
 
-            <!-- 表單 -->
-            <div class="p-4 border-t md:border-l md:border-t-0 space-y-4">
-              <div class="text-xl font-bold">
-                {{ currency(Number(detailItem?.price || 0)) }}
+          <!-- 底部操作列 -->
+          <div class="border-t px-5 py-4">
+            <div class="flex items-center justify-between">
+              <!-- 價錢（不顯示 NT$） -->
+              <div class="text-xl font-bold text-gray-900">
+                {{ Number(detailItem?.price || 0).toLocaleString() }}
                 <span class="text-xs text-gray-500 ml-1">/ {{ detailItem?.unit || '份' }}</span>
               </div>
 
-              <!-- 數量步進器 -->
-              <div class="flex items-center gap-3">
+              <!-- 數量進步器（在價錢右邊） -->
+              <div class="flex items-center gap-2">
                 <button
                   class="w-9 h-9 border rounded"
                   @click="detailQty = Math.max(1, detailQty - 1)"
                 >
                   －
                 </button>
-                <div class="w-10 text-center">{{ detailQty }}</div>
+                <span class="w-6 text-center">{{ detailQty }}</span>
                 <button class="w-9 h-9 border rounded" @click="detailQty++">＋</button>
               </div>
-
-              <!-- 加入購物車 -->
-              <button
-                class="w-full py-3 rounded-md font-semibold text-white"
-                :class="inCart(detailItem?.code) ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'"
-                @click="addDetailToCart"
-                :disabled="detailItem?.disabled"
-              >
-                {{ inCart(detailItem?.code) ? '✓ 已加入購物車' : '加入購物車' }}
-              </button>
             </div>
+
+            <button
+              class="mt-3 w-full h-12 rounded-xl font-semibold text-white transition-colors"
+              :class="detailAdded ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'"
+              @click="addDetailToCart"
+            >
+              {{ detailAdded ? '✓ 已加入購物車' : '加入購物車' }}
+            </button>
           </div>
         </div>
       </div>
@@ -225,12 +205,6 @@ const openCheckout = ref(false)
 const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
 
-function inCart(code) {
-  if (!code) return false
-  return cart.value.some(x => x.code === code)
-}
-const inCartCodes = computed(() => cart.value.map(x => x.code))
-
 const addToCart = item => {
   if (!item || item.disabled) return
   const idx = cart.value.findIndex(x => x.code === item.code)
@@ -245,61 +219,11 @@ const addToCart = item => {
       lead_days: Number(item.lead_days || 0)
     })
 }
-const inc = idx => {
-  cart.value[idx].qty++
-}
+const inc = idx => cart.value[idx].qty++
 const dec = idx => {
   if (cart.value[idx].qty > 1) cart.value[idx].qty--
 }
-const remove = idx => {
-  cart.value.splice(idx, 1)
-}
-
-/** 商品詳細視窗狀態 */
-const detailOpen = ref(false)
-const detailItem = ref(null)
-const detailQty = ref(1)
-const imgIdx = ref(0)
-const detailImages = computed(() => {
-  const it = detailItem.value || {}
-  const arr = Array.isArray(it.images) ? it.images : []
-  // 後端若只有 image 單張，也一併納入
-  const singles = it.image ? [it.image] : []
-  return (arr.length ? arr : singles).filter(Boolean)
-})
-const currentImage = computed(() => detailImages.value[imgIdx.value] || '')
-
-function openDetail(item) {
-  if (!item) return
-  detailItem.value = item
-  detailQty.value = 1
-  imgIdx.value = 0
-  detailOpen.value = true
-}
-function closeDetail() {
-  detailOpen.value = false
-}
-
-function addDetailToCart() {
-  const item = detailItem.value
-  if (!item || item.disabled) return
-  const idx = cart.value.findIndex(x => x.code === item.code)
-  if (idx > -1) cart.value[idx].qty += detailQty.value
-  else {
-    cart.value.push({
-      code: item.code,
-      name: item.name,
-      price: Number(item.price || 0),
-      qty: detailQty.value,
-      unit: item.unit || '份',
-      lead_days: Number(item.lead_days || 0)
-    })
-  }
-}
-
-function onImgErr(e) {
-  e.target.style.display = 'none'
-}
+const remove = idx => cart.value.splice(idx, 1)
 
 /** 最早可取貨日（依購物車最大前置天數） */
 const earliestPickupDate = computed(() => {
@@ -309,7 +233,7 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** 工具：本地時區 y-m-d */
+/** 送出零售訂單（打 GAS） */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
@@ -327,13 +251,8 @@ function toYMDLocal(dateLike) {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
-
-/** UI 輔助 */
-const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
-/** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {
   const items = cart.value.map(i => ({
     code: i.code,
@@ -342,7 +261,6 @@ async function submitOrder({ customer }) {
     qty: Number(i.qty || 1),
     unit: i.unit || '份'
   }))
-
   const subtotalNum = Number(subtotal.value || 0)
   const shippingNum = customer?.method === '宅配' ? 160 : 0
   const totalNum = subtotalNum + shippingNum
@@ -370,6 +288,43 @@ async function submitOrder({ customer }) {
     alert('下單失敗，請稍後再試。')
   }
 }
+
+/* ====== 詳情視窗 ====== */
+const detailItem = ref(null)
+const detailQty = ref(1)
+const detailAdded = ref(false)
+
+const detailImage = computed(() => {
+  if (!detailItem.value) return ''
+  // 支援多張圖陣列 images；沒有就用 image
+  const imgs = Array.isArray(detailItem.value.images)
+    ? detailItem.value.images
+    : detailItem.value.image
+      ? [detailItem.value.image]
+      : []
+  return imgs[0] || ''
+})
+
+function openDetail(item) {
+  if (!item) return
+  detailItem.value = item
+  detailQty.value = 1
+  detailAdded.value = false
+}
+function closeDetail() {
+  detailItem.value = null
+}
+function onDetailImgError(e) {
+  e.target.style.display = 'none'
+}
+
+function addDetailToCart() {
+  if (!detailItem.value) return
+  for (let i = 0; i < detailQty.value; i++) addToCart(detailItem.value)
+  detailAdded.value = true
+  // 5 秒後恢復藍色（可自行決定是否自動關閉）
+  setTimeout(() => (detailAdded.value = false), 5000)
+}
 </script>
 
 <style scoped>
@@ -393,10 +348,10 @@ async function submitOrder({ customer }) {
   }
 }
 
-/* modal 動畫 */
+/* 詳情淡入 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.18s ease;
+  transition: opacity 0.2s ease;
 }
 .fade-enter-from,
 .fade-leave-to {
