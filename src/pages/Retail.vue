@@ -1,41 +1,37 @@
 <template>
-  <!-- 避免被 FloatingNav 擋住 -->
+  <!-- 整頁容器，底部墊高避免被 FloatingNav 蓋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
-    <!-- 頂部：LOGO + 類別切換 -->
+    <!-- 頁首：LOGO + 分頁 -->
     <header class="mb-4">
-      <div class="flex items-center justify-between">
-        <img src="/icon/shane-logo-orange.svg" alt="山色" class="h-8" />
+      <div class="flex items-center gap-3 mb-3">
+        <img src="/icon/shane-logo-orange.svg" alt="山色" class="w-8 h-8" />
+        <h1 class="text-2xl font-bold">零售商店</h1>
       </div>
+      <nav class="flex gap-2">
+        <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
+        <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
+      </nav>
     </header>
 
-    <!-- 類別切換 -->
-    <nav class="flex gap-2 mb-4">
-      <button :class="tabBtn('frozen')" @click="tab = 'frozen'">冷凍即食</button>
-      <button :class="tabBtn('dessert')" @click="tab = 'dessert'">甜點</button>
-    </nav>
-
-    <!-- 載入骨架（配合 App.provide 的 retailLoading） -->
+    <!-- 骨架（沿用 retailLoading） -->
     <div v-if="retailLoading?.value" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      <div v-for="i in 6" :key="i" class="p-4 rounded-2xl border bg-white overflow-hidden">
-        <div class="shimmer h-40 rounded-xl mb-3"></div>
+      <div v-for="i in 6" :key="i" class="rounded-2xl border bg-white overflow-hidden p-3">
+        <div class="shimmer h-28 rounded-xl mb-3"></div>
         <div class="shimmer h-4 w-3/4 rounded mb-2"></div>
-        <div class="shimmer h-4 w-1/2 rounded mb-4"></div>
-        <div class="shimmer h-10 rounded-xl"></div>
+        <div class="shimmer h-4 w-1/2 rounded mb-3"></div>
+        <div class="shimmer h-10 w-full rounded"></div>
       </div>
     </div>
 
-    <!-- 商品清單（title 傳空字串 => 不顯示「冷凍即食 / 甜點」字樣） -->
+    <!-- 商品清單 -->
     <SectionCard
-      v-else-if="groups.items.length"
-      title=""
+      v-else
+      :title="groups.title"
       :items="displayItems"
-      :selectedList="[]"
-      type="addon"
       mode="retail"
       @add-to-cart="addToCart"
       @open-detail="openDetail"
     />
-    <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
     <!-- 浮動購物車 -->
     <div
@@ -81,7 +77,7 @@
       </div>
     </div>
 
-    <!-- 結帳 -->
+    <!-- 結帳視窗 -->
     <ModalCheckout
       v-if="openCheckout"
       :cart="cart"
@@ -91,68 +87,68 @@
       @submit="submitOrder"
     />
 
-    <!-- 商品詳情（Bottom Sheet） -->
+    <!-- 商品詳情視窗 -->
     <transition name="fade">
-      <div v-if="detailItem" class="fixed inset-0 z-[60]">
+      <div v-if="detail" class="fixed left-0 right-0 top-0 bottom-0 z-[60]">
         <!-- 遮罩 -->
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
 
-        <!-- 內容 -->
+        <!-- 內容：可滾動 + 底部固定操作列；rounded-none -->
         <div
-          class="absolute left-0 right-0 bottom-0 md:left-1/2 md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 w-full md:w-[720px] bg-white rounded-t-3xl md:rounded-2xl overflow-hidden max-h-[85vh] flex flex-col"
+          class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white rounded-none shadow-xl flex flex-col"
         >
           <!-- 標題列 -->
           <div class="px-5 py-4 border-b flex items-center justify-between">
-            <h3 class="text-lg font-semibold leading-snug">{{ detailItem?.name }}</h3>
+            <h2 class="text-lg font-semibold truncate">{{ detail.name }}</h2>
             <button class="text-gray-500 hover:text-black" @click="closeDetail">✕</button>
           </div>
 
-          <!-- 可滾動內容 -->
-          <div class="flex-1 overflow-y-auto">
-            <img
-              v-if="detailImage"
-              :src="detailImage"
-              alt=""
-              class="w-full max-h-[360px] object-cover"
-              @error="onDetailImgError"
-            />
-            <div
-              v-if="detailItem?.description"
-              class="px-5 py-4 text-[15px] leading-relaxed text-gray-800 whitespace-pre-line"
-            >
-              {{ detailItem.description }}
+          <!-- 內容可捲動 -->
+          <div class="flex-1 overflow-auto">
+            <div v-if="detail.image" class="aspect-[16/10] w-full overflow-hidden">
+              <img :src="detail.image" alt="" class="w-full h-full object-cover" />
+            </div>
+            <div class="px-5 py-4 space-y-3">
+              <div class="text-sm text-gray-700 whitespace-pre-line">
+                {{ detail.description || detail.note || '' }}
+              </div>
             </div>
           </div>
 
-          <!-- 底部操作列 -->
-          <div class="border-t px-5 py-4">
-            <div class="flex items-center justify-between">
-              <!-- 價錢（不顯示 NT$） -->
-              <div class="text-xl font-bold text-gray-900">
-                {{ Number(detailItem?.price || 0).toLocaleString() }}
-                <span class="text-xs text-gray-500 ml-1">/ {{ detailItem?.unit || '份' }}</span>
+          <!-- 底部操作列（固定） -->
+          <div class="border-t px-5 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <!-- 價格（無 NT 前綴） -->
+              <div class="text-xl font-semibold shrink-0">
+                {{ Number(detail.price || 0).toLocaleString() }}
+                <span class="text-xs text-gray-500">/ {{ detail.unit || '份' }}</span>
               </div>
 
-              <!-- 數量進步器（在價錢右邊） -->
+              <!-- 數量進步器（在價格右側） -->
               <div class="flex items-center gap-2">
                 <button
-                  class="w-9 h-9 border rounded"
+                  class="w-10 h-10 rounded border"
                   @click="detailQty = Math.max(1, detailQty - 1)"
                 >
                   －
                 </button>
-                <span class="w-6 text-center">{{ detailQty }}</span>
-                <button class="w-9 h-9 border rounded" @click="detailQty++">＋</button>
+                <span class="w-8 text-center">{{ detailQty }}</span>
+                <button class="w-10 h-10 rounded border" @click="detailQty++">＋</button>
               </div>
-            </div>
 
-            <button
-              class="mt-3 w-full h-12 rounded-xl font-semibold text-white transition-colors"
-              :class="detailAdded ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'"
-              @click="addDetailToCart"
-            >
-              {{ detailAdded ? '✓ 已加入購物車' : '加入購物車' }}
-            </button>
+              <!-- 加入按鈕 -->
+              <button
+                class="flex-1 h-12 rounded-lg font-semibold transition"
+                :class="
+                  detailJoined
+                    ? 'bg-green-600 text-white'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                "
+                @click="addDetailToCart"
+              >
+                {{ detailJoined ? '✓ 已加入購物車' : '加入購物車' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -169,22 +165,20 @@ import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
-/** 讓購物車浮在導航列上方 8px，並吃到 iOS 安全區 */
+/** --- 版面微調：底部留白配合 FloatingNav --- */
 const cartBarStyle = {
   bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 8px)'
 }
-/** 頁面底部預留空間（避免最後一排內容被擋） */
 const bottomSpacerStyle = {
   height: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 12px)'
 }
-/** 與 Menu.vue 同步：底部留白用 CSS 變數 */
 const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 
-/** 由 App.vue 注入的資料與載入旗標 */
+/** --- 由 App.vue 注入資料 --- */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const retailLoading = inject('retailLoading', ref(false))
 
-/** 類別切換 */
+/** --- 類別切換 --- */
 const tab = ref('frozen')
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
@@ -197,7 +191,7 @@ const displayItems = computed(() =>
   }))
 )
 
-/** 購物車邏輯 */
+/** --- 購物車 --- */
 const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
@@ -205,27 +199,26 @@ const openCheckout = ref(false)
 const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
 
-const addToCart = item => {
+function addToCart(item, qty = 1) {
   if (!item || item.disabled) return
+  const n = Math.max(1, Number(qty || 1))
   const idx = cart.value.findIndex(x => x.code === item.code)
-  if (idx > -1) cart.value[idx].qty++
+  if (idx > -1) cart.value[idx].qty += n
   else
     cart.value.push({
       code: item.code,
       name: item.name,
       price: Number(item.price || 0),
-      qty: 1,
+      qty: n,
       unit: item.unit || '份',
       lead_days: Number(item.lead_days || 0)
     })
 }
 const inc = idx => cart.value[idx].qty++
-const dec = idx => {
-  if (cart.value[idx].qty > 1) cart.value[idx].qty--
-}
+const dec = idx => (cart.value[idx].qty = Math.max(1, cart.value[idx].qty - 1))
 const remove = idx => cart.value.splice(idx, 1)
 
-/** 最早可取貨日（依購物車最大前置天數） */
+/** --- 最早可取貨日（依購物車最大前置天數） --- */
 const earliestPickupDate = computed(() => {
   const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -233,7 +226,43 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** 送出零售訂單（打 GAS） */
+/** --- 工具 --- */
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+const tabBtn = t =>
+  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
+
+/** --- 商品詳情視窗邏輯 --- */
+const detail = ref(null) // 目前開啟的商品
+const detailQty = ref(1)
+const detailJoined = ref(false)
+let detailTimer = null
+
+function openDetail(item) {
+  if (!item) return
+  detail.value = item
+  detailQty.value = 1
+  detailJoined.value = false
+  if (detailTimer) {
+    clearTimeout(detailTimer)
+    detailTimer = null
+  }
+}
+function closeDetail() {
+  detail.value = null
+  if (detailTimer) {
+    clearTimeout(detailTimer)
+    detailTimer = null
+  }
+}
+function addDetailToCart() {
+  if (!detail.value) return
+  addToCart(detail.value, detailQty.value)
+  detailJoined.value = true
+  if (detailTimer) clearTimeout(detailTimer)
+  detailTimer = setTimeout(() => (detailJoined.value = false), 5000)
+}
+
+/** --- 送單（GAS） --- */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
@@ -251,8 +280,6 @@ function toYMDLocal(dateLike) {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-
 async function submitOrder({ customer }) {
   const items = cart.value.map(i => ({
     code: i.code,
@@ -288,43 +315,6 @@ async function submitOrder({ customer }) {
     alert('下單失敗，請稍後再試。')
   }
 }
-
-/* ====== 詳情視窗 ====== */
-const detailItem = ref(null)
-const detailQty = ref(1)
-const detailAdded = ref(false)
-
-const detailImage = computed(() => {
-  if (!detailItem.value) return ''
-  // 支援多張圖陣列 images；沒有就用 image
-  const imgs = Array.isArray(detailItem.value.images)
-    ? detailItem.value.images
-    : detailItem.value.image
-      ? [detailItem.value.image]
-      : []
-  return imgs[0] || ''
-})
-
-function openDetail(item) {
-  if (!item) return
-  detailItem.value = item
-  detailQty.value = 1
-  detailAdded.value = false
-}
-function closeDetail() {
-  detailItem.value = null
-}
-function onDetailImgError(e) {
-  e.target.style.display = 'none'
-}
-
-function addDetailToCart() {
-  if (!detailItem.value) return
-  for (let i = 0; i < detailQty.value; i++) addToCart(detailItem.value)
-  detailAdded.value = true
-  // 5 秒後恢復藍色（可自行決定是否自動關閉）
-  setTimeout(() => (detailAdded.value = false), 5000)
-}
 </script>
 
 <style scoped>
@@ -348,10 +338,9 @@ function addDetailToCart() {
   }
 }
 
-/* 詳情淡入 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 .fade-enter-from,
 .fade-leave-to {

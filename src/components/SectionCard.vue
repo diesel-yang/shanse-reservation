@@ -1,9 +1,8 @@
 <template>
   <div class="mb-4">
-    <!-- 標題：給空字串就不顯示 -->
-    <h4 v-if="title" class="text-xl font-bold text-orange-600 mb-3">{{ title }}</h4>
+    <h4 class="text-xl font-bold text-orange-600 mb-3">{{ title }}</h4>
 
-    <!-- 零售版：大卡片 + 底部「加入購物車」長條按鈕 -->
+    <!-- 零售卡片版 -->
     <div v-if="mode === 'retail'" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
@@ -13,63 +12,55 @@
         <!-- 售完遮罩 -->
         <div
           v-if="item.disabled"
-          class="absolute inset-0 z-10 grid place-items-center bg-white/70 text-red-500 font-semibold select-none"
+          class="absolute inset-0 z-10 grid place-items-center bg-white/70 text-red-500 font-semibold"
         >
           售完／補貨中
         </div>
 
-        <!-- 圖片（點圖開詳情） -->
-        <button type="button" class="w-full" @click.stop="$emit('open-detail', item)">
+        <!-- 圖片（點擊開詳情） -->
+        <button class="text-left" @click="emit('open-detail', item)" :disabled="item.disabled">
           <img
             v-if="item.image"
             :src="item.image"
             alt=""
-            class="w-full h-40 object-cover"
+            class="w-full h-28 object-cover"
             @error="handleImgError"
           />
-          <div v-else class="w-full h-40 bg-gray-100"></div>
         </button>
 
-        <!-- 內容 -->
+        <!-- 文字區（點擊開詳情） -->
         <div class="p-3 flex-1 flex flex-col">
-          <!-- 名稱（點名稱也可看詳情） -->
-          <button
-            type="button"
-            class="text-sm font-semibold text-gray-900 text-left line-clamp-2 min-h-[2.5rem]"
-            @click.stop="$emit('open-detail', item)"
-          >
-            {{ item.name }}
+          <button class="text-left" @click="emit('open-detail', item)" :disabled="item.disabled">
+            <div class="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
+              {{ item.name }}
+            </div>
+            <div class="mt-1 text-base font-bold text-gray-900">
+              {{ currency(item.price) }}
+              <span class="text-xs text-gray-500">/ {{ item.unit || '份' }}</span>
+            </div>
+            <div v-if="item.note" class="mt-1 text-xs text-gray-500 line-clamp-1">
+              {{ item.note }}
+            </div>
           </button>
 
-          <!-- 價格與單位 -->
-          <div class="mt-1 text-base font-bold text-gray-900">
-            {{ number(item.price) }}
-            <span class="text-xs text-gray-500 ml-1">/ {{ item.unit || '份' }}</span>
-          </div>
-
-          <!-- 備註 -->
-          <div v-if="item.note" class="mt-1 text-xs text-gray-500 line-clamp-1">
-            {{ item.note }}
-          </div>
-
-          <!-- 底部：加入購物車按鈕（長條） -->
-          <div class="mt-3">
-            <button
-              type="button"
-              class="w-full h-10 rounded-xl font-semibold transition-colors"
-              :class="btnClass(item)"
-              :disabled="item.disabled"
-              @click.stop="handleAdd(item)"
-            >
-              <template v-if="justAdded[item.code]"> ✓ 已加入購物車 </template>
-              <template v-else> 加入購物車 </template>
-            </button>
-          </div>
+          <!-- 底部加入購物車按鈕（藍底/綠底 5 秒恢復） -->
+          <button
+            class="mt-3 h-10 rounded-lg font-semibold transition"
+            :class="
+              joined[item.code]
+                ? 'bg-green-600 text-white'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            "
+            :disabled="item.disabled"
+            @click.stop="onAdd(item)"
+          >
+            {{ joined[item.code] ? '✓ 已加入購物車' : '加入購物車' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- 一般菜單版（原樣保持） -->
+    <!-- 原一般菜單版（保留） -->
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
@@ -82,7 +73,7 @@
           'as-button': type === 'addon'
         }"
       >
-        <!-- 限訂 / 熱湯 / 熱飲 ICON -->
+        <!-- ICONs -->
         <img
           v-if="item.note?.includes('限預訂') || item.note?.includes('限訂')"
           src="/icon/limited.svg"
@@ -111,7 +102,7 @@
         />
         <div class="text-sm font-semibold text-gray-900">{{ item.name }}</div>
         <div v-if="type === 'addon' && item.price > 0" class="text-xs text-gray-800 mt-0.5">
-          {{ number(item.price) }} 元
+          {{ item.price }} 元
         </div>
         <div v-if="item.disabled" class="text-xs text-red-500 mt-1">售完／補貨中</div>
       </div>
@@ -120,7 +111,7 @@
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { reactive, computed } from 'vue'
 
 const props = defineProps({
   title: String,
@@ -132,41 +123,34 @@ const props = defineProps({
 })
 const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
-/* ====== 零售卡片：本地「已加入」暫態（5 秒） ====== */
-const justAdded = reactive({}) // { [code]: true }
-const ADDED_MS = 5000
+/** 卡片加入按鈕：5 秒綠底後恢復藍底 */
+const joined = reactive({}) // { [code]: boolean }
+const timers = {} // { [code]: number }
 
-function handleAdd(item) {
+function onAdd(item) {
   if (!item || item.disabled) return
   emit('add-to-cart', item)
-  justAdded[item.code] = true
-  setTimeout(() => (justAdded[item.code] = false), ADDED_MS)
-}
-const btnClass = item => {
-  if (item.disabled) return 'bg-gray-200 text-gray-400 cursor-not-allowed'
-  return justAdded[item.code]
-    ? 'bg-green-600 text-white'
-    : 'bg-blue-600 text-white hover:bg-blue-700'
+  joined[item.code] = true
+  if (timers[item.code]) clearTimeout(timers[item.code])
+  timers[item.code] = setTimeout(() => (joined[item.code] = false), 5000)
 }
 
-/* ====== 一般菜單卡 ====== */
+/** 一般菜單版點擊行為（保留） */
 const handleClick = item => {
   if (!item || item.disabled) return
   if (props.mode === 'retail') {
-    handleAdd(item)
+    emit('add-to-cart', item)
   } else if (props.type === 'addon') {
     emit('toggle', item.code)
   } else {
     emit('preview', item)
   }
 }
-const isSelected = code => {
-  return props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
-}
 
+const isSelected = code =>
+  props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
 const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
-const number = n => Number(n || 0).toLocaleString()
-
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 function handleImgError(e) {
   e.target.style.display = 'none'
 }
