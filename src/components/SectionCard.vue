@@ -120,8 +120,8 @@ const props = defineProps({
   selectedCode: String,
   selectedList: Array,
   type: String,
-  mode: { type: String, default: 'menu' } // 'menu' | 'retail'
-    hideTitle: { type: Boolean, default: false } // ← 新增
+  mode: { type: String, default: 'menu' }, // 'menu' | 'retail'
+  hideTitle: { type: Boolean, default: false } // 新增
 })
 const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
