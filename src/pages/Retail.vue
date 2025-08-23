@@ -1,11 +1,10 @@
 <template>
   <!-- 避免被 FloatingNav 擋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
-    <!-- 頂部：品牌 Logo 與標題 -->
-    <header class="mb-4 flex items-center gap-3">
-      <img src="/icon/shane-logo-orange.svg" alt="山色" class="w-10 h-10 object-contain" />
+    <!-- 品牌列：與點餐頁一致的 LOGO -->
+    <header class="mb-5 flex items-center gap-3">
+      <img src="/icon/shane-logo-orange.svg" alt="山色" class="w-10 h-10 rounded-full" />
       <h1 class="text-2xl font-bold">零售商店</h1>
-      <!-- ✂️ 移除副標 -->
     </header>
 
     <!-- 類別切換 -->
@@ -21,69 +20,23 @@
         <div class="shimmer h-4 w-3/4 rounded mb-2"></div>
         <div class="shimmer h-4 w-1/2 rounded mb-4"></div>
         <div class="flex gap-2">
-          <div class="shimmer h-10 w-28 rounded-lg"></div>
+          <div class="shimmer h-10 w-28 rounded-md"></div>
         </div>
       </div>
     </div>
 
-    <!-- 商品清單 -->
-    <div v-else>
-      <!-- ✂️ 移除大標題：冷凍即食/甜點 -->
-
-      <div v-if="displayItems.length" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <article
-          v-for="it in displayItems"
-          :key="it.code"
-          class="p-4 rounded-2xl border bg-white overflow-hidden cursor-pointer group"
-          @click="openItem(it)"
-        >
-          <div class="relative">
-            <img
-              :src="firstImage(it)"
-              alt=""
-              class="w-full h-40 object-cover rounded-xl mb-3"
-              loading="lazy"
-            />
-            <div
-              v-if="it.disabled"
-              class="absolute inset-0 bg-white/70 rounded-xl flex items-center justify-center text-red-500 font-semibold text-lg"
-            >
-              售完 / 補貨中
-            </div>
-          </div>
-
-          <div class="min-h-[3.5rem]">
-            <h3 class="font-semibold leading-snug line-clamp-2">
-              {{ it.name }}
-            </h3>
-          </div>
-          <div class="text-gray-500 text-sm mb-3">
-            {{ it.note || it.description || '' }}
-          </div>
-
-          <div class="flex items-center justify-between">
-            <div class="text-lg font-semibold">{{ currency(it.price) }}</div>
-
-            <!-- 加入購物車按鈕（卡片上的） -->
-            <button
-              class="px-3 h-10 rounded-lg text-white text-sm font-medium transition-colors"
-              :class="
-                inCart(it.code)
-                  ? 'bg-emerald-600 hover:bg-emerald-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              "
-              :disabled="it.disabled"
-              @click.stop="quickAdd(it)"
-            >
-              <span v-if="inCart(it.code)">✓ 已加入</span>
-              <span v-else>加入購物車</span>
-            </button>
-          </div>
-        </article>
-      </div>
-
-      <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
-    </div>
+    <!-- 商品清單（關閉標題顯示） -->
+    <SectionCard
+      v-else-if="groups.items.length"
+      :title="''"
+      :show-title="false"
+      :items="displayItems"
+      mode="retail"
+      :in-cart-codes="inCartCodes"
+      @add-to-cart="addToCart"
+      @open-detail="openDetail"
+    />
+    <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
 
     <!-- 浮動購物車 -->
     <div
@@ -129,15 +82,6 @@
       </div>
     </div>
 
-    <!-- 商品視窗 -->
-    <ItemModal
-      v-if="active"
-      :item="active"
-      :in-cart="inCart(active.code)"
-      @close="active = null"
-      @add="addWithQty"
-    />
-
     <!-- 結帳 -->
     <ModalCheckout
       v-if="openCheckout"
@@ -148,13 +92,100 @@
       @submit="submitOrder"
     />
 
+    <!-- 商品詳細視窗 -->
+    <transition name="fade">
+      <div v-if="detailOpen" class="fixed left-0 right-0 bottom-0 top-0 z-50">
+        <!-- 遮罩 -->
+        <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
+
+        <!-- 內容 -->
+        <div
+          class="absolute left-1/2 bottom-0 -translate-x-1/2 w-[100%] sm:w-[95%] max-w-3xl rounded-t-2xl bg-white overflow-hidden"
+          :style="{ maxHeight: '85vh' }"
+        >
+          <!-- 標題列 -->
+          <div class="px-5 py-4 border-b flex items-center justify-between">
+            <h2 class="text-lg font-semibold truncate">{{ detailItem?.name }}</h2>
+            <button class="text-gray-500 hover:text-black" @click="closeDetail">✕</button>
+          </div>
+
+          <!-- 內容 -->
+          <div class="grid md:grid-cols-2 gap-0">
+            <!-- 圖片（支援多張） -->
+            <div class="p-4">
+              <div class="relative rounded-xl overflow-hidden border">
+                <img
+                  v-if="currentImage"
+                  :src="currentImage"
+                  class="w-full h-64 object-cover"
+                  @error="onImgErr"
+                />
+                <div v-else class="h-64 grid place-items-center text-gray-400">No Image</div>
+
+                <div
+                  v-if="detailImages.length > 1"
+                  class="absolute inset-x-0 bottom-2 flex justify-center gap-2"
+                >
+                  <button
+                    v-for="(img, i) in detailImages"
+                    :key="i"
+                    class="w-2.5 h-2.5 rounded-full"
+                    :class="i === imgIdx ? 'bg-white' : 'bg-white/50'"
+                    @click="imgIdx = i"
+                  />
+                </div>
+              </div>
+
+              <div
+                v-if="detailItem?.description"
+                class="text-sm text-gray-600 mt-3 whitespace-pre-line"
+              >
+                {{ detailItem.description }}
+              </div>
+            </div>
+
+            <!-- 表單 -->
+            <div class="p-4 border-t md:border-l md:border-t-0 space-y-4">
+              <div class="text-xl font-bold">
+                {{ currency(Number(detailItem?.price || 0)) }}
+                <span class="text-xs text-gray-500 ml-1">/ {{ detailItem?.unit || '份' }}</span>
+              </div>
+
+              <!-- 數量步進器 -->
+              <div class="flex items-center gap-3">
+                <button
+                  class="w-9 h-9 border rounded"
+                  @click="detailQty = Math.max(1, detailQty - 1)"
+                >
+                  －
+                </button>
+                <div class="w-10 text-center">{{ detailQty }}</div>
+                <button class="w-9 h-9 border rounded" @click="detailQty++">＋</button>
+              </div>
+
+              <!-- 加入購物車 -->
+              <button
+                class="w-full py-3 rounded-md font-semibold text-white"
+                :class="inCart(detailItem?.code) ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'"
+                @click="addDetailToCart"
+                :disabled="detailItem?.disabled"
+              >
+                {{ inCart(detailItem?.code) ? '✓ 已加入購物車' : '加入購物車' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- spacer，避免被 FloatingNav 擋住 -->
     <div aria-hidden="true" :style="bottomSpacerStyle"></div>
   </div>
 </template>
 
 <script setup>
-import { inject, ref, computed, defineComponent } from 'vue'
+import { inject, ref, computed } from 'vue'
+import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
@@ -175,40 +206,32 @@ const retailLoading = inject('retailLoading', ref(false))
 
 /** 類別切換 */
 const tab = ref('frozen')
-const items = computed(() => providedRetail?.[tab.value] || [])
+const groups = computed(() => ({
+  title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
+  items: providedRetail?.[tab.value] || []
+}))
 const displayItems = computed(() =>
-  (items.value || []).map(i => ({
+  (groups.value.items || []).map(i => ({
     ...i,
     disabled: Boolean(i.stop || Number(i.stock ?? 0) <= 0)
   }))
 )
 
-/** 工具 */
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-const firstImage = it => {
-  if (Array.isArray(it.image) && it.image.length) return it.image[0]
-  if (typeof it.image === 'string' && it.image.trim()) {
-    const parts = it.image.split(',').map(s => s.trim()).filter(Boolean)
-    return parts[0] || '/placeholder.png'
-  }
-  return '/placeholder.png'
-}
-
-/** UI：tab 按鈕 */
-const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
-
 /** 購物車邏輯 */
 const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
-const active = ref(null) // 目前打開詳情視窗的商品
 
-const inCart = code => cart.value.some(i => i.code === code)
 const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
 
-const quickAdd = item => {
+function inCart(code) {
+  if (!code) return false
+  return cart.value.some(x => x.code === code)
+}
+const inCartCodes = computed(() => cart.value.map(x => x.code))
+
+const addToCart = item => {
   if (!item || item.disabled) return
   const idx = cart.value.findIndex(x => x.code === item.code)
   if (idx > -1) cart.value[idx].qty++
@@ -222,27 +245,61 @@ const quickAdd = item => {
       lead_days: Number(item.lead_days || 0)
     })
 }
+const inc = idx => {
+  cart.value[idx].qty++
+}
+const dec = idx => {
+  if (cart.value[idx].qty > 1) cart.value[idx].qty--
+}
+const remove = idx => {
+  cart.value.splice(idx, 1)
+}
 
-const addWithQty = ({ item, qty }) => {
-  if (!item || item.disabled || !qty) return
+/** 商品詳細視窗狀態 */
+const detailOpen = ref(false)
+const detailItem = ref(null)
+const detailQty = ref(1)
+const imgIdx = ref(0)
+const detailImages = computed(() => {
+  const it = detailItem.value || {}
+  const arr = Array.isArray(it.images) ? it.images : []
+  // 後端若只有 image 單張，也一併納入
+  const singles = it.image ? [it.image] : []
+  return (arr.length ? arr : singles).filter(Boolean)
+})
+const currentImage = computed(() => detailImages.value[imgIdx.value] || '')
+
+function openDetail(item) {
+  if (!item) return
+  detailItem.value = item
+  detailQty.value = 1
+  imgIdx.value = 0
+  detailOpen.value = true
+}
+function closeDetail() {
+  detailOpen.value = false
+}
+
+function addDetailToCart() {
+  const item = detailItem.value
+  if (!item || item.disabled) return
   const idx = cart.value.findIndex(x => x.code === item.code)
-  if (idx > -1) cart.value[idx].qty += qty
-  else
+  if (idx > -1) cart.value[idx].qty += detailQty.value
+  else {
     cart.value.push({
       code: item.code,
       name: item.name,
       price: Number(item.price || 0),
-      qty: qty,
+      qty: detailQty.value,
       unit: item.unit || '份',
       lead_days: Number(item.lead_days || 0)
     })
+  }
 }
 
-const inc = idx => (cart.value[idx].qty++)
-const dec = idx => { if (cart.value[idx].qty > 1) cart.value[idx].qty-- }
-const remove = idx => cart.value.splice(idx, 1)
-
-const openItem = it => { active.value = it }
+function onImgErr(e) {
+  e.target.style.display = 'none'
+}
 
 /** 最早可取貨日（依購物車最大前置天數） */
 const earliestPickupDate = computed(() => {
@@ -252,14 +309,16 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** 把任何輸入轉成 yyyy-mm-dd（本地時區） */
+/** 工具：本地時區 y-m-d */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
   else if (dateLike instanceof Date) d = new Date(dateLike.getTime())
   else d = new Date(dateLike)
   if (isNaN(d)) {
-    const m = String(dateLike).trim().match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
+    const m = String(dateLike)
+      .trim()
+      .match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
     if (m) d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
   }
   if (isNaN(d)) d = new Date()
@@ -268,6 +327,11 @@ function toYMDLocal(dateLike) {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
+
+/** UI 輔助 */
+const tabBtn = t =>
+  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
 /** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {
@@ -306,95 +370,6 @@ async function submitOrder({ customer }) {
     alert('下單失敗，請稍後再試。')
   }
 }
-
-/** ========== 內部元件：商品詳情視窗 ========== */
-const ItemModal = defineComponent({
-  name: 'ItemModal',
-  props: {
-    item: { type: Object, required: true },
-    inCart: { type: Boolean, default: false }
-  },
-  emits: ['close', 'add'],
-  setup(props, { emit }) {
-    const qty = ref(1)
-    const imgs = computed(() => {
-      const v = props.item?.image
-      if (Array.isArray(v)) return v.filter(Boolean)
-      if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean)
-      return []
-    })
-    const idx = ref(0)
-    const show = src => (idx.value = Math.max(0, imgs.value.indexOf(src)))
-    const next = () => (idx.value = (idx.value + 1) % Math.max(imgs.value.length || 1, 1))
-    const prev = () => (idx.value = (idx.value - 1 + Math.max(imgs.value.length || 1, 1)) % Math.max(imgs.value.length || 1, 1))
-
-    const add = () => emit('add', { item: props.item, qty: qty.value })
-
-    return () => (
-      <div class="fixed inset-0 z-50">
-        <div class="absolute inset-0 bg-black/50" onClick={() => emit('close')}></div>
-
-        <!-- 覆蓋層：貼齊底邊，無圓角 -->
-        <div class="absolute left-0 right-0 bottom-0 w-full">
-          <div class="bg-white rounded-none overflow-hidden shadow-xl max-h-[90vh] flex flex-col">
-            <!-- 標題列 -->
-            <div class="px-5 py-4 border-b flex items-center justify-between">
-              <h2 class="text-lg font-semibold">{ props.item?.name || '商品' }</h2>
-              <button class="text-gray-500 hover:text-black" onClick={() => emit('close')}>✕</button>
-            </div>
-
-            <!-- 內容 -->
-            <div class="flex-1 overflow-y-auto p-5 grid md:grid-cols-2 gap-6">
-              <!-- 相片 -->
-              <div>
-                <div class="relative">
-                  <img
-                    src={ imgs.value[idx.value] || '/placeholder.png' }
-                    alt=""
-                    class="w-full h-64 object-cover rounded-xl"
-                  />
-                  <button class="absolute inset-y-0 left-2 my-auto bg-black/50 text-white rounded-full w-8 h-8" onClick={prev}>‹</button>
-                  <button class="absolute inset-y-0 right-2 my-auto bg-black/50 text-white rounded-full w-8 h-8" onClick={next}>›</button>
-                </div>
-                <div class="mt-3 flex gap-2 overflow-x-auto">
-                  { imgs.value.map(src => (
-                    <img
-                      src={src}
-                      class={'w-16 h-16 object-cover rounded-md border ' + (src === imgs.value[idx.value] ? 'border-black' : 'border-transparent')}
-                      onClick={() => show(src)}
-                    />
-                  )) }
-                </div>
-              </div>
-
-              <!-- 資訊 -->
-              <div class="space-y-4">
-                <div class="text-2xl font-semibold">{ `NT$ ${Number(props.item?.price || 0).toLocaleString()}` }</div>
-                <p class="text-gray-600 whitespace-pre-line">{ props.item?.description || props.item?.note || '' }</p>
-
-                <!-- 數量 -->
-                <div class="flex items-center gap-3">
-                  <span class="text-sm text-gray-600">數量</span>
-                  <button class="px-2 py-1 border rounded" onClick={() => qty.value = Math.max(1, qty.value - 1)}>－</button>
-                  <span class="w-8 text-center">{ qty.value }</span>
-                  <button class="px-2 py-1 border rounded" onClick={() => qty.value++}>＋</button>
-                </div>
-
-                <!-- 加入按鈕 -->
-                <button
-                  class={'w-full h-11 rounded-lg text-white font-medium ' + (props.inCart ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700')}
-                  onClick={add}
-                >
-                  { props.inCart ? '✓ 已加入購物車' : '加入購物車' }
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-})
 </script>
 
 <style scoped>
@@ -416,5 +391,15 @@ const ItemModal = defineComponent({
   100% {
     transform: translateX(100%);
   }
+}
+
+/* modal 動畫 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

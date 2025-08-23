@@ -1,13 +1,15 @@
 <template>
   <div class="mb-4">
-    <h4 class="text-xl font-bold text-orange-600 mb-3">{{ title }}</h4>
+    <!-- 是否顯示分組標題 -->
+    <h4 v-if="showTitle" class="text-xl font-bold text-orange-600 mb-3">{{ title }}</h4>
 
-    <!-- 零售版：大卡片＋加入按鈕 -->
+    <!-- 零售版 -->
     <div v-if="mode === 'retail'" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
         :key="item.code"
-        class="group relative rounded-2xl border bg-white overflow-hidden shadow-sm"
+        class="group relative rounded-2xl border bg-white overflow-hidden shadow-sm cursor-pointer"
+        @click="$emit('open-detail', item)"
       >
         <!-- 售完遮罩 -->
         <div
@@ -17,36 +19,44 @@
           售完／補貨中
         </div>
 
+        <!-- 圖 -->
         <img
           v-if="item.image"
           :src="item.image"
           alt=""
-          class="w-full h-28 object-cover"
+          class="w-full h-32 object-cover"
           @error="handleImgError"
         />
-        <div class="p-3">
+
+        <!-- 內容 -->
+        <div class="p-3 space-y-2">
           <div class="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
             {{ item.name }}
           </div>
-          <div class="mt-1 flex items-end justify-between">
+          <div class="flex items-end justify-between">
             <div class="text-base font-bold text-gray-900">
               {{ currency(item.price) }}
               <span class="text-xs text-gray-500 ml-1">/ {{ item.unit || '份' }}</span>
             </div>
+
+            <!-- 長方形加入按鈕；阻止冒泡避免直接開視窗 -->
             <button
-              class="px-3 py-1.5 rounded-full text-sm font-semibold"
+              class="px-3 py-2 rounded-md text-sm font-semibold text-white"
               :class="
                 item.disabled
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-black text-white hover:bg-gray-900'
+                  : inCart(item.code)
+                    ? 'bg-green-600'
+                    : 'bg-blue-600 hover:bg-blue-700'
               "
               :disabled="item.disabled"
-              @click="$emit('add-to-cart', item)"
+              @click.stop="$emit('add-to-cart', item)"
             >
-              加入
+              {{ inCart(item.code) ? '✓ 已加入購物車' : '加入購物車' }}
             </button>
           </div>
-          <div v-if="item.note" class="mt-1 text-xs text-gray-500 line-clamp-1">
+
+          <div v-if="item.note" class="text-xs text-gray-500 line-clamp-1">
             {{ item.note }}
           </div>
         </div>
@@ -112,9 +122,12 @@ const props = defineProps({
   selectedCode: String,
   selectedList: Array,
   type: String,
-  mode: { type: String, default: 'menu' } // 'menu' | 'retail'
+  mode: { type: String, default: 'menu' }, // 'menu' | 'retail'
+  showTitle: { type: Boolean, default: true },
+  /** 由父層傳入已在購物車的 code 用來改變按鈕樣式 */
+  inCartCodes: { type: Array, default: () => [] }
 })
-const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart'])
+const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
 const handleClick = item => {
   if (!item || item.disabled) return
@@ -130,6 +143,7 @@ const handleClick = item => {
 const isSelected = code => {
   return props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
 }
+const inCart = code => props.inCartCodes?.includes(code)
 
 const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
