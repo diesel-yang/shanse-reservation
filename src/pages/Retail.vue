@@ -1,9 +1,11 @@
 <template>
   <!-- 避免被 FloatingNav 擋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
-    <header class="mb-4">
+    <!-- 頂部：品牌 Logo 與標題 -->
+    <header class="mb-4 flex items-center gap-3">
+      <img src="/icon/shane-logo-orange.svg" alt="山色" class="w-10 h-10 object-contain" />
       <h1 class="text-2xl font-bold">零售商店</h1>
-      <p class="text-sm text-gray-500">冷凍即食品與甜點，可到店自取或宅配</p>
+      <!-- ✂️ 移除副標 -->
     </header>
 
     <!-- 類別切換 -->
@@ -19,23 +21,69 @@
         <div class="shimmer h-4 w-3/4 rounded mb-2"></div>
         <div class="shimmer h-4 w-1/2 rounded mb-4"></div>
         <div class="flex gap-2">
-          <div class="shimmer h-9 w-20 rounded-full"></div>
-          <div class="shimmer h-9 w-9 rounded-full ml-auto"></div>
+          <div class="shimmer h-10 w-28 rounded-lg"></div>
         </div>
       </div>
     </div>
 
     <!-- 商品清單 -->
-    <SectionCard
-      v-else-if="groups.items.length"
-      :title="groups.title"
-      :items="displayItems"
-      :selectedList="[]"
-      type="addon"
-      mode="retail"
-      @add-to-cart="addToCart"
-    />
-    <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
+    <div v-else>
+      <!-- ✂️ 移除大標題：冷凍即食/甜點 -->
+
+      <div v-if="displayItems.length" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <article
+          v-for="it in displayItems"
+          :key="it.code"
+          class="p-4 rounded-2xl border bg-white overflow-hidden cursor-pointer group"
+          @click="openItem(it)"
+        >
+          <div class="relative">
+            <img
+              :src="firstImage(it)"
+              alt=""
+              class="w-full h-40 object-cover rounded-xl mb-3"
+              loading="lazy"
+            />
+            <div
+              v-if="it.disabled"
+              class="absolute inset-0 bg-white/70 rounded-xl flex items-center justify-center text-red-500 font-semibold text-lg"
+            >
+              售完 / 補貨中
+            </div>
+          </div>
+
+          <div class="min-h-[3.5rem]">
+            <h3 class="font-semibold leading-snug line-clamp-2">
+              {{ it.name }}
+            </h3>
+          </div>
+          <div class="text-gray-500 text-sm mb-3">
+            {{ it.note || it.description || '' }}
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="text-lg font-semibold">{{ currency(it.price) }}</div>
+
+            <!-- 加入購物車按鈕（卡片上的） -->
+            <button
+              class="px-3 h-10 rounded-lg text-white text-sm font-medium transition-colors"
+              :class="
+                inCart(it.code)
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              "
+              :disabled="it.disabled"
+              @click.stop="quickAdd(it)"
+            >
+              <span v-if="inCart(it.code)">✓ 已加入</span>
+              <span v-else>加入購物車</span>
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div v-else class="text-center text-gray-500 py-10">目前沒有可販售商品</div>
+    </div>
 
     <!-- 浮動購物車 -->
     <div
@@ -81,6 +129,15 @@
       </div>
     </div>
 
+    <!-- 商品視窗 -->
+    <ItemModal
+      v-if="active"
+      :item="active"
+      :in-cart="inCart(active.code)"
+      @close="active = null"
+      @add="addWithQty"
+    />
+
     <!-- 結帳 -->
     <ModalCheckout
       v-if="openCheckout"
@@ -97,8 +154,7 @@
 </template>
 
 <script setup>
-import { inject, ref, computed } from 'vue'
-import SectionCard from '@/components/SectionCard.vue'
+import { inject, ref, computed, defineComponent } from 'vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
@@ -119,26 +175,40 @@ const retailLoading = inject('retailLoading', ref(false))
 
 /** 類別切換 */
 const tab = ref('frozen')
-const groups = computed(() => ({
-  title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
-  items: providedRetail?.[tab.value] || []
-}))
+const items = computed(() => providedRetail?.[tab.value] || [])
 const displayItems = computed(() =>
-  (groups.value.items || []).map(i => ({
+  (items.value || []).map(i => ({
     ...i,
     disabled: Boolean(i.stop || Number(i.stock ?? 0) <= 0)
   }))
 )
 
+/** 工具 */
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+const firstImage = it => {
+  if (Array.isArray(it.image) && it.image.length) return it.image[0]
+  if (typeof it.image === 'string' && it.image.trim()) {
+    const parts = it.image.split(',').map(s => s.trim()).filter(Boolean)
+    return parts[0] || '/placeholder.png'
+  }
+  return '/placeholder.png'
+}
+
+/** UI：tab 按鈕 */
+const tabBtn = t =>
+  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
+
 /** 購物車邏輯 */
 const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
+const active = ref(null) // 目前打開詳情視窗的商品
 
+const inCart = code => cart.value.some(i => i.code === code)
 const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
 
-const addToCart = item => {
+const quickAdd = item => {
   if (!item || item.disabled) return
   const idx = cart.value.findIndex(x => x.code === item.code)
   if (idx > -1) cart.value[idx].qty++
@@ -152,15 +222,27 @@ const addToCart = item => {
       lead_days: Number(item.lead_days || 0)
     })
 }
-const inc = idx => {
-  cart.value[idx].qty++
+
+const addWithQty = ({ item, qty }) => {
+  if (!item || item.disabled || !qty) return
+  const idx = cart.value.findIndex(x => x.code === item.code)
+  if (idx > -1) cart.value[idx].qty += qty
+  else
+    cart.value.push({
+      code: item.code,
+      name: item.name,
+      price: Number(item.price || 0),
+      qty: qty,
+      unit: item.unit || '份',
+      lead_days: Number(item.lead_days || 0)
+    })
 }
-const dec = idx => {
-  if (cart.value[idx].qty > 1) cart.value[idx].qty--
-}
-const remove = idx => {
-  cart.value.splice(idx, 1)
-}
+
+const inc = idx => (cart.value[idx].qty++)
+const dec = idx => { if (cart.value[idx].qty > 1) cart.value[idx].qty-- }
+const remove = idx => cart.value.splice(idx, 1)
+
+const openItem = it => { active.value = it }
 
 /** 最早可取貨日（依購物車最大前置天數） */
 const earliestPickupDate = computed(() => {
@@ -170,36 +252,25 @@ const earliestPickupDate = computed(() => {
   return d
 })
 
-/** 工具：把任何輸入轉成安全的 yyyy-mm-dd（本地時區，不會因為 toISOString 被 UTC 影響而前一天） */
+/** 把任何輸入轉成 yyyy-mm-dd（本地時區） */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
   else if (dateLike instanceof Date) d = new Date(dateLike.getTime())
   else d = new Date(dateLike)
-
-  // 若使用者輸入 '2024/08/22' 或 '2024.08.22'…再試一次解析
   if (isNaN(d)) {
-    const m = String(dateLike)
-      .trim()
-      .match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
+    const m = String(dateLike).trim().match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
     if (m) d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
   }
   if (isNaN(d)) d = new Date()
-
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
 
-/** UI 輔助 */
-const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-
 /** 送出零售訂單（打 GAS） */
 async function submitOrder({ customer }) {
-  // 組品項
   const items = cart.value.map(i => ({
     code: i.code,
     name: i.name,
@@ -208,15 +279,11 @@ async function submitOrder({ customer }) {
     unit: i.unit || '份'
   }))
 
-  // 金額
   const subtotalNum = Number(subtotal.value || 0)
   const shippingNum = customer?.method === '宅配' ? 160 : 0
   const totalNum = subtotalNum + shippingNum
-
-  // 取貨日期（防止 RangeError: Invalid time value）
   const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
 
-  // 送出
   const out = await gasPost({
     type: 'retailOrder',
     name: customer?.name || '',
@@ -239,6 +306,95 @@ async function submitOrder({ customer }) {
     alert('下單失敗，請稍後再試。')
   }
 }
+
+/** ========== 內部元件：商品詳情視窗 ========== */
+const ItemModal = defineComponent({
+  name: 'ItemModal',
+  props: {
+    item: { type: Object, required: true },
+    inCart: { type: Boolean, default: false }
+  },
+  emits: ['close', 'add'],
+  setup(props, { emit }) {
+    const qty = ref(1)
+    const imgs = computed(() => {
+      const v = props.item?.image
+      if (Array.isArray(v)) return v.filter(Boolean)
+      if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean)
+      return []
+    })
+    const idx = ref(0)
+    const show = src => (idx.value = Math.max(0, imgs.value.indexOf(src)))
+    const next = () => (idx.value = (idx.value + 1) % Math.max(imgs.value.length || 1, 1))
+    const prev = () => (idx.value = (idx.value - 1 + Math.max(imgs.value.length || 1, 1)) % Math.max(imgs.value.length || 1, 1))
+
+    const add = () => emit('add', { item: props.item, qty: qty.value })
+
+    return () => (
+      <div class="fixed inset-0 z-50">
+        <div class="absolute inset-0 bg-black/50" onClick={() => emit('close')}></div>
+
+        <!-- 覆蓋層：貼齊底邊，無圓角 -->
+        <div class="absolute left-0 right-0 bottom-0 w-full">
+          <div class="bg-white rounded-none overflow-hidden shadow-xl max-h-[90vh] flex flex-col">
+            <!-- 標題列 -->
+            <div class="px-5 py-4 border-b flex items-center justify-between">
+              <h2 class="text-lg font-semibold">{ props.item?.name || '商品' }</h2>
+              <button class="text-gray-500 hover:text-black" onClick={() => emit('close')}>✕</button>
+            </div>
+
+            <!-- 內容 -->
+            <div class="flex-1 overflow-y-auto p-5 grid md:grid-cols-2 gap-6">
+              <!-- 相片 -->
+              <div>
+                <div class="relative">
+                  <img
+                    src={ imgs.value[idx.value] || '/placeholder.png' }
+                    alt=""
+                    class="w-full h-64 object-cover rounded-xl"
+                  />
+                  <button class="absolute inset-y-0 left-2 my-auto bg-black/50 text-white rounded-full w-8 h-8" onClick={prev}>‹</button>
+                  <button class="absolute inset-y-0 right-2 my-auto bg-black/50 text-white rounded-full w-8 h-8" onClick={next}>›</button>
+                </div>
+                <div class="mt-3 flex gap-2 overflow-x-auto">
+                  { imgs.value.map(src => (
+                    <img
+                      src={src}
+                      class={'w-16 h-16 object-cover rounded-md border ' + (src === imgs.value[idx.value] ? 'border-black' : 'border-transparent')}
+                      onClick={() => show(src)}
+                    />
+                  )) }
+                </div>
+              </div>
+
+              <!-- 資訊 -->
+              <div class="space-y-4">
+                <div class="text-2xl font-semibold">{ `NT$ ${Number(props.item?.price || 0).toLocaleString()}` }</div>
+                <p class="text-gray-600 whitespace-pre-line">{ props.item?.description || props.item?.note || '' }</p>
+
+                <!-- 數量 -->
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-gray-600">數量</span>
+                  <button class="px-2 py-1 border rounded" onClick={() => qty.value = Math.max(1, qty.value - 1)}>－</button>
+                  <span class="w-8 text-center">{ qty.value }</span>
+                  <button class="px-2 py-1 border rounded" onClick={() => qty.value++}>＋</button>
+                </div>
+
+                <!-- 加入按鈕 -->
+                <button
+                  class={'w-full h-11 rounded-lg text-white font-medium ' + (props.inCart ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700')}
+                  onClick={add}
+                >
+                  { props.inCart ? '✓ 已加入購物車' : '加入購物車' }
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+})
 </script>
 
 <style scoped>
