@@ -1,7 +1,8 @@
 <template>
   <div class="mb-4">
-    <h4 class="text-xl font-bold text-orange-600 mb-3">{{ title }}</h4>
-
+    <h4 v-if="!hideTitle && title" class="text-xl font-bold text-orange-600 mb-3">
+      {{ title }}
+    </h4>
     <!-- 零售卡片版 -->
     <div v-if="mode === 'retail'" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
@@ -120,6 +121,7 @@ const props = defineProps({
   selectedList: Array,
   type: String,
   mode: { type: String, default: 'menu' } // 'menu' | 'retail'
+    hideTitle: { type: Boolean, default: false } // ← 新增
 })
 const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 

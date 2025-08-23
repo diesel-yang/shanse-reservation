@@ -45,6 +45,7 @@
               <p v-if="errors.phone" class="text-xs text-red-500 mt-1">{{ errors.phone }}</p>
             </div>
 
+            <!-- 取貨方式 -->
             <div>
               <label class="block text-sm mb-2">取貨方式</label>
               <div class="flex items-center gap-4">
@@ -82,6 +83,44 @@
                 placeholder="郵遞區號、縣市區路、門牌與樓層"
               ></textarea>
               <p v-if="errors.address" class="text-xs text-red-500 mt-1">{{ errors.address }}</p>
+            </div>
+
+            <!-- 付款方式 -->
+            <div>
+              <label class="block text-sm mb-2">付款方式</label>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2">
+                  <input type="radio" value="cod" v-model="form.payment_method" />
+                  <span>到店 / 貨到付款</span>
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="radio" value="transfer" v-model="form.payment_method" />
+                  <span>轉帳匯款</span>
+                </label>
+              </div>
+
+              <!-- 匯款資訊與後五碼 -->
+              <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
+                <div class="rounded-lg bg-gray-50 border p-3 text-sm">
+                  <div>匯款銀行：玉山銀行 ○○分行（代碼 808）</div>
+                  <div>帳號：1234-567-890123</div>
+                  <div>戶名：山色有限公司</div>
+                </div>
+                <div>
+                  <label class="block text-sm mb-1">匯款後五碼</label>
+                  <input
+                    v-model.trim="form.bank_ref"
+                    type="text"
+                    maxlength="5"
+                    inputmode="numeric"
+                    class="w-full input"
+                    placeholder="請填入 5 碼（利於對帳）"
+                  />
+                  <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">
+                    {{ errors.bank_ref }}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -177,6 +216,8 @@ const form = reactive({
   method: 'pickup', // 'pickup' | '宅配'
   pickup_date: '', // YYYY-MM-DD
   address: '',
+  payment_method: 'cod', // 'cod' | 'transfer'
+  bank_ref: '', // 匯款後五碼（transfer 時啟用）
   note: ''
 })
 
@@ -198,7 +239,7 @@ watch(
 )
 
 /* 驗證 */
-const errors = reactive({ name: '', phone: '', pickup_date: '', address: '' })
+const errors = reactive({ name: '', phone: '', pickup_date: '', address: '', bank_ref: '' })
 const validate = () => {
   errors.name = form.name ? '' : '請輸入姓名'
   errors.phone = /^0\d{1,2}-?\d{6,8}$|^09\d{2}-?\d{3}-?\d{3}$/.test(form.phone)
@@ -211,10 +252,16 @@ const validate = () => {
     errors.address = form.address ? '' : '請輸入收件地址'
     errors.pickup_date = ''
   }
-  return !errors.name && !errors.phone && !errors.pickup_date && !errors.address
+  // 付款為匯款時，要求五碼（純數字、長度 5）
+  if (form.payment_method === 'transfer') {
+    errors.bank_ref = /^\d{5}$/.test(form.bank_ref) ? '' : '請填入 5 碼數字'
+  } else {
+    errors.bank_ref = ''
+  }
+  return !errors.name && !errors.phone && !errors.pickup_date && !errors.address && !errors.bank_ref
 }
 
-/* 送出（只把資料交給父層，實際打 GAS 在 Retail.vue） */
+/* 送出（把資料交給父層，實際打 GAS 在 Retail.vue） */
 const submitting = ref(false)
 const onSubmit = async () => {
   if (!props.cart?.length) return alert('購物車是空的')
@@ -228,9 +275,10 @@ const onSubmit = async () => {
       method: form.method === 'pickup' ? '自取' : '宅配',
       pickup_date: form.pickup_date,
       address: form.address,
+      payment_method: form.payment_method === 'transfer' ? '轉帳匯款' : '到店/貨到',
+      bank_ref: form.bank_ref,
       note: form.note
     }
-    // 交給父層處理（父層成功後會關閉彈窗並清空購物車）
     await Promise.resolve(emit('submit', { customer }))
   } finally {
     submitting.value = false

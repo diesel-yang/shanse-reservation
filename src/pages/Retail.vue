@@ -299,6 +299,9 @@ async function submitOrder({ customer }) {
     phone: customer?.phone || '',
     method: customer?.method || '自取',
     pickup_date: pickupYmd,
+    address: customer?.address || '',
+    payment_method: customer?.payment_method || '到店/貨到',
+    bank_ref: customer?.bank_ref || '',
     note: customer?.note || '',
     items: JSON.stringify(items),
     subtotal: String(subtotalNum),
@@ -307,7 +310,13 @@ async function submitOrder({ customer }) {
   })
 
   if (out?.result === 'success') {
-    alert(`下單成功！訂單編號：${out.orderId}`)
+    if (customer?.payment_method === '轉帳匯款') {
+      alert(
+        `下單成功！訂單編號：${out.orderId}\n\n請於 24 小時內完成匯款：\n玉山銀行（808） 1234-567-890123\n戶名：山色有限公司\n\n完成後請回填匯款後五碼：${customer?.bank_ref || '（尚未填寫）'}`
+      )
+    } else {
+      alert(`下單成功！訂單編號：${out.orderId}`)
+    }
     cart.value = []
     openCart.value = false
     openCheckout.value = false
