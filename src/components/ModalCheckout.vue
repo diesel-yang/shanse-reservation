@@ -54,8 +54,8 @@
                   <span>到店自取</span>
                 </label>
                 <label class="flex items-center gap-2">
-                  <input type="radio" value="宅配" v-model="form.method" />
-                  <span>宅配</span>
+                  <input type="radio" value="冷凍宅配" v-model="form.method" />
+                  <span>冷凍宅配</span>
                 </label>
               </div>
             </div>
@@ -84,52 +84,53 @@
               ></textarea>
               <p v-if="errors.address" class="text-xs text-red-500 mt-1">{{ errors.address }}</p>
             </div>
-
             <!-- 付款方式 -->
             <div>
               <label class="block text-sm mb-2">付款方式</label>
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2">
-                  <input type="radio" value="cod" v-model="form.payment_method" />
-                  <span>到店 / 貨到付款</span>
+                  <input type="radio" value="cash" v-model="form.payment_method" />
+                  <span>現金 / 到店付款</span>
                 </label>
                 <label class="flex items-center gap-2">
                   <input type="radio" value="transfer" v-model="form.payment_method" />
-                  <span>轉帳匯款</span>
+                  <span>銀行轉帳</span>
                 </label>
-              </div>
-
-              <!-- 匯款資訊與後五碼 -->
-              <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
-                <div class="rounded-lg bg-gray-50 border p-3 text-sm">
-                  <div>匯款銀行：玉山銀行 ○○分行（代碼 808）</div>
-                  <div>帳號：1234-567-890123</div>
-                  <div>戶名：山色有限公司</div>
-                </div>
-                <div>
-                  <label class="block text-sm mb-1">匯款後五碼</label>
-                  <input
-                    v-model.trim="form.bank_ref"
-                    type="text"
-                    maxlength="5"
-                    inputmode="numeric"
-                    class="w-full input"
-                    placeholder="請填入 5 碼（利於對帳）"
-                  />
-                  <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">
-                    {{ errors.bank_ref }}
-                  </p>
-                </div>
+                <label class="flex items-center gap-2">
+                  <input type="radio" value="linepay" v-model="form.payment_method" />
+                  <span>LINE Pay</span>
+                </label>
               </div>
             </div>
 
+            <!-- 若為轉帳匯款，顯示銀行資料 + 後五碼 -->
+            <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
+              <div class="rounded-lg bg-gray-50 border p-3 text-sm">
+                <div>轉帳銀行：玉山銀行（代碼 808）</div>
+                <div>帳號：1234-567-890123</div>
+              </div>
+              <div>
+                <label class="block text-sm mb-1">帳號後五碼</label>
+                <input
+                  v-model.trim="form.bank_ref"
+                  type="text"
+                  maxlength="5"
+                  inputmode="numeric"
+                  class="w-full input"
+                  placeholder="請填入 5 碼（利於對帳）"
+                />
+                <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">
+                  {{ errors.bank_ref }}
+                </p>
+              </div>
+            </div>
             <div>
-              <label class="block text-sm mb-1">備註</label>
+              <label class="block text-sm mb-1">訂單備註</label>
               <textarea
                 v-model.trim="form.note"
                 rows="2"
                 class="w-full input"
-                placeholder="過敏 / 開立公司抬頭…（選填）"
+                placeholder="配送時的特別註記 / 開立公司抬頭…（選填）"
               ></textarea>
             </div>
           </form>
@@ -157,7 +158,8 @@
 
             <p class="text-xs text-gray-500">
               • 商品保存方式請依標示冷凍/冷藏。<br />
-              • 宅配以低溫配送計價（可貨到 / 到店付款）。<br />
+              • 宅配以低溫/冷凍配送計價。<br />
+              • 冷藏及冷凍商品，分溫層包裝出貨，請分開下單。<br />
               • 若售完或缺貨，我們會與您聯繫協調。
             </p>
           </aside>
@@ -222,7 +224,7 @@ const form = reactive({
   pickup_date: '', // YYYY-MM-DD
   address: '',
   payment_method: 'cod', // 'cod' | 'transfer'
-  bank_ref: '', // 匯款後五碼（transfer 時啟用）
+  bank_ref: '', // 帳號後五碼（transfer 時啟用）
   note: ''
 })
 
