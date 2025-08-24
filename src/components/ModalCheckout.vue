@@ -166,7 +166,12 @@
         <!-- Sticky Footer（永遠在底部） -->
         <div class="px-5 pb-4 pt-3 sticky bottom-0 bg-white border-t">
           <button
-            class="w-full bg-black text-white rounded-full py-3 font-semibold disabled:opacity-60"
+            class="w-full rounded-full py-3 font-semibold transition"
+            :class="
+              submitting
+                ? 'bg-gray-400 text-white cursor-not-allowed pointer-events-none'
+                : 'bg-black text-white hover:bg-gray-900'
+            "
             :disabled="submitting"
             @click="onSubmit"
           >
@@ -264,6 +269,7 @@ const validate = () => {
 /* 送出（把資料交給父層，實際打 GAS 在 Retail.vue） */
 const submitting = ref(false)
 const onSubmit = async () => {
+  if (submitting.value) return // ⬅️ 防連點保險
   if (!props.cart?.length) return alert('購物車是空的')
   if (!validate()) return
 
@@ -275,13 +281,13 @@ const onSubmit = async () => {
       method: form.method === 'pickup' ? '自取' : '宅配',
       pickup_date: form.pickup_date,
       address: form.address,
-      payment_method: form.payment_method === 'transfer' ? '轉帳匯款' : '到店/貨到',
-      bank_ref: form.bank_ref,
-      note: form.note
+      note: form.note,
+      payment_method: form.payment_method || '', // 如果你有加付款方式欄位
+      bank_ref: form.bank_ref || ''
     }
     await Promise.resolve(emit('submit', { customer }))
   } finally {
-    submitting.value = false
+    submitting.value = false // ⬅️ 成功/失敗都恢復
   }
 }
 </script>
