@@ -288,9 +288,12 @@ async function submitOrder({ customer }) {
     qty: Number(i.qty || 1),
     unit: i.unit || '份'
   }))
+
   const subtotalNum = Number(subtotal.value || 0)
-  const shippingNum = customer?.method === '冷凍宅配' ? 160 : 0
+  // 若表單傳的是「宅配」，這裡請用同一個字串判斷
+  const shippingNum = customer?.method === '宅配' ? 160 : 0
   const totalNum = subtotalNum + shippingNum
+
   const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
 
   const out = await gasPost({
@@ -309,31 +312,31 @@ async function submitOrder({ customer }) {
     total: String(totalNum)
   })
 
-if (out?.result === 'success') {
-  // 判斷是否為轉帳匯款（容錯：英文代碼或中文文字都會成立）
-  const pm = (customer?.payment_method || '').trim();
-  const isTransfer =
-    pm === 'transfer' || pm.includes('轉帳') || pm.includes('匯款');
+  if (out?.result === 'success') {
+    // 判斷是否為轉帳匯款（容錯：英文代碼或中文文字都會成立）
+    const pm = (customer?.payment_method || '').trim()
+    const isTransfer = pm === 'transfer' || pm.includes('轉帳') || pm.includes('匯款')
 
-  if (isTransfer) {
-    const bankRef = (customer?.bank_ref || '').trim() || '尚未填寫';
-    alert(
-      `下單成功！訂單編號：${out.orderId}\n\n` +
-      `請於 24 小時內完成付款：\n` +
-      `玉山銀行（808） 1234-567-890123\n\n` +
-      `您在表單所填寫的「帳號後五碼：${bankRef}」，我們將自動對帳。`
-    );
+    if (isTransfer) {
+      const bankRef = (customer?.bank_ref || '').trim() || '尚未填寫'
+      alert(
+        `下單成功！訂單編號：${out.orderId}\n\n` +
+          `請於 24 小時內完成付款：\n` +
+          `玉山銀行（808） 1234-567-890123\n\n` +
+          `您在表單所填寫的「帳號後五碼：${bankRef}」，我們將自動對帳。`
+      )
+    } else {
+      alert(`下單成功！訂單編號：${out.orderId}`)
+    }
+
+    // 清空購物車 & 關閉視窗
+    cart.value = []
+    openCart.value = false
+    openCheckout.value = false
   } else {
-    alert(`下單成功！訂單編號：${out.orderId}`);
+    alert('下單失敗，請稍後再試。')
   }
-
-  // 清空購物車 & 關閉視窗
-  cart.value = [];
-  openCart.value = false;
-  openCheckout.value = false;
-} else {
-  alert('下單失敗，請稍後再試。');
-}
+} // ←← 這一行就是缺少的收尾大括號
 </script>
 
 <style scoped>

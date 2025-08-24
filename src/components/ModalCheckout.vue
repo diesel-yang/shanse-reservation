@@ -54,8 +54,8 @@
                   <span>到店自取</span>
                 </label>
                 <label class="flex items-center gap-2">
-                  <input type="radio" value="冷凍宅配" v-model="form.method" />
-                  <span>冷凍宅配</span>
+                  <input type="radio" value="宅配" v-model="form.method" />
+                  <span>宅配</span>
                 </label>
               </div>
             </div>
@@ -223,7 +223,7 @@ const form = reactive({
   method: 'pickup', // 'pickup' | '宅配'
   pickup_date: '', // YYYY-MM-DD
   address: '',
-  payment_method: 'cod', // 'cod' | 'transfer'
+  payment_method: 'cash', // 'cash' | 'transfer'
   bank_ref: '', // 帳號後五碼（transfer 時啟用）
   note: ''
 })
