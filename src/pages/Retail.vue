@@ -303,7 +303,7 @@ async function submitOrder({ customer }) {
     method: customer?.method || '自取',
     pickup_date: pickupYmd,
     address: customer?.address || '',
-    payment_method: customer?.payment_method || '到店/貨到',
+    payment_method: customer?.payment_method || 'cash', // 'linepay' | 'cash' | 'transfer',
     bank_ref: customer?.bank_ref || '',
     note: customer?.note || '',
     items: JSON.stringify(items),
@@ -311,6 +311,12 @@ async function submitOrder({ customer }) {
     shipping: String(shippingNum),
     total: String(totalNum)
   })
+
+  if (out?.result === 'pending' && out?.paymentUrl) {
+    // 使用者選了 LINE Pay：導向 LINE Pay 付款頁
+    window.location.href = out.paymentUrl
+    return
+  }
 
   if (out?.result === 'success') {
     // 判斷是否為轉帳匯款（容錯：英文代碼或中文文字都會成立）

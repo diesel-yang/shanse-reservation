@@ -19,10 +19,11 @@
           </button>
         </div>
 
-        <!-- 內容：獨立可捲動 -->
+        <!-- 內容（可捲動區） -->
         <div class="px-5 py-4 grid md:grid-cols-2 gap-6 modal-scroll">
           <!-- 左：表單 -->
           <form class="space-y-4" @submit.prevent="onSubmit">
+            <!-- 訂購人 -->
             <div>
               <label class="block text-sm mb-1">訂購人姓名</label>
               <input
@@ -34,6 +35,7 @@
               <p v-if="errors.name" class="text-xs text-red-500 mt-1">{{ errors.name }}</p>
             </div>
 
+            <!-- 電話 -->
             <div>
               <label class="block text-sm mb-1">聯絡電話</label>
               <input
@@ -48,7 +50,7 @@
             <!-- 取貨方式 -->
             <div>
               <label class="block text-sm mb-2">取貨方式</label>
-              <div class="flex items-center gap-4">
+              <div class="flex flex-wrap items-center gap-4">
                 <label class="flex items-center gap-2">
                   <input type="radio" value="pickup" v-model="form.method" />
                   <span>到店自取</span>
@@ -60,6 +62,7 @@
               </div>
             </div>
 
+            <!-- 日期 / 地址 -->
             <div v-if="form.method === 'pickup' || form.method === '到店自取'">
               <label class="block text-sm mb-1">取貨日期</label>
               <input
@@ -84,10 +87,11 @@
               ></textarea>
               <p v-if="errors.address" class="text-xs text-red-500 mt-1">{{ errors.address }}</p>
             </div>
+
             <!-- 付款方式 -->
             <div>
               <label class="block text-sm mb-2">付款方式</label>
-              <div class="flex items-center gap-4">
+              <div class="flex flex-wrap items-center gap-4">
                 <label class="flex items-center gap-2">
                   <input type="radio" value="cash" v-model="form.payment_method" />
                   <span>現金 / 到店付款</span>
@@ -101,36 +105,46 @@
                   <span>LINE Pay</span>
                 </label>
               </div>
+
+              <!-- 轉帳資訊＋後五碼 -->
+              <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
+                <div class="rounded-lg bg-gray-50 border p-3 text-sm">
+                  <div>轉帳銀行：玉山銀行（代碼 808）</div>
+                  <div>帳號：1234-567-890123</div>
+                </div>
+                <div>
+                  <label class="block text-sm mb-1">帳號後五碼</label>
+                  <input
+                    v-model.trim="form.bank_ref"
+                    type="text"
+                    maxlength="5"
+                    inputmode="numeric"
+                    class="w-full input"
+                    placeholder="請填入 5 碼（利於對帳）"
+                  />
+                  <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">
+                    {{ errors.bank_ref }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- LINE Pay 說明（暫時流程提示） -->
+              <p
+                v-else-if="form.payment_method === 'linepay'"
+                class="mt-2 text-xs text-gray-500 leading-relaxed"
+              >
+                送出後將以訊息提供 LINE Pay 付款連結或 QR Code，請於 30 分鐘內完成付款。
+              </p>
             </div>
 
-            <!-- 若為轉帳匯款，顯示銀行資料 + 後五碼 -->
-            <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
-              <div class="rounded-lg bg-gray-50 border p-3 text-sm">
-                <div>轉帳銀行：玉山銀行（代碼 808）</div>
-                <div>帳號：1234-567-890123</div>
-              </div>
-              <div>
-                <label class="block text-sm mb-1">帳號後五碼</label>
-                <input
-                  v-model.trim="form.bank_ref"
-                  type="text"
-                  maxlength="5"
-                  inputmode="numeric"
-                  class="w-full input"
-                  placeholder="請填入 5 碼（利於對帳）"
-                />
-                <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">
-                  {{ errors.bank_ref }}
-                </p>
-              </div>
-            </div>
+            <!-- 備註 -->
             <div>
-              <label class="block text-sm mb-1">訂單備註</label>
+              <label class="block text-sm mb-1">備註</label>
               <textarea
                 v-model.trim="form.note"
                 rows="2"
                 class="w-full input"
-                placeholder="配送時的特別註記 / 開立公司抬頭…（選填）"
+                placeholder="過敏 / 開立公司抬頭…（選填）"
               ></textarea>
             </div>
           </form>
@@ -158,22 +172,17 @@
 
             <p class="text-xs text-gray-500">
               • 商品保存方式請依標示冷凍/冷藏。<br />
-              • 宅配以低溫/冷凍配送計價。<br />
-              • 冷藏及冷凍商品，分溫層包裝出貨，請分開下單。<br />
+              • 宅配以低溫配送計價（可貨到 / 到店付款）。<br />
               • 若售完或缺貨，我們會與您聯繫協調。
             </p>
           </aside>
         </div>
 
-        <!-- Sticky Footer（永遠在底部） -->
+        <!-- Sticky Footer：送出按鈕（防連點） -->
         <div class="px-5 pb-4 pt-3 sticky bottom-0 bg-white border-t">
           <button
-            class="w-full rounded-full py-3 font-semibold transition"
-            :class="
-              submitting
-                ? 'bg-gray-400 text-white cursor-not-allowed pointer-events-none'
-                : 'bg-black text-white hover:bg-gray-900'
-            "
+            class="w-full rounded-full py-3 font-semibold transition disabled:opacity-60"
+            :class="submitting ? 'bg-gray-400 text-white' : 'bg-black text-white hover:bg-gray-900'"
             :disabled="submitting"
             @click="onSubmit"
           >
@@ -216,15 +225,15 @@ const displayMinDate = computed(
     `${baseDate.value.getFullYear()}年${baseDate.value.getMonth() + 1}月${baseDate.value.getDate()}日`
 )
 
-/* 表單 */
+/* 表單（預設：自取 + 現金） */
 const form = reactive({
   name: '',
   phone: '',
   method: 'pickup', // 'pickup' | '宅配'
   pickup_date: '', // YYYY-MM-DD
   address: '',
-  payment_method: 'cash', // 'cash' | 'transfer'
-  bank_ref: '', // 帳號後五碼（transfer 時啟用）
+  payment_method: 'cash', // 'cash' | 'transfer' | 'linepay'
+  bank_ref: '', // 轉帳後五碼
   note: ''
 })
 
@@ -233,6 +242,7 @@ onMounted(() => {
   form.pickup_date = minDateStr.value
 })
 
+/* 切換取貨方式：清掉不相干欄位 */
 watch(
   () => form.method,
   v => {
@@ -245,6 +255,14 @@ watch(
   }
 )
 
+/* 切換付款方式：轉帳以外清空後五碼 */
+watch(
+  () => form.payment_method,
+  pm => {
+    if (pm !== 'transfer') form.bank_ref = ''
+  }
+)
+
 /* 驗證 */
 const errors = reactive({ name: '', phone: '', pickup_date: '', address: '', bank_ref: '' })
 const validate = () => {
@@ -252,6 +270,7 @@ const validate = () => {
   errors.phone = /^0\d{1,2}-?\d{6,8}$|^09\d{2}-?\d{3}-?\d{3}$/.test(form.phone)
     ? ''
     : '請輸入有效電話'
+
   if (form.method === 'pickup' || form.method === '到店自取') {
     errors.pickup_date = form.pickup_date ? '' : '請選擇取貨日期'
     errors.address = ''
@@ -259,19 +278,21 @@ const validate = () => {
     errors.address = form.address ? '' : '請輸入收件地址'
     errors.pickup_date = ''
   }
-  // 付款為匯款時，要求五碼（純數字、長度 5）
+
+  // 轉帳時強制要求後五碼（你也可改成非必填）
   if (form.payment_method === 'transfer') {
     errors.bank_ref = /^\d{5}$/.test(form.bank_ref) ? '' : '請填入 5 碼數字'
   } else {
     errors.bank_ref = ''
   }
+
   return !errors.name && !errors.phone && !errors.pickup_date && !errors.address && !errors.bank_ref
 }
 
-/* 送出（把資料交給父層，實際打 GAS 在 Retail.vue） */
+/* 送出（只把資料交給父層 Retail.vue，實際打 GAS 在父層） */
 const submitting = ref(false)
 const onSubmit = async () => {
-  if (submitting.value) return // ⬅️ 防連點保險
+  if (submitting.value) return // 二次防呆
   if (!props.cart?.length) return alert('購物車是空的')
   if (!validate()) return
 
@@ -283,13 +304,13 @@ const onSubmit = async () => {
       method: form.method === 'pickup' ? '自取' : '宅配',
       pickup_date: form.pickup_date,
       address: form.address,
-      note: form.note,
-      payment_method: form.payment_method || '', // 如果你有加付款方式欄位
-      bank_ref: form.bank_ref || ''
+      payment_method: form.payment_method, // cash | transfer | linepay
+      bank_ref: form.bank_ref?.trim(),
+      note: form.note
     }
     await Promise.resolve(emit('submit', { customer }))
   } finally {
-    submitting.value = false // ⬅️ 成功/失敗都恢復
+    submitting.value = false
   }
 }
 </script>
