@@ -1,4 +1,3 @@
-<!-- src/components/ModalCheckout.vue -->
 <template>
   <div class="fixed inset-0 z-[100]">
     <!-- 遮罩 -->
@@ -14,7 +13,7 @@
         <!-- 標題列 -->
         <div class="px-5 py-4 border-b flex items-center justify-between">
           <h2 class="text-lg font-semibold">結帳</h2>
-          <button class="text-gray-500 hover:text-black" @click="$emit('close')" aria-label="關閉">
+          <button class="text-gray-500 hover:text黑" @click="$emit('close')" aria-label="關閉">
             ✕
           </button>
         </div>
@@ -96,18 +95,18 @@
                   <input type="radio" value="cash" v-model="form.payment_method" />
                   <span>現金 / 到店付款</span>
                 </label>
-                <label class="flex items-center gap-2">
+                <label class="flex items中心 gap-2">
                   <input type="radio" value="transfer" v-model="form.payment_method" />
                   <span>銀行轉帳</span>
                 </label>
-                <label class="flex items-center gap-2">
+                <label class="flex items中心 gap-2">
                   <input type="radio" value="linepay" v-model="form.payment_method" />
                   <span>LINE Pay</span>
                 </label>
               </div>
 
               <!-- 轉帳資訊＋後五碼 -->
-              <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
+              <div v-if="form.payment_method === 'transfer' " class="mt-3 space-y-2">
                 <div class="rounded-lg bg-gray-50 border p-3 text-sm">
                   <div>轉帳銀行：玉山銀行（代碼 808）</div>
                   <div>帳號：1234-567-890123</div>
@@ -179,10 +178,16 @@
         </div>
 
         <!-- Sticky Footer：送出按鈕（防連點） -->
-        <div class="px-5 pb-4 pt-3 sticky bottom-0 bg-white border-t">
+        <div class="px-5 pb-4 pt-3 sticky bottom-0 bg白 border-t">
+         <!-- 🟧 新增：退換貨政策連結 -->
+          <p class="text-xs text-gray-500 text-center">
+            下單前請先閱讀
+            <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
+          </p>
+
           <button
             class="w-full rounded-full py-3 font-semibold transition disabled:opacity-60"
-            :class="submitting ? 'bg-gray-400 text-white' : 'bg-black text-white hover:bg-gray-900'"
+            :class="submitting ? 'bg-gray-400 text白' : 'bg黑 text白 hover:bg-gray-900'"
             :disabled="submitting"
             @click="onSubmit"
           >
@@ -192,10 +197,31 @@
       </div>
     </div>
   </div>
+
+  <!-- 🟧 新增：下單成功訊息彈窗（顯示訂單編號） -->
+  <div
+    v-if="successDialog.open"
+    class="fixed inset-0 z-[110] flex items-center justify-center bg黑/50"
+  >
+    <div class="bg白 rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
+      <h2 class="text-xl font-bold mb-2">感謝您的訂購！</h2>
+      <p class="text-gray-700 mb-4">您的訂單編號：</p>
+      <p class="text-lg font-mono font-semibold text-orange-600 mb-6">
+        {{ successDialog.orderId }}
+      </p>
+      <button
+        class="w-full rounded-full bg黑 text白 py-3 font-semibold hover:bg-gray-900"
+        @click="successDialog.open = false; emit('close')"
+      >
+        確定
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted } from 'vue'
+import { useCart } from '@/composables/useCart' // 🟧 新增：清空購物車要用
 
 /* Props / Emits */
 const props = defineProps({
@@ -204,6 +230,8 @@ const props = defineProps({
   earliestPickupDate: { type: Date, required: true }
 })
 const emit = defineEmits(['close', 'submit'])
+
+const { clear } = useCart() // 🟧 新增：成功後清空購物車（含 localStorage）
 
 /* 工具 */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
@@ -279,7 +307,7 @@ const validate = () => {
     errors.pickup_date = ''
   }
 
-  // 轉帳時強制要求後五碼（你也可改成非必填）
+  // 轉帳時強制要求後五碼（可依需求改為選填）
   if (form.payment_method === 'transfer') {
     errors.bank_ref = /^\d{5}$/.test(form.bank_ref) ? '' : '請填入 5 碼數字'
   } else {
@@ -289,7 +317,10 @@ const validate = () => {
   return !errors.name && !errors.phone && !errors.pickup_date && !errors.address && !errors.bank_ref
 }
 
-/* 送出（只把資料交給父層 Retail.vue，實際打 GAS 在父層） */
+/* 🟧 新增：成功訊息狀態 */
+const successDialog = ref({ open: false, orderId: '' })
+
+/* 送出（把資料交給父層 Retail.vue，並帶 callback 拿回 orderId） */
 const submitting = ref(false)
 const onSubmit = async () => {
   if (submitting.value) return // 二次防呆
@@ -308,7 +339,19 @@ const onSubmit = async () => {
       bank_ref: form.bank_ref?.trim(),
       note: form.note
     }
-    await Promise.resolve(emit('submit', { customer }))
+
+    // 🟧 修改：帶 done 回呼讓父層回傳 { orderId }
+    emit('submit', {
+      customer,
+      done: (result) => {
+        if (result?.orderId) {
+          clear() // ✅ 清空購物車 & localStorage
+          successDialog.value = { open: true, orderId: result.orderId } // ✅ 顯示成功彈窗
+        } else {
+          alert('下單失敗，請稍後再試。')
+        }
+      }
+    })
   } finally {
     submitting.value = false
   }

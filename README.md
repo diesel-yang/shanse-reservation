@@ -106,3 +106,37 @@ git push
 - Vercel: [專案部署頁面](https://vue-tailwind-order.vercel.app)
 
 ---
+
+## Retail.vue：
+
+模板完全維持你原本結構（骨架、清單、浮動購物車、詳情視窗都在）。
+
+只是把本地 cart 換成 useCart，並保留同名方法 addToCart/inc/dec/remove 供模板使用。
+
+submitOrder 事件改以 callback done 把 { orderId } 傳回給子層，不破壞事件架構；同時保留原本的 alert + 清空作為相容後備路徑（通常不會走）。
+
+## ModalCheckout.vue：
+
+表單/驗證原樣保留。
+
+新增成功彈窗 + 透過 useCart.clear() 清空購物車（含 localStorage）。
+
+呼叫父層 @submit 時帶入 done 回呼以取得 { orderId }。
+
+## Cart.vue：
+
+獨立購物車頁（選用），直接讀取 useCart 狀態，可在 /cart 觀看/編輯購物車。
+
+## useCart.js：
+
+全域購物車狀態，支援 localStorage 永續化、基本加減刪、（可用）運費/折扣欄位。
+
+## useOrder.js
+共用的送單邏輯只存在一份 (useOrder.js)。
+Retail.vue 與 Cart.vue 都只需呼叫 submitOrderCommon。
+
+## 使用者流程
+
+/cart 頁面：可以檢視、修改購物車。
+點 前往結帳 → 會開啟 ModalCheckout 視窗。
+ModalCheckout 送出 → 呼叫 submitOrder → 打 GAS → 成功 → 顯示 感謝訂購 + 訂單編號 彈窗 → 清空購物車。

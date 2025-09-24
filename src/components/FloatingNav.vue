@@ -60,13 +60,21 @@
             <span class="hidden sm:inline text-sm font-medium">須知</span>
           </RouterLink>
 
+          <!-- 🟧 修改：零售商品 + 購物車角標 -->
           <RouterLink
-            to="/retail"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+            to="/cart"
+            class="relative flex items-center gap-2 text-gray-800 hover:opacity-80"
             aria-label="零售商品"
           >
             <ShoppingBagIcon class="w-6 h-6" />
-            <span class="hidden sm:inline text-sm font-medium">零售</span>
+            <span class="hidden sm:inline text-sm font-medium">購物車</span>
+            <!-- 🟧 新增：小紅點 -->
+            <span
+              v-if="cartCount > 0"
+              class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full"
+            >
+              {{ cartCount }}
+            </span>
           </RouterLink>
         </div>
 
@@ -96,13 +104,17 @@ import {
   ShoppingBagIcon
 } from '@heroicons/vue/24/outline'
 
-/** 行為參數（可依需求微調） */
-const GRACE_MS = 5000 // 進頁前 5s 不隱藏
-const IDLE_SHOW_MS = 10000 // 無操作 10s 自動顯示
-const MIN_DELTA = 8 // 需要至少位移 8px 才算一次方向改變
+import { useCart } from '@/composables/useCart' // 🟧 新增
 
-const visible = ref(true) // 進頁顯示
-const armed = ref(false) // 是否已過緩衝期
+const { count: cartCount } = useCart() // 🟧 新增
+
+/** 行為參數（可依需求微調） */
+const GRACE_MS = 5000
+const IDLE_SHOW_MS = 10000
+const MIN_DELTA = 8
+
+const visible = ref(true)
+const armed = ref(false)
 const igDmUrl = 'https://ig.me/m/mmshanse'
 
 let lastY = 0
@@ -153,7 +165,7 @@ function onScroll() {
         // 上滑 -> 顯示
         if (!visible.value) visible.value = true
       }
-      onActivity() // 捲動亦重置 idle 計時
+      onActivity()
       lastY = y
     }
 

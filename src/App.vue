@@ -11,12 +11,16 @@ import { useRoute } from 'vue-router'
 import FloatingNav from '@/components/FloatingNav.vue'
 import { preloadAll } from '@/utils/dataLoaders'
 import { gasGet } from '@/utils/gas' // 用於 notice 背景更新（SWR）
+import { provideCart } from '@/composables/useCart'
+
 
 /** -------- 全域狀態（provide 給頁面 inject） -------- */
 const menu = reactive({ main: [], drink: [], side: [], addon: [] })
 const holidays = reactive([]) // 用 splice 維持同一個 array 參考
 const retail = reactive({ frozen: [], dessert: [] })
 const notice = reactive([])
+const cart = provideCart() // ✅ 讓整個 app 都能用
+
 
 /** -------- 載入狀態（細分） -------- */
 const loading = reactive({
