@@ -169,7 +169,7 @@ import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 import { useCart } from '@/composables/useCart' // 🟧 新增：改用全域購物車
-+import { submitOrderCommon } from '@/composables/useOrder'
+import { submitOrderCommon } from '@/composables/useOrder'
 
 
 /** --- 版面微調：底部留白配合 FloatingNav --- */
