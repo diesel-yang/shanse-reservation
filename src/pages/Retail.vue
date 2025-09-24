@@ -313,7 +313,6 @@ async function submitOrder({ customer, done }) {
     done(result) // result = { orderId } 或 null
   } else if (!result) {
    alert('下單失敗，請稍後再試。')
-    }
   }
 }
 </script>
