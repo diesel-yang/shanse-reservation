@@ -315,7 +315,7 @@ async function submitOrder({ customer, done }) {
    alert('下單失敗，請稍後再試。')
     }
   }
-} // ←← 這一行就是缺少的收尾大括號（保留你的原註解）
+}
 </script>
 
 <style scoped>
