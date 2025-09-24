@@ -49,9 +49,10 @@
           <button class="text-xs underline opacity-80" @click="openCart = !openCart">
             {{ openCart ? '收合' : '展開' }}
           </button>
-          <button class="bg-white text黑 rounded-full px-4 py-2" @click="openCheckout = true">
-            結帳
-          </button>
+<button class="bg-yellow-400 text-black font-semibold rounded-full px-4 py-2">
+  結帳
+</button>
+
         </div>
        <!-- 🟧 新增：退換貨政策連結 -->
 <p class="text-[11px] text-gray-300 mt-1">
@@ -248,7 +249,7 @@ const earliestPickupDate = computed(() => {
 /** --- 工具 --- */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text白 border-black' : 'bg白 text黑'}`
+  `px-3 py-1 rounded-full border ${tab.value === t ? 'border-black text-black bg-white' : 'border-gray-300 text-gray-500 bg-white'}`
 
 /** --- 商品詳情視窗邏輯 --- */
 const detail = ref(null) // 目前開啟的商品
