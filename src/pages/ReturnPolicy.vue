@@ -52,9 +52,7 @@
     <section class="mb-6">
       <h2 class="text-lg font-semibold mb-2">六、聯絡資訊</h2>
       <ul class="list-disc pl-6 space-y-1">
-        <li>客服信箱：<a href="mailto:support@yourshop.com" class="underline">support@yourshop.com</a></li>
         <li>IG 私訊：<a :href="igDmUrl" target="_blank" class="underline">mmshanse</a></li>
-        <li>聯絡電話：02-1234-5678（週一至週五 10:00–18:00）</li>
       </ul>
     </section>
 

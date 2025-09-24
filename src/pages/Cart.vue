@@ -73,7 +73,7 @@ import ModalCheckout from '@/components/ModalCheckout.vue'
 import { submitOrderCommon } from '@/composables/useOrder'
 
 /** 🟧 useCart 取全域購物車 */
-const { state: cart, subtotal, inc, dec, remove } = useCart()
+const { state, subtotal, total, remove, inc, dec } = useCart()
 
 const openCheckout = ref(false)
 

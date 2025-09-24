@@ -69,6 +69,14 @@
           <span class="block text-center tracking-[0.2em]">訂位及用餐須知</span>
         </button>
       </router-link>
+    
+      <router-link to="/return-policy" class="block">
+        <button
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
+          <span class="block text-center tracking-[0.2em]">訂退換貨政策</span>
+        </button>
+      </router-link>
     </div>
   </div>
 </template>

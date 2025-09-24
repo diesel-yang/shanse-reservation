@@ -17,66 +17,71 @@
           <img src="/icon/shane-logo-orange.svg" alt="山色" class="w-9 h-9 object-contain" />
         </RouterLink>
 
-        <!-- 中：橢圓形群組 -->
-        <div
-          class="min-w-[68vw] max-w-[84vw] md:min-w-[520px] md:max-w-[640px] bg-white/90 backdrop-blur-md rounded-[26px] px-5 py-3 shadow-[0_8px_28px_rgba(0,0,0,0.18)] flex items-center justify-around gap-3"
-        >
-          <RouterLink
-            to="/about"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
-            aria-label="關於山色"
-          >
-            <UserIcon class="w-6 h-6" />
-            <span class="hidden sm:inline text-sm font-medium">關於</span>
-          </RouterLink>
+ <!-- 中：橢圓形群組 -->
+<div
+  class="min-w-[68vw] max-w-[84vw] md:min-w-[520px] md:max-w-[640px]
+         bg-white/90 backdrop-blur-md rounded-[26px] px-5 py-3
+         shadow-[0_8px_28px_rgba(0,0,0,0.18)]
+         flex items-center justify-around gap-3"
+>
+  <!-- 關於我們 -->
+  <RouterLink
+    to="/about"
+    class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+    aria-label="關於我們"
+  >
+    <UserIcon class="w-6 h-6" />
+    <span class="hidden sm:inline text-sm font-medium">關於</span>
+  </RouterLink>
 
-          <!-- 外部連結 -->
-          <a
-            href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
-            aria-label="餐桌予約（外部）"
-          >
-            <CalendarDaysIcon class="w-6 h-6" />
-            <span class="hidden sm:inline text-sm font-medium">予約</span>
-          </a>
+  <!-- 餐桌予約（外部連結） -->
+  <a
+    href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+    aria-label="餐桌予約（外部）"
+  >
+    <CalendarDaysIcon class="w-6 h-6" />
+    <span class="hidden sm:inline text-sm font-medium">予約</span>
+  </a>
 
-          <RouterLink
-            to="/menu"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
-            aria-label="預先點餐"
-          >
-            <BookOpenIcon class="w-6 h-6" />
-            <span class="hidden sm:inline text-sm font-medium">點餐</span>
-          </RouterLink>
+  <!-- 預先點餐 -->
+  <RouterLink
+    to="/menu"
+    class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+    aria-label="預先點餐"
+  >
+    <BookOpenIcon class="w-6 h-6" />
+    <span class="hidden sm:inline text-sm font-medium">點餐</span>
+  </RouterLink>
 
-          <RouterLink
-            to="/notice"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
-            aria-label="訂位及用餐須知"
-          >
-            <QuestionMarkCircleIcon class="w-6 h-6" />
-            <span class="hidden sm:inline text-sm font-medium">須知</span>
-          </RouterLink>
+  <!-- 零售商店 -->
+  <RouterLink
+    to="/retail"
+    class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+    aria-label="零售商店"
+  >
+    <ShoppingBagIcon class="w-6 h-6" />
+    <span class="hidden sm:inline text-sm font-medium">零售</span>
+  </RouterLink>
 
-          <!-- 🟧 修改：零售商品 + 購物車角標 -->
-          <RouterLink
-            to="/cart"
-            class="relative flex items-center gap-2 text-gray-800 hover:opacity-80"
-            aria-label="零售商品"
-          >
-            <ShoppingBagIcon class="w-6 h-6" />
-            <span class="hidden sm:inline text-sm font-medium">購物車</span>
-            <!-- 🟧 新增：小紅點 -->
-            <span
-              v-if="cartCount > 0"
-              class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full"
-            >
-              {{ cartCount }}
-            </span>
-          </RouterLink>
-        </div>
+  <!-- 購物車 + 小紅點 -->
+  <RouterLink
+    to="/cart"
+    class="relative flex items-center gap-2 text-gray-800 hover:opacity-80"
+    aria-label="購物車"
+  >
+    <ShoppingCartIcon class="w-6 h-6" />
+    <span class="hidden sm:inline text-sm font-medium">購物車</span>
+    <span
+      v-if="cartCount > 0"
+      class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full"
+    >
+      {{ cartCount }}
+    </span>
+  </RouterLink>
+</div>
 
         <!-- 右：圓形 IG 私訊 -->
         <a
@@ -100,8 +105,8 @@ import {
   UserIcon,
   BookOpenIcon,
   CalendarDaysIcon,
-  QuestionMarkCircleIcon,
-  ShoppingBagIcon
+  ShoppingBagIcon,
+  ShoppingCartIcon, // 🟧 新增
 } from '@heroicons/vue/24/outline'
 
 import { useCart } from '@/composables/useCart' // 🟧 新增
@@ -210,4 +215,3 @@ onBeforeUnmount(() => {
   transform: translateY(8px);
 }
 </style>
-<!-- src/App.vue -->
