@@ -49,9 +49,9 @@
           <button class="text-xs underline opacity-80" @click="openCart = !openCart">
             {{ openCart ? '收合' : '展開' }}
           </button>
-<button class="bg-yellow-400 text-black font-semibold rounded-full px-4 py-2">
-  結帳
-</button>
+          <button class="bg-yellow-400 text-black font-semibold rounded-full px-4 py-2">
+           結帳
+          </button>
 
         </div>
        <!-- 🟧 新增：退換貨政策連結 -->
