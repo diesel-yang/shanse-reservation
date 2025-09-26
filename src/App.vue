@@ -19,7 +19,7 @@ const menu = reactive({ main: [], drink: [], side: [], addon: [] })
 const holidays = reactive([]) // 用 splice 維持同一個 array 參考
 const retail = reactive({ frozen: [], dessert: [] })
 const notice = reactive([])
-provideCart() // ✅ 讓整個 app 都能用
+const cart = provideCart() // ✅ 提供全域購物車 store
 
 
 /** -------- 載入狀態（細分） -------- */

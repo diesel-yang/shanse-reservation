@@ -159,6 +159,7 @@ import { inject, ref, computed } from 'vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
+import { useCart } from '@/composables/useCart'
 
 /** --- 版面微調 --- */
 const cartBarStyle = {
@@ -186,34 +187,17 @@ const displayItems = computed(() =>
   }))
 )
 
-/** --- 購物車 --- */
-const cart = ref([])
+/** --- 購物車 (全域 useCart) --- */
+const { state: cart, add, inc, dec, remove, clear, count: cartCount, subtotal } = useCart()
 const openCart = ref(false)
 const openCheckout = ref(false)
 
-const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
-const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
-
 function addToCart(item, qty = 1) {
-  if (!item || item.disabled) return
-  const n = Math.max(1, Number(qty || 1))
-  const idx = cart.value.findIndex(x => x.code === item.code)
-  if (idx > -1) cart.value[idx].qty += n
-  else
-    cart.value.push({
-      code: item.code,
-      name: item.name,
-      price: Number(item.price || 0),
-      qty: n,
-      unit: item.unit || '份',
-      lead_days: Number(item.lead_days || 0)
-    })
+  add(item, qty)
 }
-const inc = idx => cart.value[idx].qty++
-const dec = idx => (cart.value[idx].qty = Math.max(1, cart.value[idx].qty - 1))
-const remove = idx => cart.value.splice(idx, 1)
 
-/** --- 取貨日 --- */
+
+/** --- 最早可取貨日 --- */
 const earliestPickupDate = computed(() => {
   const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -228,26 +212,25 @@ const tabBtn = t =>
     tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
   }`
 
-/** --- 詳情視窗 --- */
+/** --- 商品詳情視窗邏輯 --- */
 const detail = ref(null)
 const detailQty = ref(1)
 const detailJoined = ref(false)
 let detailTimer = null
 
 function openDetail(item) {
-  if (!item) return
   detail.value = item
   detailQty.value = 1
   detailJoined.value = false
-  if (detailTimer) clearTimeout(detailTimer)
+  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
 }
 function closeDetail() {
   detail.value = null
-  if (detailTimer) clearTimeout(detailTimer)
+  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
 }
 function addDetailToCart() {
   if (!detail.value) return
-  addToCart(detail.value, detailQty.value)
+  add(detail.value, detailQty.value)
   detailJoined.value = true
   if (detailTimer) clearTimeout(detailTimer)
   detailTimer = setTimeout(() => (detailJoined.value = false), 5000)
