@@ -1,9 +1,10 @@
-// vite.config.js
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
-import { fileURLToPath, URL } from 'node:url' // ✅ 你原本沒匯入這兩個
+import { fileURLToPath, URL } from 'node:url'
+import fs from 'fs'
+import path from 'path'
 
 // 🔹 建置版號（git commit 短哈希）
 function injectBuildId() {
@@ -21,10 +22,25 @@ function injectBuildId() {
   }
 }
 
+// 🟧 自動檢查 manifest 是否輸出
+function checkManifest() {
+  return {
+    name: 'check-manifest',
+    closeBundle() {
+      const manifestPath = path.resolve(__dirname, 'dist/manifest.webmanifest')
+      if (fs.existsSync(manifestPath)) {
+        console.log('✅ PWA manifest 已生成:', manifestPath)
+      } else {
+        console.warn('⚠️ 沒找到 manifest.webmanifest，請檢查 VitePWA 設定')
+      }
+    }
+  }
+}
+
 export default defineConfig({
   plugins: [
     vue(),
-    injectBuildId(), // 放在 PWA 前面
+    injectBuildId(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -79,13 +95,14 @@ export default defineConfig({
         ]
       },
       devOptions: { enabled: true }
-    })
+    }),
+    checkManifest() // ✅ build 完檢查 manifest
   ],
   base: '/',
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)), // ✅ 只留一種寫法
-      vue: 'vue/dist/vue.esm-bundler.js' // ✅ 如需 runtime compiler 才保留
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      vue: 'vue/dist/vue.esm-bundler.js'
     }
   },
   optimizeDeps: { include: ['vue'] },

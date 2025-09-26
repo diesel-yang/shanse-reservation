@@ -1,46 +1,44 @@
+<!-- src/pages/Cart.vue -->
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-4">購物車</h1>
 
-    <div v-if="!cart.value.length" class="text-gray-500 text-center py-10">
-      購物車是空的
+    <div v-if="state.items.length === 0" class="text-gray-500">
+      購物車是空的，快去逛逛吧！
+      <RouterLink to="/retail" class="text-blue-600 underline">零售商店</RouterLink>
     </div>
 
-    <div v-else class="space-y-3">
-      <!-- 購物車清單 -->
+    <div v-else>
+      <!-- 商品清單 -->
       <div
-        v-for="(c, idx) in cart.value"
+        v-for="(c, idx) in state.items"
         :key="c.code + '-' + idx"
-        class="flex items-center justify-between border-b pb-2"
+        class="flex items-center justify-between py-3 border-b"
       >
         <div class="min-w-0">
           <div class="font-medium truncate">{{ c.name }}</div>
-          <div class="text-xs text-gray-500">{{ currency(c.price) }} / {{ c.unit || '份' }}</div>
+          <div class="text-xs text-gray-500">
+            {{ currency(c.price) }} / {{ c.unit || '份' }}
+          </div>
         </div>
         <div class="flex items-center gap-2">
-          <button @click="dec(idx)" class="px-2 border rounded" :disabled="c.qty <= 1">－</button>
+          <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">－</button>
           <span class="w-6 text-center">{{ c.qty }}</span>
-          <button @click="inc(idx)" class="px-2 border rounded">＋</button>
-          <button @click="remove(idx)" class="text-red-500 underline text-xs">移除</button>
+          <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
+          <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
         </div>
       </div>
 
       <!-- 小計 -->
-      <div class="flex justify-between font-bold text-lg mt-4">
+      <div class="flex justify-between items-center mt-6 text-lg font-semibold">
         <span>小計</span>
-        <span>{{ currency(subtotal.value) }}</span>
+        <span>{{ currency(subtotal) }}</span>
       </div>
 
-      <!-- 按鈕區 -->
-      <div class="flex gap-3 mt-6">
-        <RouterLink
-          to="/retail"
-          class="flex-1 text-center bg-gray-200 text-gray-800 rounded-full px-6 py-3"
-        >
-          回到商店
-        </RouterLink>
+      <!-- 結帳按鈕 -->
+      <div class="mt-6">
         <button
-          class="flex-1 bg-black text-white rounded-full px-6 py-3"
+          class="w-full bg-black text-white rounded-full py-3 font-semibold hover:bg-gray-900 transition"
           @click="openCheckout = true"
         >
           前往結帳
@@ -56,8 +54,8 @@
     <!-- 🟧 新增：結帳視窗 -->
     <ModalCheckout
       v-if="openCheckout"
-      :cart="cart"
-      :subtotal="subtotal.value"
+      :cart="state.items"
+      :subtotal="subtotal"
       :earliest-pickup-date="earliestPickupDate"
       @close="openCheckout = false"
       @submit="submitOrder"
@@ -70,25 +68,24 @@ import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useCart } from '@/composables/useCart'
 import ModalCheckout from '@/components/ModalCheckout.vue'
-import { submitOrderCommon } from '@/composables/useOrder'
+import { gasPost } from '@/utils/gas'
 
-/** 🟧 useCart 取全域購物車 */
-const { state, subtotal, total, remove, inc, dec } = useCart()
-
+/** --- 購物車狀態 --- */
+const { state, subtotal, inc, dec, remove, clear } = useCart()
 const openCheckout = ref(false)
 
-/** 小工具 */
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-
-/** --- 最早可取貨日（依購物車最大前置天數） --- */
+/** --- 最早可取貨日 --- */
 const earliestPickupDate = computed(() => {
-  const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
+  const maxLead = state.items.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
   d.setDate(d.getDate() + maxLead)
   return d
 })
 
-/** --- 下單流程（和 Retail.vue 相同邏輯） --- */
+/** --- 工具 --- */
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+
+/** --- 下單 --- */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
@@ -101,8 +98,8 @@ function toYMDLocal(dateLike) {
   return `${y}-${m}-${day}`
 }
 
-async function submitOrder({ customer, done }) {
-  const items = cart.value.map(i => ({
+async function submitOrder({ customer }) {
+  const items = state.items.map(i => ({
     code: i.code,
     name: i.name,
     price: Number(i.price || 0),
@@ -113,7 +110,6 @@ async function submitOrder({ customer, done }) {
   const subtotalNum = Number(subtotal.value || 0)
   const shippingNum = customer?.method === '宅配' ? 160 : 0
   const totalNum = subtotalNum + shippingNum
-
   const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
 
   const out = await gasPost({
@@ -138,15 +134,13 @@ async function submitOrder({ customer, done }) {
   }
 
   if (out?.result === 'success') {
-    if (typeof done === 'function') {
-      done({ orderId: out.orderId })
-    }
+    alert(`下單成功！訂單編號：${out.orderId}`)
+    clear() // ✅ 清空購物車
+    openCheckout.value = false
+    // ✅ 自動跳轉回零售頁（或首頁）
+    window.location.href = '/retail'
   } else {
-    if (typeof done === 'function') {
-      done(null)
-    } else {
-      alert('下單失敗，請稍後再試。')
-    }
+    alert('下單失敗，請稍後再試。')
   }
 }
 </script>

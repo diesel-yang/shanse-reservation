@@ -1,3 +1,4 @@
+<!-- src/pages/Retail.vue -->
 <template>
   <!-- 整頁容器，底部墊高避免被 FloatingNav 蓋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
@@ -49,18 +50,13 @@
           <button class="text-xs underline opacity-80" @click="openCart = !openCart">
             {{ openCart ? '收合' : '展開' }}
           </button>
-          <button class="bg-yellow-400 text-black font-semibold rounded-full px-4 py-2">
-           結帳
+          <button class="bg-white text-black rounded-full px-4 py-2" @click="openCheckout = true">
+            結帳
           </button>
-
         </div>
-       <!-- 🟧 新增：退換貨政策連結 -->
-<p class="text-[11px] text-gray-300 mt-1">
-  <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
-</p> 
       </div>
 
-      <div v-if="openCart" class="mt-2 bg白 rounded-2xl border p-3 max-h-72 overflow-auto">
+      <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in cart"
           :key="c.code + '-' + idx"
@@ -98,17 +94,15 @@
         <!-- 遮罩 -->
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
 
-        <!-- 內容：可滾動 + 底部固定操作列；rounded-none -->
+        <!-- 內容 -->
         <div
           class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white rounded-none shadow-xl flex flex-col"
         >
-          <!-- 標題列 -->
           <div class="px-5 py-4 border-b flex items-center justify-between">
             <h2 class="text-lg font-semibold truncate">{{ detail.name }}</h2>
             <button class="text-gray-500 hover:text-black" @click="closeDetail">✕</button>
           </div>
 
-          <!-- 內容可捲動 -->
           <div class="flex-1 overflow-auto">
             <div v-if="detail.image" class="aspect-[16/10] w-full overflow-hidden">
               <img :src="detail.image" alt="" class="w-full h-full object-cover" />
@@ -120,16 +114,13 @@
             </div>
           </div>
 
-          <!-- 底部操作列（固定） -->
           <div class="border-t px-5 py-3">
             <div class="flex items-center justify-between gap-3">
-              <!-- 價格（無 NT 前綴） -->
               <div class="text-xl font-semibold shrink-0">
                 {{ Number(detail.price || 0).toLocaleString() }}
                 <span class="text-xs text-gray-500">/ {{ detail.unit || '份' }}</span>
               </div>
 
-              <!-- 數量進步器（在價格右側） -->
               <div class="flex items-center gap-2">
                 <button
                   class="w-10 h-10 rounded border"
@@ -141,13 +132,12 @@
                 <button class="w-10 h-10 rounded border" @click="detailQty++">＋</button>
               </div>
 
-              <!-- 加入按鈕 -->
               <button
                 class="flex-1 h-12 rounded-lg font-semibold transition"
                 :class="
                   detailJoined
-                    ? 'bg-green-600 text白'
-                    : 'bg-blue-600 text白 hover:bg-blue-700'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 "
                 @click="addDetailToCart"
               >
@@ -159,7 +149,7 @@
       </div>
     </transition>
 
-    <!-- spacer，避免被 FloatingNav 擋住 -->
+    <!-- spacer -->
     <div aria-hidden="true" :style="bottomSpacerStyle"></div>
   </div>
 </template>
@@ -169,11 +159,8 @@ import { inject, ref, computed } from 'vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
-import { useCart } from '@/composables/useCart' // 🟧 新增：改用全域購物車
-import { submitOrderCommon } from '@/composables/useOrder'
 
-
-/** --- 版面微調：底部留白配合 FloatingNav --- */
+/** --- 版面微調 --- */
 const cartBarStyle = {
   bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--nav-height, 100px) + 8px)'
 }
@@ -182,7 +169,7 @@ const bottomSpacerStyle = {
 }
 const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 
-/** --- 由 App.vue 注入資料 --- */
+/** --- 資料 --- */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const retailLoading = inject('retailLoading', ref(false))
 
@@ -200,45 +187,33 @@ const displayItems = computed(() =>
 )
 
 /** --- 購物車 --- */
-// const cart = ref([])                                   // ⛔ 原本本地狀態
-// const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
-// const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
-
-// 🟧 修改：使用 useCart 全域 store，但保留相同變數名稱給模板使用
-const {
-  state,
-  count: storeCount,
-  subtotal: storeSubtotal,
-  add: addFromStore,
-  inc: incFromStore,
-  dec: decFromStore,
-  remove: removeFromStore,
-  clear: clearFromStore
-} = useCart()
-
-const cart = state                       // 🟧 修改：cart 改成全域 state
-const cartCount = computed(() => storeCount.value)     // 🟧 修改
-const subtotal = computed(() => storeSubtotal.value)   // 🟧 修改
-
+const cart = ref([])
 const openCart = ref(false)
 const openCheckout = ref(false)
 
-function addToCart(item, qty = 1) {                     // 🟧 修改：改呼叫 store.add
+const cartCount = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
+const subtotal = computed(() => cart.value.reduce((s, i) => s + i.qty * Number(i.price || 0), 0))
+
+function addToCart(item, qty = 1) {
   if (!item || item.disabled) return
-  addFromStore(item, qty)
+  const n = Math.max(1, Number(qty || 1))
+  const idx = cart.value.findIndex(x => x.code === item.code)
+  if (idx > -1) cart.value[idx].qty += n
+  else
+    cart.value.push({
+      code: item.code,
+      name: item.name,
+      price: Number(item.price || 0),
+      qty: n,
+      unit: item.unit || '份',
+      lead_days: Number(item.lead_days || 0)
+    })
 }
+const inc = idx => cart.value[idx].qty++
+const dec = idx => (cart.value[idx].qty = Math.max(1, cart.value[idx].qty - 1))
+const remove = idx => cart.value.splice(idx, 1)
 
-// ⛔ 原本直接更動陣列的版本
-// const inc = idx => cart.value[idx].qty++
-// const dec = idx => (cart.value[idx].qty = Math.max(1, cart.value[idx].qty - 1))
-// const remove = idx => cart.value.splice(idx, 1)
-
-// 🟧 修改：維持同名方法給模板用，但內部轉呼叫 store
-const inc = idx => incFromStore(idx)
-const dec = idx => decFromStore(idx)
-const remove = idx => removeFromStore(idx)
-
-/** --- 最早可取貨日（依購物車最大前置天數） --- */
+/** --- 取貨日 --- */
 const earliestPickupDate = computed(() => {
   const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -249,10 +224,12 @@ const earliestPickupDate = computed(() => {
 /** --- 工具 --- */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'border-black text-black bg-white' : 'border-gray-300 text-gray-500 bg-white'}`
+  `px-3 py-1 rounded-full border ${
+    tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
+  }`
 
-/** --- 商品詳情視窗邏輯 --- */
-const detail = ref(null) // 目前開啟的商品
+/** --- 詳情視窗 --- */
+const detail = ref(null)
 const detailQty = ref(1)
 const detailJoined = ref(false)
 let detailTimer = null
@@ -262,27 +239,21 @@ function openDetail(item) {
   detail.value = item
   detailQty.value = 1
   detailJoined.value = false
-  if (detailTimer) {
-    clearTimeout(detailTimer)
-    detailTimer = null
-  }
+  if (detailTimer) clearTimeout(detailTimer)
 }
 function closeDetail() {
   detail.value = null
-  if (detailTimer) {
-    clearTimeout(detailTimer)
-    detailTimer = null
-  }
+  if (detailTimer) clearTimeout(detailTimer)
 }
 function addDetailToCart() {
   if (!detail.value) return
-  addToCart(detail.value, detailQty.value) // 🟧 修改：內部已改呼叫 store.add
+  addToCart(detail.value, detailQty.value)
   detailJoined.value = true
   if (detailTimer) clearTimeout(detailTimer)
   detailTimer = setTimeout(() => (detailJoined.value = false), 5000)
 }
 
-/** --- 送單（GAS） --- */
+/** --- GAS 下單 --- */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
@@ -301,19 +272,66 @@ function toYMDLocal(dateLike) {
   return `${y}-${m}-${day}`
 }
 
-// 🟧 修改：@submit 現在會帶回調 done，透過 callback 把 result 回給子層（不破壞既有事件架構）
-async function submitOrder({ customer, done }) {
- const result = await submitOrderCommon({
-    cart: cart.value,
-    subtotal: subtotal.value,
-    earliestPickupDate: earliestPickupDate.value,
-    customer
+async function submitOrder({ customer }) {
+  const items = cart.value.map(i => ({
+    code: i.code,
+    name: i.name,
+    price: Number(i.price || 0),
+    qty: Number(i.qty || 1),
+    unit: i.unit || '份'
+  }))
+
+  const subtotalNum = Number(subtotal.value || 0)
+  const shippingNum = customer?.method === '宅配' ? 160 : 0
+  const totalNum = subtotalNum + shippingNum
+  const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
+
+  const out = await gasPost({
+    type: 'retailOrder',
+    name: customer?.name || '',
+    phone: customer?.phone || '',
+    method: customer?.method || '自取',
+    pickup_date: pickupYmd,
+    address: customer?.address || '',
+    payment_method: customer?.payment_method || 'cash',
+    bank_ref: customer?.bank_ref || '',
+    note: customer?.note || '',
+    items: JSON.stringify(items),
+    subtotal: String(subtotalNum),
+    shipping: String(shippingNum),
+    total: String(totalNum)
   })
 
- if (typeof done === 'function') {
-    done(result) // result = { orderId } 或 null
-  } else if (!result) {
-   alert('下單失敗，請稍後再試。')
+  if (out?.result === 'pending' && out?.paymentUrl) {
+    window.location.href = out.paymentUrl
+    return
+  }
+
+  if (out?.result === 'success') {
+    const pm = (customer?.payment_method || '').trim()
+    const isTransfer = pm === 'transfer' || pm.includes('轉帳') || pm.includes('匯款')
+
+    if (isTransfer) {
+      const bankRef = (customer?.bank_ref || '').trim() || '尚未填寫'
+      alert(
+        `下單成功！訂單編號：${out.orderId}\n\n` +
+          `請於 24 小時內完成付款：\n` +
+          `玉山銀行（808） 1234-567-890123\n\n` +
+          `您在表單所填寫的「帳號後五碼：${bankRef}」，我們將自動對帳。`
+      )
+    } else {
+      alert(`下單成功！訂單編號：${out.orderId}`)
+    }
+
+    // ✅ 清空購物車 & 關閉視窗
+    cart.value = []
+    openCart.value = false
+    openCheckout.value = false
+
+    // ✅ 跳回零售頁
+    window.location.href = '/retail'
+  } else {
+    alert('下單失敗，請稍後再試。')
   }
 }
 </script>
