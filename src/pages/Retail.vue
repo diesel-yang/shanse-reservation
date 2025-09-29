@@ -1,3 +1,4 @@
+<!-- src/pages/Retail.vue -->
 <template>
   <!-- 整頁容器，底部墊高避免被 FloatingNav 蓋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
@@ -55,9 +56,10 @@
         </div>
       </div>
 
+      <!-- 🟧 修正：用 items 取代 cart -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
-          v-for="(c, idx) in cart"
+          v-for="(c, idx) in items"
           :key="(c?.code || 'item') + '-' + idx"
           v-if="c"
           class="flex items-center justify-between py-2 border-b last:border-b-0"
@@ -81,7 +83,7 @@
     <!-- 結帳視窗 -->
     <ModalCheckout
       v-if="openCheckout"
-      :cart="cart"
+      :cart="items"
       :subtotal="subtotal"
       :earliest-pickup-date="earliestPickupDate"
       @close="openCheckout = false"
@@ -188,7 +190,7 @@ const displayItems = computed(() =>
 )
 
 /** --- 購物車 (全域 useCart) --- */
-const { items: cart, add, inc, dec, remove, clear, count: cartCount, subtotal } = useCart()
+const { items, add, inc, dec, remove, clear, count: cartCount, subtotal } = useCart()
 const openCart = ref(false)
 const openCheckout = ref(false)
 
@@ -198,7 +200,7 @@ function addToCart(item, qty = 1) {
 
 /** --- 最早可取貨日 --- */
 const earliestPickupDate = computed(() => {
-  const maxLead = cart.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
+  const maxLead = items.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
   d.setDate(d.getDate() + maxLead)
   return d
@@ -211,7 +213,7 @@ const tabBtn = t =>
     tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
   }`
 
-/** --- 商品詳情視窗 --- */
+/** --- 商品詳情視窗邏輯 --- */
 const detail = ref(null)
 const detailQty = ref(1)
 const detailJoined = ref(false)
@@ -255,7 +257,7 @@ function toYMDLocal(dateLike) {
 }
 
 async function submitOrder({ customer }) {
-  const items = cart.value.map(i => ({
+  const orderItems = items.value.map(i => ({
     code: i.code,
     name: i.name,
     price: Number(i.price || 0),
@@ -278,7 +280,7 @@ async function submitOrder({ customer }) {
     payment_method: customer?.payment_method || 'cash',
     bank_ref: customer?.bank_ref || '',
     note: customer?.note || '',
-    items: JSON.stringify(items),
+    items: JSON.stringify(orderItems),
     subtotal: String(subtotalNum),
     shipping: String(shippingNum),
     total: String(totalNum)
@@ -305,7 +307,8 @@ async function submitOrder({ customer }) {
       alert(`下單成功！訂單編號：${out.orderId}`)
     }
 
-    clear() // ✅ 用 clear() 清空購物車
+    // ✅ 清空購物車 & 關閉視窗
+    clear()
     openCart.value = false
     openCheckout.value = false
 
