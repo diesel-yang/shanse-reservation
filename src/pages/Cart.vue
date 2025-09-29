@@ -1,6 +1,16 @@
 <!-- src/pages/Cart.vue -->
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6">
+    <!-- 🟧 返回零售商店 -->
+    <div class="mb-4">
+      <RouterLink
+        to="/retail"
+        class="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+      >
+        ← 返回零售商店
+      </RouterLink>
+    </div>
+
     <h1 class="text-2xl font-bold mb-4">購物車</h1>
 
     <div v-if="items.length === 0" class="text-gray-500">
@@ -99,26 +109,33 @@ function toYMDLocal(dateLike) {
 }
 
 async function submitOrder({ customer }) {
+  const orderItems = items.value.map(i => ({
+    code: i.code,
+    name: i.name,
+    price: Number(i.price || 0),
+    qty: Number(i.qty || 1),
+    unit: i.unit || '份'
+  }))
+
+  const subtotalNum = Number(subtotal.value || 0)
+  const shippingNum = customer?.method === '宅配' ? 160 : 0
+  const totalNum = subtotalNum + shippingNum
+  const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
+
   const out = await gasPost({
     type: 'retailOrder',
     name: customer?.name || '',
     phone: customer?.phone || '',
     method: customer?.method || '自取',
-    pickup_date: toYMDLocal(customer?.pickup_date || earliestPickupDate.value),
+    pickup_date: pickupYmd,
     address: customer?.address || '',
     payment_method: customer?.payment_method || 'cash',
     bank_ref: customer?.bank_ref || '',
     note: customer?.note || '',
-    items: JSON.stringify(items.value.map(i => ({
-      code: i.code,
-      name: i.name,
-      price: Number(i.price || 0),
-      qty: Number(i.qty || 1),
-      unit: i.unit || '份'
-    }))),
-    subtotal: String(Number(subtotal.value || 0)),
-    shipping: String(customer?.method === '宅配' ? 160 : 0),
-    total: String(Number(subtotal.value || 0) + (customer?.method === '宅配' ? 160 : 0))
+    items: JSON.stringify(orderItems),
+    subtotal: String(subtotalNum),
+    shipping: String(shippingNum),
+    total: String(totalNum)
   })
 
   if (out?.result === 'pending' && out?.paymentUrl) {
@@ -130,7 +147,8 @@ async function submitOrder({ customer }) {
     alert(`下單成功！訂單編號：${out.orderId}`)
     clear() // ✅ 清空購物車
     openCheckout.value = false
-    window.location.href = '/retail' // ✅ 跳轉回零售頁
+    // ✅ 自動跳轉回零售頁
+    window.location.href = '/retail'
   } else {
     alert('下單失敗，請稍後再試。')
   }

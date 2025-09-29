@@ -56,20 +56,22 @@
             <span class="hidden sm:inline text-sm font-medium">點餐</span>
           </RouterLink>
 
-          <!-- 零售商店 -->
+          <!-- 零售商店（🟧 高亮在 /retail） -->
           <RouterLink
             to="/retail"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+            class="flex items-center gap-2 hover:opacity-80"
+            :class="isRetailPage ? 'text-orange-600 font-bold' : 'text-gray-800'"
             aria-label="零售商店"
           >
             <ShoppingBagIcon class="w-6 h-6" />
             <span class="hidden sm:inline text-sm font-medium">零售</span>
           </RouterLink>
 
-          <!-- 購物車 + 小紅點 -->
+          <!-- 購物車 + 小紅點（🟧 高亮在 /cart） -->
           <RouterLink
             to="/cart"
-            class="relative flex items-center gap-2 text-gray-800 hover:opacity-80"
+            class="relative flex items-center gap-2 hover:opacity-80"
+            :class="isCartPage ? 'text-orange-600 font-bold' : 'text-gray-800'"
             aria-label="購物車"
           >
             <ShoppingCartIcon class="w-6 h-6" />
@@ -99,8 +101,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { RouterLink } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import {
   UserIcon,
   BookOpenIcon,
@@ -111,10 +113,14 @@ import {
 
 import { useCart } from '@/composables/useCart'
 
-// ✅ 使用 count（computed）做角標
 const { count: cartCount } = useCart()
 
-/** 行為參數（可依需求微調） */
+// 🟧 高亮判斷
+const route = useRoute()
+const isCartPage = computed(() => route.path === '/cart')
+const isRetailPage = computed(() => route.path === '/retail')
+
+/** 行為參數 */
 const GRACE_MS = 5000
 const IDLE_SHOW_MS = 10000
 const MIN_DELTA = 8
@@ -147,13 +153,11 @@ function scheduleIdleShow() {
   }, IDLE_SHOW_MS)
 }
 
-/** 任何互動都重置 idle 計時 */
 function onActivity() {
   if (!armed.value) return
   scheduleIdleShow()
 }
 
-/** 依捲動方向切換顯示 */
 function onScroll() {
   if (!armed.value) return
   if (ticking) return
