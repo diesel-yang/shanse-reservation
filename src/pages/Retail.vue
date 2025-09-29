@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <!-- 展開購物車 -->
+      <!-- 🟧 修正：展開購物車 -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in items"
@@ -77,6 +77,8 @@
             <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
           </div>
         </div>
+        <!-- 🟧 Debug: 確認有資料 -->
+        <p v-if="!items.length" class="text-xs text-gray-400">購物車是空的 (debug)</p>
       </div>
     </div>
 
@@ -95,7 +97,7 @@
       <div v-if="detail" class="fixed left-0 right-0 top-0 bottom-0 z-[60]">
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
         <div
-          class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white shadow-xl flex flex-col"
+          class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white rounded-none shadow-xl flex flex-col"
         >
           <div class="px-5 py-4 border-b flex items-center justify-between">
             <h2 class="text-lg font-semibold truncate">{{ detail.name }}</h2>
@@ -119,16 +121,23 @@
                 {{ Number(detail.price || 0).toLocaleString() }}
                 <span class="text-xs text-gray-500">/ {{ detail.unit || '份' }}</span>
               </div>
-
               <div class="flex items-center gap-2">
-                <button class="w-10 h-10 rounded border" @click="detailQty = Math.max(1, detailQty - 1)">－</button>
+                <button
+                  class="w-10 h-10 rounded border"
+                  @click="detailQty = Math.max(1, detailQty - 1)"
+                >
+                  －
+                </button>
                 <span class="w-8 text-center">{{ detailQty }}</span>
                 <button class="w-10 h-10 rounded border" @click="detailQty++">＋</button>
               </div>
-
               <button
                 class="flex-1 h-12 rounded-lg font-semibold transition"
-                :class="detailJoined ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'"
+                :class="
+                  detailJoined
+                    ? 'bg-green-600 text-white'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                "
                 @click="addDetailToCart"
               >
                 {{ detailJoined ? '✓ 已加入購物車' : '加入購物車' }}
@@ -182,9 +191,6 @@ const openCart = ref(false)
 const openCheckout = ref(false)
 
 function addToCart(item, qty = 1) {
-  if (!item.code) {
-    item.code = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  }
   add(item, qty)
 }
 
@@ -199,9 +205,11 @@ const earliestPickupDate = computed(() => {
 /** --- 工具 --- */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
+  `px-3 py-1 rounded-full border ${
+    tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
+  }`
 
-/** --- 商品詳情視窗 --- */
+/** --- 商品詳情視窗邏輯 --- */
 const detail = ref(null)
 const detailQty = ref(1)
 const detailJoined = ref(false)
@@ -211,17 +219,14 @@ function openDetail(item) {
   detail.value = item
   detailQty.value = 1
   detailJoined.value = false
-  if (detailTimer) clearTimeout(detailTimer)
+  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
 }
 function closeDetail() {
   detail.value = null
-  if (detailTimer) clearTimeout(detailTimer)
+  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
 }
 function addDetailToCart() {
   if (!detail.value) return
-  if (!detail.value.code) {
-    detail.value.code = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  }
   add(detail.value, detailQty.value)
   detailJoined.value = true
   if (detailTimer) clearTimeout(detailTimer)
@@ -234,10 +239,6 @@ function toYMDLocal(dateLike) {
   if (!dateLike) d = new Date()
   else if (dateLike instanceof Date) d = new Date(dateLike.getTime())
   else d = new Date(dateLike)
-  if (isNaN(d)) {
-    const m = String(dateLike).trim().match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
-    if (m) d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-  }
   if (isNaN(d)) d = new Date()
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
