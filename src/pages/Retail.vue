@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <!-- 🟧 修正：用 items 取代 cart -->
+      <!-- 展開購物車 -->
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
         <div
           v-for="(c, idx) in items"
@@ -93,12 +93,9 @@
     <!-- 商品詳情視窗 -->
     <transition name="fade">
       <div v-if="detail" class="fixed left-0 right-0 top-0 bottom-0 z-[60]">
-        <!-- 遮罩 -->
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
-
-        <!-- 內容 -->
         <div
-          class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white rounded-none shadow-xl flex flex-col"
+          class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white shadow-xl flex flex-col"
         >
           <div class="px-5 py-4 border-b flex items-center justify-between">
             <h2 class="text-lg font-semibold truncate">{{ detail.name }}</h2>
@@ -124,23 +121,14 @@
               </div>
 
               <div class="flex items-center gap-2">
-                <button
-                  class="w-10 h-10 rounded border"
-                  @click="detailQty = Math.max(1, detailQty - 1)"
-                >
-                  －
-                </button>
+                <button class="w-10 h-10 rounded border" @click="detailQty = Math.max(1, detailQty - 1)">－</button>
                 <span class="w-8 text-center">{{ detailQty }}</span>
                 <button class="w-10 h-10 rounded border" @click="detailQty++">＋</button>
               </div>
 
               <button
                 class="flex-1 h-12 rounded-lg font-semibold transition"
-                :class="
-                  detailJoined
-                    ? 'bg-green-600 text-white'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                "
+                :class="detailJoined ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'"
                 @click="addDetailToCart"
               >
                 {{ detailJoined ? '✓ 已加入購物車' : '加入購物車' }}
@@ -151,7 +139,6 @@
       </div>
     </transition>
 
-    <!-- spacer -->
     <div aria-hidden="true" :style="bottomSpacerStyle"></div>
   </div>
 </template>
@@ -195,6 +182,9 @@ const openCart = ref(false)
 const openCheckout = ref(false)
 
 function addToCart(item, qty = 1) {
+  if (!item.code) {
+    item.code = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  }
   add(item, qty)
 }
 
@@ -209,11 +199,9 @@ const earliestPickupDate = computed(() => {
 /** --- 工具 --- */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 const tabBtn = t =>
-  `px-3 py-1 rounded-full border ${
-    tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
-  }`
+  `px-3 py-1 rounded-full border ${tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'}`
 
-/** --- 商品詳情視窗邏輯 --- */
+/** --- 商品詳情視窗 --- */
 const detail = ref(null)
 const detailQty = ref(1)
 const detailJoined = ref(false)
@@ -223,14 +211,17 @@ function openDetail(item) {
   detail.value = item
   detailQty.value = 1
   detailJoined.value = false
-  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
+  if (detailTimer) clearTimeout(detailTimer)
 }
 function closeDetail() {
   detail.value = null
-  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
+  if (detailTimer) clearTimeout(detailTimer)
 }
 function addDetailToCart() {
   if (!detail.value) return
+  if (!detail.value.code) {
+    detail.value.code = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  }
   add(detail.value, detailQty.value)
   detailJoined.value = true
   if (detailTimer) clearTimeout(detailTimer)
@@ -244,9 +235,7 @@ function toYMDLocal(dateLike) {
   else if (dateLike instanceof Date) d = new Date(dateLike.getTime())
   else d = new Date(dateLike)
   if (isNaN(d)) {
-    const m = String(dateLike)
-      .trim()
-      .match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
+    const m = String(dateLike).trim().match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/)
     if (m) d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
   }
   if (isNaN(d)) d = new Date()
@@ -292,27 +281,10 @@ async function submitOrder({ customer }) {
   }
 
   if (out?.result === 'success') {
-    const pm = (customer?.payment_method || '').trim()
-    const isTransfer = pm === 'transfer' || pm.includes('轉帳') || pm.includes('匯款')
-
-    if (isTransfer) {
-      const bankRef = (customer?.bank_ref || '').trim() || '尚未填寫'
-      alert(
-        `下單成功！訂單編號：${out.orderId}\n\n` +
-          `請於 24 小時內完成付款：\n` +
-          `玉山銀行（808） 1234-567-890123\n\n` +
-          `您在表單所填寫的「帳號後五碼：${bankRef}」，我們將自動對帳。`
-      )
-    } else {
-      alert(`下單成功！訂單編號：${out.orderId}`)
-    }
-
-    // ✅ 清空購物車 & 關閉視窗
+    alert(`下單成功！訂單編號：${out.orderId}`)
     clear()
     openCart.value = false
     openCheckout.value = false
-
-    // ✅ 跳回零售頁
     window.location.href = '/retail'
   } else {
     alert('下單失敗，請稍後再試。')

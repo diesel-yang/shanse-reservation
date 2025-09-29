@@ -3,11 +3,12 @@
     <h4 v-if="!hideTitle && title" class="text-xl font-bold text-orange-600 mb-3">
       {{ title }}
     </h4>
+
     <!-- 零售卡片版 -->
     <div v-if="mode === 'retail'" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
-        :key="item.code"
+        :key="item.code || `tmp-${Math.random()}`"
         class="group relative rounded-2xl border bg-white overflow-hidden shadow-sm flex flex-col"
       >
         <!-- 售完遮罩 -->
@@ -29,7 +30,7 @@
           />
         </button>
 
-        <!-- 文字區（點擊開詳情） -->
+        <!-- 文字區 -->
         <div class="p-3 flex-1 flex flex-col">
           <button class="text-left" @click="emit('open-detail', item)" :disabled="item.disabled">
             <div class="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
@@ -44,14 +45,10 @@
             </div>
           </button>
 
-          <!-- 底部加入購物車按鈕（藍底/綠底 5 秒恢復） -->
+          <!-- 加入購物車按鈕 -->
           <button
             class="mt-3 h-10 rounded-lg font-semibold transition"
-            :class="
-              joined[item.code]
-                ? 'bg-green-600 text-white'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            "
+            :class="joined[item.code] ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'"
             :disabled="item.disabled"
             @click.stop="onAdd(item)"
           >
@@ -61,11 +58,11 @@
       </div>
     </div>
 
-    <!-- 原一般菜單版（保留） -->
+    <!-- 原一般菜單版 -->
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
-        :key="item.code"
+        :key="item.code || `tmp-${Math.random()}`"
         @click="handleClick(item)"
         class="relative card-item"
         :class="{
@@ -121,27 +118,30 @@ const props = defineProps({
   selectedList: Array,
   type: String,
   mode: { type: String, default: 'menu' }, // 'menu' | 'retail'
-  hideTitle: { type: Boolean, default: false } // 新增
+  hideTitle: { type: Boolean, default: false }
 })
 const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
 /** 卡片加入按鈕：5 秒綠底後恢復藍底 */
-const joined = reactive({}) // { [code]: boolean }
-const timers = {} // { [code]: number }
+const joined = reactive({})
+const timers = {}
 
 function onAdd(item) {
   if (!item || item.disabled) return
+  // 🟧 確保 item.code 存在
+  if (!item.code) {
+    item.code = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  }
   emit('add-to-cart', item)
   joined[item.code] = true
   if (timers[item.code]) clearTimeout(timers[item.code])
   timers[item.code] = setTimeout(() => (joined[item.code] = false), 5000)
 }
 
-/** 一般菜單版點擊行為（保留） */
 const handleClick = item => {
   if (!item || item.disabled) return
   if (props.mode === 'retail') {
-    emit('add-to-cart', item)
+    onAdd(item)
   } else if (props.type === 'addon') {
     emit('toggle', item.code)
   } else {
