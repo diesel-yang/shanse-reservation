@@ -1,4 +1,3 @@
-<!-- src/pages/Retail.vue -->
 <template>
   <!-- 整頁容器，底部墊高避免被 FloatingNav 蓋住 -->
   <div class="max-w-3xl mx-auto px-4 py-6" :style="pagePadStyle">
@@ -57,25 +56,25 @@
       </div>
 
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
-<div
-  v-for="(c, idx) in cart"
-  :key="(c?.code || 'item') + '-' + idx"
-  v-if="c"
-  class="flex items-center justify-between py-2 border-b last:border-b-0"
->
-  <div class="min-w-0">
-    <div class="font-medium truncate">{{ c.name || '未命名商品' }}</div>
-    <div class="text-xs text-gray-500">
-      {{ currency(c.price || 0) }} / {{ c.unit || '份' }}
-    </div>
-  </div>
-  <div class="flex items-center gap-2">
-    <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">－</button>
-    <span class="w-6 text-center">{{ c.qty }}</span>
-    <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
-    <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
-  </div>
-</div>
+        <div
+          v-for="(c, idx) in cart"
+          :key="(c?.code || 'item') + '-' + idx"
+          v-if="c"
+          class="flex items-center justify-between py-2 border-b last:border-b-0"
+        >
+          <div class="min-w-0">
+            <div class="font-medium truncate">{{ c.name || '未命名商品' }}</div>
+            <div class="text-xs text-gray-500">
+              {{ currency(c.price || 0) }} / {{ c.unit || '份' }}
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">－</button>
+            <span class="w-6 text-center">{{ c.qty }}</span>
+            <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
+            <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -189,14 +188,13 @@ const displayItems = computed(() =>
 )
 
 /** --- 購物車 (全域 useCart) --- */
-const { state: cart, add, inc, dec, remove, clear, count: cartCount, subtotal } = useCart()
+const { items: cart, add, inc, dec, remove, clear, count: cartCount, subtotal } = useCart()
 const openCart = ref(false)
 const openCheckout = ref(false)
 
 function addToCart(item, qty = 1) {
   add(item, qty)
 }
-
 
 /** --- 最早可取貨日 --- */
 const earliestPickupDate = computed(() => {
@@ -213,7 +211,7 @@ const tabBtn = t =>
     tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
   }`
 
-/** --- 商品詳情視窗邏輯 --- */
+/** --- 商品詳情視窗 --- */
 const detail = ref(null)
 const detailQty = ref(1)
 const detailJoined = ref(false)
@@ -307,8 +305,7 @@ async function submitOrder({ customer }) {
       alert(`下單成功！訂單編號：${out.orderId}`)
     }
 
-    // ✅ 清空購物車 & 關閉視窗
-    cart.value = []
+    clear() // ✅ 用 clear() 清空購物車
     openCart.value = false
     openCheckout.value = false
 

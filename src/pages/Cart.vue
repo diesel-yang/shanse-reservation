@@ -3,7 +3,7 @@
   <div class="max-w-3xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-4">購物車</h1>
 
-    <div v-if="state.items.length === 0" class="text-gray-500">
+    <div v-if="items.length === 0" class="text-gray-500">
       購物車是空的，快去逛逛吧！
       <RouterLink to="/retail" class="text-blue-600 underline">零售商店</RouterLink>
     </div>
@@ -11,7 +11,7 @@
     <div v-else>
       <!-- 商品清單 -->
       <div
-        v-for="(c, idx) in state.items"
+        v-for="(c, idx) in items"
         :key="c.code + '-' + idx"
         class="flex items-center justify-between py-3 border-b"
       >
@@ -45,16 +45,16 @@
         </button>
       </div>
       <!-- 🟧 新增：退換貨政策連結 -->
-<p class="text-xs text-gray-500 mt-2 text-center">
-  結帳前請先閱讀
-  <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
-</p>
+      <p class="text-xs text-gray-500 mt-2 text-center">
+        結帳前請先閱讀
+        <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
+      </p>
     </div>
 
-    <!-- 🟧 新增：結帳視窗 -->
+    <!-- 結帳視窗 -->
     <ModalCheckout
       v-if="openCheckout"
-      :cart="state.items"
+      :cart="items"
       :subtotal="subtotal"
       :earliest-pickup-date="earliestPickupDate"
       @close="openCheckout = false"
@@ -71,12 +71,12 @@ import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
 /** --- 購物車狀態 --- */
-const { state, subtotal, inc, dec, remove, clear } = useCart()
+const { items, subtotal, inc, dec, remove, clear } = useCart()
 const openCheckout = ref(false)
 
 /** --- 最早可取貨日 --- */
 const earliestPickupDate = computed(() => {
-  const maxLead = state.items.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
+  const maxLead = items.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
   d.setDate(d.getDate() + maxLead)
   return d
@@ -99,33 +99,26 @@ function toYMDLocal(dateLike) {
 }
 
 async function submitOrder({ customer }) {
-  const items = state.items.map(i => ({
-    code: i.code,
-    name: i.name,
-    price: Number(i.price || 0),
-    qty: Number(i.qty || 1),
-    unit: i.unit || '份'
-  }))
-
-  const subtotalNum = Number(subtotal.value || 0)
-  const shippingNum = customer?.method === '宅配' ? 160 : 0
-  const totalNum = subtotalNum + shippingNum
-  const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
-
   const out = await gasPost({
     type: 'retailOrder',
     name: customer?.name || '',
     phone: customer?.phone || '',
     method: customer?.method || '自取',
-    pickup_date: pickupYmd,
+    pickup_date: toYMDLocal(customer?.pickup_date || earliestPickupDate.value),
     address: customer?.address || '',
     payment_method: customer?.payment_method || 'cash',
     bank_ref: customer?.bank_ref || '',
     note: customer?.note || '',
-    items: JSON.stringify(items),
-    subtotal: String(subtotalNum),
-    shipping: String(shippingNum),
-    total: String(totalNum)
+    items: JSON.stringify(items.value.map(i => ({
+      code: i.code,
+      name: i.name,
+      price: Number(i.price || 0),
+      qty: Number(i.qty || 1),
+      unit: i.unit || '份'
+    }))),
+    subtotal: String(Number(subtotal.value || 0)),
+    shipping: String(customer?.method === '宅配' ? 160 : 0),
+    total: String(Number(subtotal.value || 0) + (customer?.method === '宅配' ? 160 : 0))
   })
 
   if (out?.result === 'pending' && out?.paymentUrl) {
@@ -137,8 +130,7 @@ async function submitOrder({ customer }) {
     alert(`下單成功！訂單編號：${out.orderId}`)
     clear() // ✅ 清空購物車
     openCheckout.value = false
-    // ✅ 自動跳轉回零售頁（或首頁）
-    window.location.href = '/retail'
+    window.location.href = '/retail' // ✅ 跳轉回零售頁
   } else {
     alert('下單失敗，請稍後再試。')
   }
