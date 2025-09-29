@@ -1,14 +1,26 @@
-// 🟧 新增：購物車全域 store（跨頁共享 + localStorage 永續化）
+// 🟧 購物車全域 store（跨頁共享 + localStorage 永續化）
 import { reactive, computed, provide, inject, watch } from 'vue'
 
 const CartSymbol = Symbol('Cart')
 const STORAGE_KEY = 'shanse-cart-v1'
 
 export function createCartStore() {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  // 🟧 安全讀取 localStorage
+  let parsed = []
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const tmp = JSON.parse(saved)
+      if (Array.isArray(tmp)) parsed = tmp
+    }
+  } catch (err) {
+    console.warn('❌ 解析購物車失敗，重設為空陣列', err)
+    parsed = []
+  }
+
   const state = reactive({
-    // 結構：{ code, name, price, qty, unit?, lead_days? }
-    items: saved ? JSON.parse(saved) : [],
+    // 確保一定是陣列
+    items: parsed,
     coupon: null,
     note: ''
   })
@@ -36,7 +48,7 @@ export function createCartStore() {
   function dec(idx) { state.items[idx].qty = Math.max(1, state.items[idx].qty - 1) }
   function remove(idx) { state.items.splice(idx, 1) }
   function clear() {
-    state.items.splice(0, state.items.length) // 🟧 保留 reactivity
+    state.items.splice(0, state.items.length) // 🟧 清空但保留 reactive
     state.coupon = null
     state.note = ''
     localStorage.removeItem(STORAGE_KEY)
@@ -49,7 +61,11 @@ export function createCartStore() {
   watch(
     () => state.items,
     (val) => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+      } catch (err) {
+        console.error('❌ 無法寫入 localStorage', err)
+      }
     },
     { deep: true }
   )
