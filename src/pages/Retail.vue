@@ -57,24 +57,25 @@
       </div>
 
       <div v-if="openCart" class="mt-2 bg-white rounded-2xl border p-3 max-h-72 overflow-auto">
-        <div
-          v-for="(c, idx) in cart"
-          :key="c.code + '-' + idx"
-          class="flex items-center justify-between py-2 border-b last:border-b-0"
-        >
-          <div class="min-w-0">
-            <div class="font-medium truncate">{{ c.name }}</div>
-            <div class="text-xs text-gray-500">{{ currency(c.price) }} / {{ c.unit || '份' }}</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">
-              －
-            </button>
-            <span class="w-6 text-center">{{ c.qty }}</span>
-            <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
-            <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
-          </div>
-        </div>
+<div
+  v-for="(c, idx) in cart"
+  :key="(c?.code || 'item') + '-' + idx"
+  v-if="c"
+  class="flex items-center justify-between py-2 border-b last:border-b-0"
+>
+  <div class="min-w-0">
+    <div class="font-medium truncate">{{ c.name || '未命名商品' }}</div>
+    <div class="text-xs text-gray-500">
+      {{ currency(c.price || 0) }} / {{ c.unit || '份' }}
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">－</button>
+    <span class="w-6 text-center">{{ c.qty }}</span>
+    <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
+    <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
+  </div>
+</div>
       </div>
     </div>
 

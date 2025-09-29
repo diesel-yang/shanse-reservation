@@ -7,7 +7,7 @@ const STORAGE_KEY = 'shanse-cart-v1'
 export function createCartStore() {
   const saved = localStorage.getItem(STORAGE_KEY)
   const state = reactive({
-    // 與你原本 item 結構一致：{ code, name, price, qty, unit?, lead_days? }
+    // 結構：{ code, name, price, qty, unit?, lead_days? }
     items: saved ? JSON.parse(saved) : [],
     coupon: null,
     note: ''
@@ -20,19 +20,23 @@ export function createCartStore() {
   const discount = computed(() => (state.coupon?.code === 'WELCOME100' ? 100 : 0))
   const total = computed(() => Math.max(0, subtotal.value + shipping.value - discount.value))
 
-  // 操作方法（index 以 state.items 的索引為準）
+  // 操作方法
   function add(item, qty = 1) {
     if (!item) return
     const n = Math.max(1, Number(qty || 1))
-    const idx = state.items.findIndex(x => x.code === item.code)
-    if (idx > -1) state.items[idx].qty += n
-    else state.items.push({ ...item, qty: n })
+    const code = item.code || `tmp-${Date.now()}-${Math.random()}`
+    const idx = state.items.findIndex(x => x.code === code)
+    if (idx > -1) {
+      state.items[idx].qty += n
+    } else {
+      state.items.push({ ...item, code, qty: n })
+    }
   }
   function inc(idx) { state.items[idx].qty++ }
   function dec(idx) { state.items[idx].qty = Math.max(1, state.items[idx].qty - 1) }
   function remove(idx) { state.items.splice(idx, 1) }
   function clear() {
-    state.items = []
+    state.items.splice(0, state.items.length) // 🟧 保留 reactivity
     state.coupon = null
     state.note = ''
     localStorage.removeItem(STORAGE_KEY)

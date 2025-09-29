@@ -178,21 +178,21 @@
         </div>
 
         <!-- Sticky Footer：送出按鈕（防連點） -->
-        <div class="px-5 pb-4 pt-3 sticky bottom-0 bg白 border-t">
+        <div class="px-5 pb-4 pt-3 sticky bottom-0 bg-white border-t">
          <!-- 🟧 新增：退換貨政策連結 -->
           <p class="text-xs text-gray-500 text-center">
             下單前請先閱讀
             <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
           </p>
-
           <button
             class="w-full rounded-full py-3 font-semibold transition disabled:opacity-60"
-            :class="submitting ? 'bg-gray-400 text白' : 'bg黑 text白 hover:bg-gray-900'"
+            :class="submitting ? 'bg-gray-400 text-white' : 'bg-[#ed8a3f] text-black hover:bg-[#d36c1d]'"
             :disabled="submitting"
             @click="onSubmit"
-          >
+           >
             {{ submitting ? '送出中…' : '送出訂單' }}
-          </button>
+           </button>
+          </div>
         </div>
       </div>
     </div>
