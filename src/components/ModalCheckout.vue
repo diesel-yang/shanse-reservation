@@ -13,7 +13,7 @@
         <!-- 標題列 -->
         <div class="px-5 py-4 border-b flex items-center justify-between">
           <h2 class="text-lg font-semibold">結帳</h2>
-          <button class="text-gray-500 hover:text黑" @click="$emit('close')" aria-label="關閉">
+          <button class="text-gray-500 hover:text-black" @click="$emit('close')" aria-label="關閉">
             ✕
           </button>
         </div>
@@ -25,12 +25,7 @@
             <!-- 訂購人 -->
             <div>
               <label class="block text-sm mb-1">訂購人姓名</label>
-              <input
-                v-model.trim="form.name"
-                type="text"
-                class="w-full input"
-                placeholder="王小明"
-              />
+              <input v-model.trim="form.name" type="text" class="w-full input" placeholder="王小明" />
               <p v-if="errors.name" class="text-xs text-red-500 mt-1">{{ errors.name }}</p>
             </div>
 
@@ -64,12 +59,7 @@
             <!-- 日期 / 地址 -->
             <div v-if="form.method === 'pickup' || form.method === '到店自取'">
               <label class="block text-sm mb-1">取貨日期</label>
-              <input
-                v-model="form.pickup_date"
-                :min="minDateStr"
-                type="date"
-                class="w-full input"
-              />
+              <input v-model="form.pickup_date" :min="minDateStr" type="date" class="w-full input" />
               <p class="text-xs text-gray-500 mt-1">最早可取：{{ displayMinDate }}</p>
               <p v-if="errors.pickup_date" class="text-xs text-red-500 mt-1">
                 {{ errors.pickup_date }}
@@ -95,18 +85,18 @@
                   <input type="radio" value="cash" v-model="form.payment_method" />
                   <span>現金 / 到店付款</span>
                 </label>
-                <label class="flex items中心 gap-2">
+                <label class="flex items-center gap-2">
                   <input type="radio" value="transfer" v-model="form.payment_method" />
                   <span>銀行轉帳</span>
                 </label>
-                <label class="flex items中心 gap-2">
+                <label class="flex items-center gap-2">
                   <input type="radio" value="linepay" v-model="form.payment_method" />
                   <span>LINE Pay</span>
                 </label>
               </div>
 
               <!-- 轉帳資訊＋後五碼 -->
-              <div v-if="form.payment_method === 'transfer' " class="mt-3 space-y-2">
+              <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
                 <div class="rounded-lg bg-gray-50 border p-3 text-sm">
                   <div>轉帳銀行：玉山銀行（代碼 808）</div>
                   <div>帳號：1234-567-890123</div>
@@ -121,13 +111,11 @@
                     class="w-full input"
                     placeholder="請填入 5 碼（利於對帳）"
                   />
-                  <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">
-                    {{ errors.bank_ref }}
-                  </p>
+                  <p v-if="errors.bank_ref" class="text-xs text-red-500 mt-1">{{ errors.bank_ref }}</p>
                 </div>
               </div>
 
-              <!-- LINE Pay 說明（暫時流程提示） -->
+              <!-- LINE Pay 說明 -->
               <p
                 v-else-if="form.payment_method === 'linepay'"
                 class="mt-2 text-xs text-gray-500 leading-relaxed"
@@ -177,9 +165,8 @@
           </aside>
         </div>
 
-        <!-- Sticky Footer：送出按鈕（防連點） -->
+        <!-- Sticky Footer：送出按鈕 -->
         <div class="px-5 pb-4 pt-3 sticky bottom-0 bg-white border-t">
-         <!-- 🟧 新增：退換貨政策連結 -->
           <p class="text-xs text-gray-500 text-center">
             下單前請先閱讀
             <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
@@ -189,28 +176,24 @@
             :class="submitting ? 'bg-gray-400 text-white' : 'bg-[#ed8a3f] text-black hover:bg-[#d36c1d]'"
             :disabled="submitting"
             @click="onSubmit"
-           >
+          >
             {{ submitting ? '送出中…' : '送出訂單' }}
-           </button>
-          </div>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 🟧 新增：下單成功訊息彈窗（顯示訂單編號） -->
-  <div
-    v-if="successDialog.open"
-    class="fixed inset-0 z-[110] flex items-center justify-center bg黑/50"
-  >
-    <div class="bg白 rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
+  <!-- 🟧 下單成功訊息彈窗 -->
+  <div v-if="successDialog.open" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/50">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
       <h2 class="text-xl font-bold mb-2">感謝您的訂購！</h2>
       <p class="text-gray-700 mb-4">您的訂單編號：</p>
       <p class="text-lg font-mono font-semibold text-orange-600 mb-6">
         {{ successDialog.orderId }}
       </p>
       <button
-        class="w-full rounded-full bg黑 text白 py-3 font-semibold hover:bg-gray-900"
+        class="w-full rounded-full bg-black text-white py-3 font-semibold hover:bg-gray-900"
         @click="successDialog.open = false; emit('close')"
       >
         確定
@@ -221,17 +204,17 @@
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted } from 'vue'
-import { useCart } from '@/composables/useCart' // 🟧 新增：清空購物車要用
+import { useCart } from '@/composables/useCart'
 
 /* Props / Emits */
 const props = defineProps({
-  cart: { type: Array, default: () => [] }, // [{code,name,price,qty,unit,lead_days}]
+  cart: { type: Array, default: () => [] },
   subtotal: { type: Number, default: 0 },
   earliestPickupDate: { type: Date, required: true }
 })
 const emit = defineEmits(['close', 'submit'])
 
-const { clear } = useCart() // 🟧 新增：成功後清空購物車（含 localStorage）
+const { clear } = useCart()
 
 /* 工具 */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
@@ -242,35 +225,32 @@ const toDateStr = d => {
   return `${y}-${m}-${day}`
 }
 
-/* 保障 earliestPickupDate 合法 */
+/* 日期 */
 const baseDate = computed(() => {
   const d = props.earliestPickupDate
   return d instanceof Date && !isNaN(d) ? d : new Date()
 })
 const minDateStr = computed(() => toDateStr(baseDate.value))
 const displayMinDate = computed(
-  () =>
-    `${baseDate.value.getFullYear()}年${baseDate.value.getMonth() + 1}月${baseDate.value.getDate()}日`
+  () => `${baseDate.value.getFullYear()}年${baseDate.value.getMonth() + 1}月${baseDate.value.getDate()}日`
 )
 
-/* 表單（預設：自取 + 現金） */
+/* 表單 */
 const form = reactive({
   name: '',
   phone: '',
-  method: 'pickup', // 'pickup' | '宅配'
-  pickup_date: '', // YYYY-MM-DD
+  method: 'pickup',
+  pickup_date: '',
   address: '',
-  payment_method: 'cash', // 'cash' | 'transfer' | 'linepay'
-  bank_ref: '', // 轉帳後五碼
+  payment_method: 'cash',
+  bank_ref: '',
   note: ''
 })
 
-/* 初始：預設取貨日為最早日期，避免 Invalid time value */
 onMounted(() => {
   form.pickup_date = minDateStr.value
 })
 
-/* 切換取貨方式：清掉不相干欄位 */
 watch(
   () => form.method,
   v => {
@@ -283,7 +263,6 @@ watch(
   }
 )
 
-/* 切換付款方式：轉帳以外清空後五碼 */
 watch(
   () => form.payment_method,
   pm => {
@@ -295,9 +274,7 @@ watch(
 const errors = reactive({ name: '', phone: '', pickup_date: '', address: '', bank_ref: '' })
 const validate = () => {
   errors.name = form.name ? '' : '請輸入姓名'
-  errors.phone = /^0\d{1,2}-?\d{6,8}$|^09\d{2}-?\d{3}-?\d{3}$/.test(form.phone)
-    ? ''
-    : '請輸入有效電話'
+  errors.phone = /^0\d{1,2}-?\d{6,8}$|^09\d{2}-?\d{3}-?\d{3}$/.test(form.phone) ? '' : '請輸入有效電話'
 
   if (form.method === 'pickup' || form.method === '到店自取') {
     errors.pickup_date = form.pickup_date ? '' : '請選擇取貨日期'
@@ -307,7 +284,6 @@ const validate = () => {
     errors.pickup_date = ''
   }
 
-  // 轉帳時強制要求後五碼（可依需求改為選填）
   if (form.payment_method === 'transfer') {
     errors.bank_ref = /^\d{5}$/.test(form.bank_ref) ? '' : '請填入 5 碼數字'
   } else {
@@ -317,13 +293,13 @@ const validate = () => {
   return !errors.name && !errors.phone && !errors.pickup_date && !errors.address && !errors.bank_ref
 }
 
-/* 🟧 新增：成功訊息狀態 */
-const successDialog = ref({ open: false, orderId: '' })
+/* 🟧 成功訊息狀態 */
+const successDialog = reactive({ open: false, orderId: '' })
 
-/* 送出（把資料交給父層 Retail.vue，並帶 callback 拿回 orderId） */
+/* 送出 */
 const submitting = ref(false)
 const onSubmit = async () => {
-  if (submitting.value) return // 二次防呆
+  if (submitting.value) return
   if (!props.cart?.length) return alert('購物車是空的')
   if (!validate()) return
 
@@ -335,18 +311,18 @@ const onSubmit = async () => {
       method: form.method === 'pickup' ? '自取' : '宅配',
       pickup_date: form.pickup_date,
       address: form.address,
-      payment_method: form.payment_method, // cash | transfer | linepay
+      payment_method: form.payment_method,
       bank_ref: form.bank_ref?.trim(),
       note: form.note
     }
 
-    // 🟧 修改：帶 done 回呼讓父層回傳 { orderId }
     emit('submit', {
       customer,
       done: (result) => {
         if (result?.orderId) {
-          clear() // ✅ 清空購物車 & localStorage
-          successDialog.value = { open: true, orderId: result.orderId } // ✅ 顯示成功彈窗
+          clear()
+          successDialog.open = true
+          successDialog.orderId = result.orderId
         } else {
           alert('下單失敗，請稍後再試。')
         }
@@ -362,7 +338,6 @@ const onSubmit = async () => {
 .input {
   @apply rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black/20;
 }
-/* 讓中間內容能捲動（含 iOS） */
 .modal-scroll {
   max-height: 70vh;
   overflow-y: auto;
