@@ -5,7 +5,7 @@
       {{ title }}
     </h4>
 
-    <!-- 🛒 零售卡片版 -->
+    <!-- 零售卡片版 -->
     <div v-if="mode === 'retail'" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="(item, idx) in filteredItems"
@@ -31,7 +31,7 @@
           />
         </button>
 
-        <!-- 文字區 -->
+        <!-- 文字區（點擊開詳情） -->
         <div class="p-3 flex-1 flex flex-col">
           <button class="text-left" @click="emit('open-detail', item)" :disabled="item.disabled">
             <div class="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
@@ -46,49 +46,55 @@
             </div>
           </button>
 
-          <!-- ✅ 底部按鈕區塊 -->
+          <!-- 底部加入購物車區：黃底 → 🗑 數字 ＋ -->
           <div class="mt-3">
-            <!-- 如果已加入購物車，顯示數量控制 -->
-            <div
-              v-if="cartMap[item.code]"
-              class="flex items-center justify-between border rounded-lg px-2 py-1"
-            >
-              <button
-                class="text-red-500 text-sm px-2"
-                @click.stop="emit('remove-from-cart', item)"
-              >
-                🗑 移除
-              </button>
-              <div class="flex items-center gap-2">
-                <button
-                  class="px-2 py-1 border rounded"
-                  @click.stop="emit('dec', item)"
-                  :disabled="cartMap[item.code].qty <= 1"
-                >
-                  －
-                </button>
-                <span class="w-6 text-center">{{ cartMap[item.code].qty }}</span>
-                <button class="px-2 py-1 border rounded" @click.stop="emit('inc', item)">
-                  ＋
-                </button>
-              </div>
-            </div>
-
-            <!-- 尚未加入購物車 -->
+            <!-- 未加入：黃底圓角大鈕 -->
             <button
-              v-else
-              class="w-full h-10 rounded-lg font-semibold transition bg-blue-600 text-white hover:bg-blue-700"
+              v-if="!inCart(item.code)"
+              class="w-full h-10 rounded-full font-semibold transition
+                     bg-[#f9d24e] text-black border border-black
+                     shadow-[4px_4px_0_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0"
               :disabled="item.disabled"
               @click.stop="onAdd(item)"
             >
               加入購物車
             </button>
+
+            <!-- 已加入：黃底條形控制（🗑 數字 ＋） -->
+            <div
+              v-else
+              class="h-10 rounded-full bg-[#f9d24e] border border-black shadow-[4px_4px_0_rgba(0,0,0,1)]
+                     flex items-center justify-between px-2"
+            >
+              <!-- 🗑 移除 -->
+              <button
+                class="px-3 py-1 rounded-full hover:bg-black/10"
+                @click.stop="remove(idxOf(item.code))"
+                aria-label="移除商品"
+                title="移除"
+              >
+                🗑
+              </button>
+
+              <!-- 數量 -->
+              <span class="font-semibold tabular-nums select-none">{{ qtyOf(item.code) }}</span>
+
+              <!-- ＋ 增加 -->
+              <button
+                class="px-3 py-1 rounded-full hover:bg-black/10"
+                @click.stop="inc(idxOf(item.code))"
+                aria-label="增加數量"
+                title="增加"
+              >
+                ＋
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 🍽️ 原一般菜單版（保留） -->
+    <!-- 原一般菜單版（保留、不要動） -->
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       <div
         v-for="item in filteredItems"
@@ -139,7 +145,8 @@
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue'
+import { computed } from 'vue'
+import { useCart } from '@/composables/useCart'
 
 const props = defineProps({
   title: String,
@@ -148,61 +155,17 @@ const props = defineProps({
   selectedList: Array,
   type: String,
   mode: { type: String, default: 'menu' }, // 'menu' | 'retail'
-  hideTitle: { type: Boolean, default: false },
-  cartMap: { type: Object, default: () => ({}) } // 🆕 用 code 對應購物車數量
+  hideTitle: { type: Boolean, default: false }
 })
-const emit = defineEmits([
-  'select',
-  'toggle',
-  'preview',
-  'add-to-cart',
-  'open-detail',
-  'inc',
-  'dec',
-  'remove-from-cart'
-])
+const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
-/** 加入購物車 */
-function onAdd(item) {
-  if (!item || item.disabled) return
-  emit('add-to-cart', item)
-}
+/* 🟨 連動全域購物車 */
+const { items: cartItems, add, inc, remove } = useCart()
 
-/** 一般菜單版點擊行為 */
-const handleClick = item => {
-  if (!item || item.disabled) return
-  if (props.mode === 'retail') {
-    emit('add-to-cart', item)
-  } else if (props.type === 'addon') {
-    emit('toggle', item.code)
-  } else {
-    emit('preview', item)
-  }
-}
+/* 購物車查詢工具 */
+const inCart = code => cartItems.value.some(i => i.code === code)
+const qtyOf = code => cartItems.value.find(i => i.code === code)?.qty || 0
+const idxOf = code => cartItems.value.findIndex(i => i.code === code)
 
-const isSelected = code =>
-  props.type === 'addon' ? props.selectedList?.includes(code) : props.selectedCode === code
-const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
-const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
-function handleImgError(e) {
-  e.target.style.display = 'none'
-}
-</script>
+/* 加入購
 
-<style scoped>
-.card-item {
-  @apply border rounded p-3 cursor-pointer transition bg-white text-left;
-}
-.card-item.selected {
-  @apply bg-orange-100 border-orange-400 text-orange-800;
-}
-.card-item.disabled {
-  @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
-}
-.card-item.as-button {
-  @apply text-center py-2 px-3 bg-white border border-gray-300 rounded font-medium;
-}
-.card-item.as-button.selected {
-  @apply bg-orange-100 text-orange-800 border-orange-400;
-}
-</style>

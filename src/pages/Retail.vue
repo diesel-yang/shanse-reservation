@@ -29,6 +29,11 @@
       :title="groups.title"
       :items="displayItems"
       mode="retail"
+      :cartMap="cartMap"
+      @add-to-cart="addToCart"
+      @inc="incQty"
+      @dec="decQty"
+      @remove-from-cart="removeItem"
       @open-detail="openDetail"
     />
 
@@ -68,13 +73,17 @@
 <script setup>
 import { inject, ref, computed } from 'vue'
 import SectionCard from '@/components/SectionCard.vue'
+import { useCart } from '@/composables/useCart'
 
+/** --- UI style --- */
 const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 const bottomSpacerStyle = { height: 'calc(var(--nav-height, 100px) + 12px)' }
 
+/** --- data injection --- */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const retailLoading = inject('retailLoading', ref(false))
 
+/** --- 分類切換 --- */
 const tab = ref('frozen')
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
@@ -87,6 +96,34 @@ const displayItems = computed(() =>
   }))
 )
 
+/** --- 購物車 --- */
+const { items, add, inc, dec, remove } = useCart()
+
+// 映射成 { [code]: { qty, ... } }
+const cartMap = computed(() =>
+  items.value.reduce((acc, cur) => {
+    if (cur?.code) acc[cur.code] = cur
+    return acc
+  }, {})
+)
+
+function addToCart(item) {
+  add(item, 1)
+}
+function incQty(item) {
+  const idx = items.value.findIndex(i => i.code === item.code)
+  if (idx > -1) inc(idx)
+}
+function decQty(item) {
+  const idx = items.value.findIndex(i => i.code === item.code)
+  if (idx > -1) dec(idx)
+}
+function removeItem(item) {
+  const idx = items.value.findIndex(i => i.code === item.code)
+  if (idx > -1) remove(idx)
+}
+
+/** --- 詳情視窗 --- */
 const detail = ref(null)
 function openDetail(item) {
   detail.value = item
@@ -94,6 +131,8 @@ function openDetail(item) {
 function closeDetail() {
   detail.value = null
 }
+
+/** --- tab button class --- */
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${
     tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'

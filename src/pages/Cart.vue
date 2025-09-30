@@ -31,11 +31,24 @@
             {{ currency(c.price) }} / {{ c.unit || '份' }}
           </div>
         </div>
+
+        <!-- 數量控制 -->
         <div class="flex items-center gap-2">
-          <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">－</button>
-          <span class="w-6 text-center">{{ c.qty }}</span>
-          <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
-          <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
+          <button
+            class="px-2 py-1 border rounded text-sm"
+            @click="dec(idx)"
+            :disabled="c.qty <= 1"
+          >
+            －
+          </button>
+          <span class="w-8 text-center">{{ c.qty }}</span>
+          <button class="px-2 py-1 border rounded text-sm" @click="inc(idx)">＋</button>
+          <button
+            class="ml-2 px-2 py-1 border border-red-500 text-red-500 text-sm rounded"
+            @click="remove(idx)"
+          >
+            🗑 移除
+          </button>
         </div>
       </div>
 
@@ -147,7 +160,6 @@ async function submitOrder({ customer }) {
     alert(`下單成功！訂單編號：${out.orderId}`)
     clear() // ✅ 清空購物車
     openCheckout.value = false
-    // ✅ 自動跳轉回零售頁
     window.location.href = '/retail'
   } else {
     alert('下單失敗，請稍後再試。')
