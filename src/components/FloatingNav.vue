@@ -27,14 +27,15 @@
           <!-- 關於我們 -->
           <RouterLink
             to="/about"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+            class="flex items-center gap-2 hover:opacity-80"
+            :class="isAboutPage ? 'text-orange-600 font-bold' : 'text-gray-800'"
             aria-label="關於我們"
           >
             <UserIcon class="w-6 h-6" />
             <span class="hidden sm:inline text-sm font-medium">關於</span>
           </RouterLink>
 
-          <!-- 餐桌予約（外部連結） -->
+          <!-- 餐桌予約（外部連結，不會高亮） -->
           <a
             href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
             target="_blank"
@@ -49,14 +50,15 @@
           <!-- 預先點餐 -->
           <RouterLink
             to="/menu"
-            class="flex items-center gap-2 text-gray-800 hover:opacity-80"
+            class="flex items-center gap-2 hover:opacity-80"
+            :class="isMenuPage ? 'text-orange-600 font-bold' : 'text-gray-800'"
             aria-label="預先點餐"
           >
             <BookOpenIcon class="w-6 h-6" />
             <span class="hidden sm:inline text-sm font-medium">點餐</span>
           </RouterLink>
 
-          <!-- 零售商店（🟧 高亮在 /retail） -->
+          <!-- 零售商店 -->
           <RouterLink
             to="/retail"
             class="flex items-center gap-2 hover:opacity-80"
@@ -67,7 +69,7 @@
             <span class="hidden sm:inline text-sm font-medium">零售</span>
           </RouterLink>
 
-          <!-- 購物車 + 小紅點（🟧 高亮在 /cart） -->
+          <!-- 購物車 + 小紅點 -->
           <RouterLink
             to="/cart"
             class="relative flex items-center gap-2 hover:opacity-80"
@@ -119,6 +121,8 @@ const { count: cartCount } = useCart()
 const route = useRoute()
 const isCartPage = computed(() => route.path === '/cart')
 const isRetailPage = computed(() => route.path === '/retail')
+const isMenuPage = computed(() => route.path === '/menu')
+const isAboutPage = computed(() => route.path === '/about')
 
 /** 行為參數 */
 const GRACE_MS = 5000
