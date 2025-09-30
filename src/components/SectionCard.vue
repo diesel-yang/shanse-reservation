@@ -160,12 +160,62 @@ const props = defineProps({
 const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
 /* 🟨 連動全域購物車 */
-const { items: cartItems, add, inc, remove } = useCart()
+const { items: cartItems, add, inc, dec, remove } = useCart()
 
 /* 購物車查詢工具 */
 const inCart = code => cartItems.value.some(i => i.code === code)
 const qtyOf = code => cartItems.value.find(i => i.code === code)?.qty || 0
 const idxOf = code => cartItems.value.findIndex(i => i.code === code)
 
-/* 加入購
+/* 加入購物車（保留事件往上丟給父層） */
+function onAdd(item) {
+  if (!item || item.disabled) return
+  add(item, 1)
+  emit('add-to-cart', item)
+}
 
+/* 一般菜單版點擊行為（保留） */
+function handleClick(item) {
+  if (!item || item.disabled) return
+  if (props.mode === 'retail') {
+    emit('add-to-cart', item)
+  } else if (props.type === 'addon') {
+    emit('toggle', item.code)
+  } else {
+    emit('preview', item)
+  }
+}
+
+/* 狀態判斷 */
+const isSelected = code =>
+  props.type === 'addon'
+    ? props.selectedList?.includes(code)
+    : props.selectedCode === code
+
+/* 過濾 */
+const filteredItems = computed(() => (Array.isArray(props.items) ? props.items : []))
+
+/* 工具 */
+const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
+function handleImgError(e) {
+  e.target.style.display = 'none'
+}
+</script>
+
+<style scoped>
+.card-item {
+  @apply border rounded p-3 cursor-pointer transition bg-white text-left;
+}
+.card-item.selected {
+  @apply bg-orange-100 border-orange-400 text-orange-800;
+}
+.card-item.disabled {
+  @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
+}
+.card-item.as-button {
+  @apply text-center py-2 px-3 bg-white border border-gray-300 rounded font-medium;
+}
+.card-item.as-button.selected {
+  @apply bg-orange-100 text-orange-800 border-orange-400;
+}
+</style>
