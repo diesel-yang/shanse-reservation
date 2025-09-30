@@ -20,7 +20,7 @@
           售完／補貨中
         </div>
 
-        <!-- 圖片（點擊開詳情） -->
+        <!-- 圖片 -->
         <button class="text-left" @click="emit('open-detail', item)" :disabled="item.disabled">
           <img
             v-if="item.image"
@@ -31,7 +31,7 @@
           />
         </button>
 
-        <!-- 文字區 -->
+        <!-- 文字 + 加入購物車區 -->
         <div class="p-3 flex-1 flex flex-col">
           <button class="text-left" @click="emit('open-detail', item)" :disabled="item.disabled">
             <div class="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
@@ -46,25 +46,32 @@
             </div>
           </button>
 
-          <!-- 加入購物車 / 已加入顯示 -->
-          <button
-            v-if="!cartMap[item.code]"
-            class="mt-3 h-10 rounded-lg font-semibold transition bg-yellow-400 text-black hover:bg-yellow-300"
-            :disabled="item.disabled"
-            @click.stop="addToCart(item)"
-          >
-            加入購物車
-          </button>
-
-          <div
-            v-else
-            class="mt-3 h-10 rounded-lg font-semibold transition w-full bg-yellow-400 text-black flex items-center justify-between px-3"
-          >
-            <button @click.stop="removeOne(item)">
-              <TrashIcon class="w-5 h-5 text-red-600" />
+          <!-- 加入購物車區塊 -->
+          <div class="mt-3">
+            <!-- 未加入：黃底按鈕 -->
+            <button
+              v-if="!cartMap[item.code]"
+              class="w-full h-10 bg-yellow-400 text-black rounded-lg font-semibold transition hover:bg-yellow-500"
+              :disabled="item.disabled"
+              @click.stop="onAdd(item)"
+            >
+              加入購物車
             </button>
-            <span>{{ cartMap[item.code].qty }}</span>
-            <button @click.stop="addToCart(item)" class="font-bold">＋</button>
+
+            <!-- 已加入：黃底條形控制 -->
+            <div
+              v-else
+              class="flex items-center justify-between bg-yellow-400 text-black rounded-lg px-4 h-10"
+            >
+              <!-- 🟧 判斷數量 =1 → 垃圾桶；>=2 → 減少 -->
+              <button v-if="cartMap[item.code].qty <= 1" @click.stop="onRemove(item.code)">
+                <TrashIcon class="w-5 h-5 text-red-600" />
+              </button>
+              <button v-else @click.stop="onDec(item.code)" class="font-bold">－</button>
+
+              <span>{{ cartMap[item.code].qty }}</span>
+              <button @click.stop="onInc(item.code)" class="font-bold">＋</button>
+            </div>
           </div>
         </div>
       </div>
@@ -122,8 +129,8 @@
 
 <script setup>
 import { computed } from 'vue'
-import { TrashIcon } from '@heroicons/vue/24/outline'
 import { useCart } from '@/composables/useCart'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
   title: String,
@@ -131,26 +138,48 @@ const props = defineProps({
   selectedCode: String,
   selectedList: Array,
   type: String,
-  mode: { type: String, default: 'menu' }, // 'menu' | 'retail'
+  mode: { type: String, default: 'menu' },
   hideTitle: { type: Boolean, default: false }
 })
 const emit = defineEmits(['select', 'toggle', 'preview', 'add-to-cart', 'open-detail'])
 
-const { items: cartItems, add, remove } = useCart()
+const { items: cartItems, add, inc, dec, remove } = useCart()
 
 const cartMap = computed(() => {
   const map = {}
-  for (const c of cartItems.value) map[c.code] = c
+  for (const i of cartItems.value) {
+    map[i.code] = i
+  }
   return map
 })
 
-function addToCart(item) {
+function onAdd(item) {
+  if (!item || item.disabled) return
   add(item, 1)
   emit('add-to-cart', item)
 }
-function removeOne(item) {
-  const idx = cartItems.value.findIndex(c => c.code === item.code)
+function onInc(code) {
+  const idx = cartItems.value.findIndex(i => i.code === code)
+  if (idx > -1) inc(idx)
+}
+function onDec(code) {
+  const idx = cartItems.value.findIndex(i => i.code === code)
+  if (idx > -1) dec(idx)
+}
+function onRemove(code) {
+  const idx = cartItems.value.findIndex(i => i.code === code)
   if (idx > -1) remove(idx)
+}
+
+const handleClick = item => {
+  if (!item || item.disabled) return
+  if (props.mode === 'retail') {
+    emit('add-to-cart', item)
+  } else if (props.type === 'addon') {
+    emit('toggle', item.code)
+  } else {
+    emit('preview', item)
+  }
 }
 
 const isSelected = code =>
@@ -160,28 +189,4 @@ const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 function handleImgError(e) {
   e.target.style.display = 'none'
 }
-function handleClick(item) {
-  if (!item || item.disabled) return
-  if (props.mode === 'retail') emit('add-to-cart', item)
-  else if (props.type === 'addon') emit('toggle', item.code)
-  else emit('preview', item)
-}
 </script>
-
-<style scoped>
-.card-item {
-  @apply border rounded p-3 cursor-pointer transition bg-white text-left;
-}
-.card-item.selected {
-  @apply bg-orange-100 border-orange-400 text-orange-800;
-}
-.card-item.disabled {
-  @apply opacity-50 cursor-not-allowed bg-gray-100 border-gray-300;
-}
-.card-item.as-button {
-  @apply text-center py-2 px-3 bg-white border border-gray-300 rounded font-medium;
-}
-.card-item.as-button.selected {
-  @apply bg-orange-100 text-orange-800 border-orange-400;
-}
-</style>

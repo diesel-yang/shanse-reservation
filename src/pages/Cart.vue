@@ -1,7 +1,7 @@
 <!-- src/pages/Cart.vue -->
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6">
-    <!-- 返回零售商店 -->
+    <!-- 🟧 保留：返回零售商店 -->
     <div class="mb-4">
       <RouterLink
         to="/retail"
@@ -19,7 +19,7 @@
     </div>
 
     <div v-else>
-      <!-- 商品清單 -->
+      <!-- 🟧 改動：每列商品使用黃底條形控制（與 SectionCard 一致） -->
       <div
         v-for="(c, idx) in items"
         :key="c.code + '-' + idx"
@@ -32,15 +32,29 @@
           </div>
         </div>
 
-        <!-- 🟨 黃底條形購物車控制 -->
-        <div
-          class="flex items-center justify-between bg-yellow-400 text-black rounded-lg px-4 h-10 min-w-[110px]"
-        >
-          <button @click="remove(idx)">
+        <div class="flex items-center bg-yellow-400 rounded-lg px-4 h-10 gap-4">
+          <button
+            v-if="c.qty <= 1"
+            @click="remove(idx)"
+            class="inline-flex items-center justify-center"
+            aria-label="移除"
+          >
             <TrashIcon class="w-5 h-5 text-red-600" />
           </button>
-          <span>{{ c.qty }}</span>
-          <button @click="inc(idx)" class="font-bold">＋</button>
+          <button
+            v-else
+            @click="dec(idx)"
+            class="font-bold text-black"
+            aria-label="減少"
+          >－</button>
+
+          <span class="w-6 text-center font-semibold">{{ c.qty }}</span>
+
+          <button
+            @click="inc(idx)"
+            class="font-bold text-black"
+            aria-label="增加"
+          >＋</button>
         </div>
       </div>
 
@@ -59,14 +73,14 @@
           前往結帳
         </button>
       </div>
-      <!-- 退換貨政策 -->
+
       <p class="text-xs text-gray-500 mt-2 text-center">
         結帳前請先閱讀
         <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
       </p>
     </div>
 
-    <!-- 結帳視窗 -->
+    <!-- 結帳視窗（原邏輯保留） -->
     <ModalCheckout
       v-if="openCheckout"
       :cart="items"
@@ -81,16 +95,17 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { TrashIcon } from '@heroicons/vue/24/outline'
 import { useCart } from '@/composables/useCart'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
+/* 🟧 新增：垃圾桶 icon（其餘維持不變） */
+import { TrashIcon } from '@heroicons/vue/24/outline'   // 🟧
 
 /** --- 購物車狀態 --- */
-const { items, subtotal, inc, remove, clear } = useCart()
+const { items, subtotal, inc, dec, remove, clear } = useCart()
 const openCheckout = ref(false)
 
-/** --- 最早可取貨日 --- */
+/** --- 最早可取貨日（保留原本邏輯） --- */
 const earliestPickupDate = computed(() => {
   const maxLead = items.value.reduce((m, i) => Math.max(m, Number(i.lead_days || 0)), 0)
   const d = new Date()
@@ -101,7 +116,7 @@ const earliestPickupDate = computed(() => {
 /** --- 工具 --- */
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 
-/** --- 下單 --- */
+/** --- 下單（保留原本流程） --- */
 function toYMDLocal(dateLike) {
   let d
   if (!dateLike) d = new Date()
@@ -151,7 +166,7 @@ async function submitOrder({ customer }) {
 
   if (out?.result === 'success') {
     alert(`下單成功！訂單編號：${out.orderId}`)
-    clear() // ✅ 清空購物車
+    clear()
     openCheckout.value = false
     window.location.href = '/retail'
   } else {

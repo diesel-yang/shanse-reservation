@@ -35,10 +35,7 @@
     <!-- 商品詳情視窗 -->
     <transition name="fade">
       <div v-if="detail" class="fixed inset-0 z-[60]">
-        <!-- 遮罩 -->
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
-
-        <!-- 詳情內容 -->
         <div
           class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white shadow-xl flex flex-col"
         >
@@ -58,7 +55,7 @@
             </div>
           </div>
 
-          <!-- 底部購物車控制區 -->
+          <!-- 🟧 改動：詳情頁底部操作，與 SectionCard 一致（黃底條形 + 動態垃圾桶/減號） -->
           <div class="border-t px-5 py-3">
             <div class="flex items-center justify-between gap-3">
               <div class="text-xl font-semibold shrink-0">
@@ -66,28 +63,46 @@
                 <span class="text-xs text-gray-500">/ {{ detail.unit || '份' }}</span>
               </div>
 
-              <!-- 未加入購物車 → 顯示加入按鈕 -->
+              <!-- 若已在購物車，顯示黃底控制條 -->
+              <div
+                v-if="cartMap[detail.code]"
+                class="flex items-center bg-yellow-400 rounded-lg px-4 h-12 flex-1"
+              >
+                <button
+                  v-if="cartMap[detail.code].qty <= 1"
+                  @click="onRemove(detail.code)"
+                  class="inline-flex items-center justify-center"
+                  aria-label="移除"
+                >
+                  <TrashIcon class="w-5 h-5 text-red-600" />
+                </button>
+                <button
+                  v-else
+                  @click="onDec(detail.code)"
+                  class="font-bold text-black"
+                  aria-label="減少"
+                >－</button>
+
+                <span class="flex-1 text-center font-semibold">{{ cartMap[detail.code].qty }}</span>
+
+                <button
+                  @click="onInc(detail.code)"
+                  class="font-bold text-black"
+                  aria-label="增加"
+                >＋</button>
+              </div>
+
+              <!-- 未在購物車，顯示「加入購物車」 -->
               <button
-                v-if="!cartMap[detail.code]"
-                class="flex-1 h-12 rounded-lg font-semibold transition bg-yellow-400 text-black hover:bg-yellow-300"
-                @click="addDetailToCart"
+                v-else
+                class="flex-1 h-12 bg-yellow-400 text-black rounded-lg font-semibold hover:bg-yellow-500"
+                @click="onAdd(detail)"
               >
                 加入購物車
               </button>
-
-              <!-- 已加入購物車 → 顯示黃底條形控制 -->
-              <div
-                v-else
-                class="flex-1 h-12 rounded-lg font-semibold transition bg-yellow-400 text-black flex items-center justify-between px-6"
-              >
-                <button @click="removeOne(detail)">
-                  <TrashIcon class="w-6 h-6 text-red-600" />
-                </button>
-                <span>{{ cartMap[detail.code].qty }}</span>
-                <button @click="addDetailToCart" class="font-bold">＋</button>
-              </div>
             </div>
           </div>
+          <!-- 🟧 改動結束 -->
         </div>
       </div>
     </transition>
@@ -99,19 +114,18 @@
 
 <script setup>
 import { inject, ref, computed } from 'vue'
-import { TrashIcon } from '@heroicons/vue/24/outline'
 import SectionCard from '@/components/SectionCard.vue'
-import { useCart } from '@/composables/useCart'
 
-/** --- 版面微調 --- */
+/* 🟧 新增：接上全域購物車 + 垃圾桶 icon（其餘原樣保留） */
+import { useCart } from '@/composables/useCart'             // 🟧
+import { TrashIcon } from '@heroicons/vue/24/outline'       // 🟧
+
 const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 const bottomSpacerStyle = { height: 'calc(var(--nav-height, 100px) + 12px)' }
 
-/** --- 資料 --- */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const retailLoading = inject('retailLoading', ref(false))
 
-/** --- 類別切換 --- */
 const tab = ref('frozen')
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
@@ -124,32 +138,24 @@ const displayItems = computed(() =>
   }))
 )
 
-/** --- 購物車 --- */
-const { items: cartItems, add, remove } = useCart()
-const cartMap = computed(() => {
-  const map = {}
-  for (const c of cartItems.value) map[c.code] = c
-  return map
-})
-
-/** --- 詳情 --- */
 const detail = ref(null)
-function openDetail(item) {
-  detail.value = item
-}
-function closeDetail() {
-  detail.value = null
-}
-function addDetailToCart() {
-  if (!detail.value) return
-  add(detail.value, 1)
-}
-function removeOne(item) {
-  const idx = cartItems.value.findIndex(c => c.code === item.code)
-  if (idx > -1) remove(idx)
-}
+function openDetail(item) { detail.value = item }
+function closeDetail() { detail.value = null }
 
-/** --- 工具 --- */
+/* 🟧 新增：購物車狀態映射（不動原有資料流） */
+const { items: cartItems, add, inc, dec, remove } = useCart()  // 🟧
+const cartMap = computed(() => {                               // 🟧
+  const m = Object.create(null)
+  for (const it of cartItems.value || []) {
+    if (it && it.code) m[it.code] = it
+  }
+  return m
+})
+function onAdd(item) { if (item) add(item, 1) }                // 🟧
+function onInc(code) { const i = cartItems.value.findIndex(x => x?.code === code); if (i > -1) inc(i) }   // 🟧
+function onDec(code) { const i = cartItems.value.findIndex(x => x?.code === code); if (i > -1) dec(i) }   // 🟧
+function onRemove(code) { const i = cartItems.value.findIndex(x => x?.code === code); if (i > -1) remove(i) } // 🟧
+
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${
     tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
@@ -171,16 +177,8 @@ const tabBtn = t =>
   animation: shimmer 1.2s infinite;
 }
 @keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+  100% { transform: translateX(100%); }
 }
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.18s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.18s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
