@@ -1,7 +1,7 @@
 <!-- src/pages/Cart.vue -->
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6">
-    <!-- 🟧 返回零售商店 -->
+    <!-- 返回零售商店 -->
     <div class="mb-4">
       <RouterLink
         to="/retail"
@@ -32,23 +32,15 @@
           </div>
         </div>
 
-        <!-- 數量控制 -->
-        <div class="flex items-center gap-2">
-          <button
-            class="px-2 py-1 border rounded text-sm"
-            @click="dec(idx)"
-            :disabled="c.qty <= 1"
-          >
-            －
+        <!-- 🟨 黃底條形購物車控制 -->
+        <div
+          class="flex items-center justify-between bg-yellow-400 text-black rounded-lg px-4 h-10 min-w-[110px]"
+        >
+          <button @click="remove(idx)">
+            <TrashIcon class="w-5 h-5 text-red-600" />
           </button>
-          <span class="w-8 text-center">{{ c.qty }}</span>
-          <button class="px-2 py-1 border rounded text-sm" @click="inc(idx)">＋</button>
-          <button
-            class="ml-2 px-2 py-1 border border-red-500 text-red-500 text-sm rounded"
-            @click="remove(idx)"
-          >
-            🗑 移除
-          </button>
+          <span>{{ c.qty }}</span>
+          <button @click="inc(idx)" class="font-bold">＋</button>
         </div>
       </div>
 
@@ -67,7 +59,7 @@
           前往結帳
         </button>
       </div>
-      <!-- 🟧 新增：退換貨政策連結 -->
+      <!-- 退換貨政策 -->
       <p class="text-xs text-gray-500 mt-2 text-center">
         結帳前請先閱讀
         <RouterLink to="/return-policy" class="underline">退換貨與退款政策</RouterLink>
@@ -89,12 +81,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 import { useCart } from '@/composables/useCart'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
 
 /** --- 購物車狀態 --- */
-const { items, subtotal, inc, dec, remove, clear } = useCart()
+const { items, subtotal, inc, remove, clear } = useCart()
 const openCheckout = ref(false)
 
 /** --- 最早可取貨日 --- */

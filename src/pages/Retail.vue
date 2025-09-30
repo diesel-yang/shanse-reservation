@@ -29,18 +29,16 @@
       :title="groups.title"
       :items="displayItems"
       mode="retail"
-      :cartMap="cartMap"
-      @add-to-cart="addToCart"
-      @inc="incQty"
-      @dec="decQty"
-      @remove-from-cart="removeItem"
       @open-detail="openDetail"
     />
 
     <!-- 商品詳情視窗 -->
     <transition name="fade">
       <div v-if="detail" class="fixed inset-0 z-[60]">
+        <!-- 遮罩 -->
         <div class="absolute inset-0 bg-black/50" @click="closeDetail"></div>
+
+        <!-- 詳情內容 -->
         <div
           class="absolute left-1/2 -translate-x-1/2 w-[95%] max-w-3xl top-6 bottom-6 bg-white shadow-xl flex flex-col"
         >
@@ -48,6 +46,7 @@
             <h2 class="text-lg font-semibold truncate">{{ detail.name }}</h2>
             <button class="text-gray-500 hover:text-black" @click="closeDetail">✕</button>
           </div>
+
           <div class="flex-1 overflow-auto">
             <div v-if="detail.image" class="aspect-[16/10] w-full overflow-hidden">
               <img :src="detail.image" class="w-full h-full object-cover" />
@@ -58,8 +57,36 @@
               </div>
             </div>
           </div>
+
+          <!-- 底部購物車控制區 -->
           <div class="border-t px-5 py-3">
-            <div class="text-xl font-semibold">{{ Number(detail.price || 0).toLocaleString() }}</div>
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-xl font-semibold shrink-0">
+                {{ Number(detail.price || 0).toLocaleString() }}
+                <span class="text-xs text-gray-500">/ {{ detail.unit || '份' }}</span>
+              </div>
+
+              <!-- 未加入購物車 → 顯示加入按鈕 -->
+              <button
+                v-if="!cartMap[detail.code]"
+                class="flex-1 h-12 rounded-lg font-semibold transition bg-yellow-400 text-black hover:bg-yellow-300"
+                @click="addDetailToCart"
+              >
+                加入購物車
+              </button>
+
+              <!-- 已加入購物車 → 顯示黃底條形控制 -->
+              <div
+                v-else
+                class="flex-1 h-12 rounded-lg font-semibold transition bg-yellow-400 text-black flex items-center justify-between px-6"
+              >
+                <button @click="removeOne(detail)">
+                  <TrashIcon class="w-6 h-6 text-red-600" />
+                </button>
+                <span>{{ cartMap[detail.code].qty }}</span>
+                <button @click="addDetailToCart" class="font-bold">＋</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -72,18 +99,19 @@
 
 <script setup>
 import { inject, ref, computed } from 'vue'
+import { TrashIcon } from '@heroicons/vue/24/outline'
 import SectionCard from '@/components/SectionCard.vue'
 import { useCart } from '@/composables/useCart'
 
-/** --- UI style --- */
+/** --- 版面微調 --- */
 const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 const bottomSpacerStyle = { height: 'calc(var(--nav-height, 100px) + 12px)' }
 
-/** --- data injection --- */
+/** --- 資料 --- */
 const providedRetail = inject('retail', { frozen: [], dessert: [] })
 const retailLoading = inject('retailLoading', ref(false))
 
-/** --- 分類切換 --- */
+/** --- 類別切換 --- */
 const tab = ref('frozen')
 const groups = computed(() => ({
   title: tab.value === 'frozen' ? '冷凍即食' : '甜點',
@@ -97,33 +125,14 @@ const displayItems = computed(() =>
 )
 
 /** --- 購物車 --- */
-const { items, add, inc, dec, remove } = useCart()
+const { items: cartItems, add, remove } = useCart()
+const cartMap = computed(() => {
+  const map = {}
+  for (const c of cartItems.value) map[c.code] = c
+  return map
+})
 
-// 映射成 { [code]: { qty, ... } }
-const cartMap = computed(() =>
-  items.value.reduce((acc, cur) => {
-    if (cur?.code) acc[cur.code] = cur
-    return acc
-  }, {})
-)
-
-function addToCart(item) {
-  add(item, 1)
-}
-function incQty(item) {
-  const idx = items.value.findIndex(i => i.code === item.code)
-  if (idx > -1) inc(idx)
-}
-function decQty(item) {
-  const idx = items.value.findIndex(i => i.code === item.code)
-  if (idx > -1) dec(idx)
-}
-function removeItem(item) {
-  const idx = items.value.findIndex(i => i.code === item.code)
-  if (idx > -1) remove(idx)
-}
-
-/** --- 詳情視窗 --- */
+/** --- 詳情 --- */
 const detail = ref(null)
 function openDetail(item) {
   detail.value = item
@@ -131,8 +140,16 @@ function openDetail(item) {
 function closeDetail() {
   detail.value = null
 }
+function addDetailToCart() {
+  if (!detail.value) return
+  add(detail.value, 1)
+}
+function removeOne(item) {
+  const idx = cartItems.value.findIndex(c => c.code === item.code)
+  if (idx > -1) remove(idx)
+}
 
-/** --- tab button class --- */
+/** --- 工具 --- */
 const tabBtn = t =>
   `px-3 py-1 rounded-full border ${
     tab.value === t ? 'bg-black text-white border-black' : 'bg-white text-black'
