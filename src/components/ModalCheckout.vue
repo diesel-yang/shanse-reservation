@@ -98,8 +98,8 @@
               <!-- 轉帳資訊＋後五碼 -->
               <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
                 <div class="rounded-lg bg-gray-50 border p-3 text-sm">
-                  <div>轉帳銀行：玉山銀行（代碼 808）</div>
-                  <div>帳號：1234-567-890123</div>
+                  <div>轉帳銀行：國泰銀行（代碼 013）</div>
+                  <div>帳號：0735-0604-6588</div>
                 </div>
                 <div>
                   <label class="block text-sm mb-1">帳號後五碼</label>
