@@ -13,6 +13,11 @@ import ReturnPolicy from '@/pages/ReturnPolicy.vue' // 🟧 新增：退換貨�
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/about', name: 'About', component: About },
+  { 
+  path: '/menu-view',
+  name: 'menu-view',
+  component: () => import('@/pages/MenuView.vue') 
+},
   { path: '/reserve', name: 'Reserve', component: Reserve },
   { path: '/menu', name: 'Menu', component: Menu },
   { path: '/notice', name: 'Notice', component: Notice },

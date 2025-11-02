@@ -1,96 +1,75 @@
-// src/composables/useCart.js
-// 🟧 購物車全域 store（跨頁共享 + localStorage 永續化）
-import { reactive, computed, provide, inject, watch } from 'vue'
+// src/composables/useCatalog.ts
+import { ref, computed, watch, onUnmounted } from 'vue'
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore'
+import { db } from '@/firebase'
+import { useRoom } from '@/stores/useRoom'
 
-const CartSymbol = Symbol('Cart')
-const STORAGE_KEY = 'shanse-cart-v1'
+type Scope = 'restaurant' | 'personal'
+type Group = { id: string; key: string; label: string; icon?: string; scope: Scope }
+type Item = { id: string; label: string; scope: Scope; group: string }
 
-export function createCartStore() {
-  const saved = localStorage.getItem(STORAGE_KEY)
-  const state = reactive({
-    // 結構：{ code, name, price, qty, unit?, lead_days? }
-    items: saved ? JSON.parse(saved) : [],
-    coupon: null,
-    note: ''
+export function useCatalog() {
+  const room = useRoom()
+  const groupsFS = ref<Group[]>([])
+  const itemsFS = ref<Item[]>([])
+
+  let unsubs: Array<() => void> = []
+  onUnmounted(() => stopFS())
+
+  function stopFS() {
+    unsubs.forEach(fn => fn())
+    unsubs = []
+  }
+
+  function watchCatalog() {
+    stopFS()
+    if (!room.space) return
+
+    // 監聽群組
+    const baseGroups = collection(db, 'rooms', room.space, 'groups')
+    const un1 = onSnapshot(baseGroups, snap => {
+      groupsFS.value = snap.docs.map(d => ({ id: d.id, ...d.data() } as Group))
+    })
+    unsubs.push(un1)
+
+    // 監聽項目
+    const baseItems = collection(db, 'rooms', room.space, 'items')
+    const un2 = onSnapshot(baseItems, snap => {
+      itemsFS.value = snap.docs.map(d => ({ id: d.id, ...d.data() } as Item))
+    })
+    unsubs.push(un2)
+  }
+
+  watch(() => room.space, () => watchCatalog(), { immediate: true })
+
+  const availableGroups = computed<Group[]>(() => {
+    return groupsFS.value.filter(g => g.scope === room.scope)
   })
 
-  // 🟧 給 template 用的 computed
-  const items = computed(() => state.items)
+  const availableItems = computed<Item[]>(() => {
+    if (!room.group) return []
+    return itemsFS.value.filter(it => it.group === room.group)
+  })
 
-  // 計算屬性
-  const count = computed(() => (state.items?.reduce?.((s, i) => s + i.qty, 0)) || 0)
-  const subtotal = computed(
-    () => (state.items?.reduce?.((s, i) => s + i.qty * Number(i.price || 0), 0)) || 0
-  )
-  const shipping = computed(() => (subtotal.value >= 1200 || subtotal.value === 0 ? 0 : 100))
-  const discount = computed(() => (state.coupon?.code === 'WELCOME100' ? 100 : 0))
-  const total = computed(() => Math.max(0, subtotal.value + shipping.value - discount.value))
+  async function addItem(name: string) {
+    const label = (name || '').trim()
+    if (!room.space) throw new Error('請先連線')
+    if (!room.group) throw new Error('請先選類別')
+    if (!label) throw new Error('輸入項目名稱')
 
-  // 操作方法
-  function add(item, qty = 1) {
-    if (!item) return
-    const n = Math.max(1, Number(qty || 1))
-    const code = item.code || `tmp-${Date.now()}-${Math.random()}`
-    const idx = state.items.findIndex(x => x.code === code)
-    if (idx > -1) {
-      state.items[idx].qty += n
-    } else {
-      state.items.push({ ...item, code, qty: n })
-    }
-  }
-  function inc(idx) {
-    if (state.items[idx]) state.items[idx].qty++
-  }
-  function dec(idx) {
-    if (state.items[idx]) state.items[idx].qty = Math.max(1, state.items[idx].qty - 1)
-  }
-  function remove(idx) {
-    state.items.splice(idx, 1)
-  }
-  function clear() {
-    state.items.splice(0, state.items.length) // ✅ 保留 reactivity
-    state.coupon = null
-    state.note = ''
-    localStorage.removeItem(STORAGE_KEY)
-  }
-  function applyCoupon(code) {
-    state.coupon = code ? { code: code.trim().toUpperCase() } : null
+    const base = collection(db, 'rooms', room.space, 'items')
+    await addDoc(base, {
+      scope: room.scope,
+      group: room.group,
+      label,
+      ts: serverTimestamp(),
+    })
   }
 
-  // 永續化
-  watch(
-    () => state.items,
-    val => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-    },
-    { deep: true }
-  )
-
-  return {
-    state,
-    items,
-    count,
-    subtotal,
-    shipping,
-    discount,
-    total,
-    add,
-    inc,
-    dec,
-    remove,
-    clear,
-    applyCoupon
-  }
-}
-
-export function provideCart() {
-  const store = createCartStore()
-  provide(CartSymbol, store)
-  return store
-}
-
-export function useCart() {
-  const store = inject(CartSymbol)
-  if (!store) throw new Error('Cart not provided')
-  return store
+  return { watchCatalog, availableGroups, availableItems, addItem }
 }

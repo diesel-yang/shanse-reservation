@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-2xl mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6 text-orange-600">餐桌予約</h1>
+    <h1 class="text-3xl font-bold mb-6 text-orange-600">訂位</h1>
     <form @submit.prevent="submitReservation" class="space-y-4">
       <div>
         <label class="block font-medium">訂位人姓名：</label>

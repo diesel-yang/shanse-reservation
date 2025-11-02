@@ -44,7 +44,16 @@
             <span class="block text-center tracking-[0.2em]">關於我們</span>
           </button>
         </router-link>
-
+   
+        <!-- 🆕 菜單（只看菜單，不下單） -->
+        <router-link to="/menu-view" class="block">
+          <button
+          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+        >
+          <span class="block text-center tracking-[0.2em]">菜單 MENU</span>
+          </button>
+       
+        </router-link>
         <a
           href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
           target="_blank"
@@ -54,7 +63,7 @@
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
           >
-            餐桌予約
+            訂位
           </button>
         </a>
 
@@ -62,7 +71,7 @@
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
           >
-            <span class="block text-center tracking-[0.2em]">預先點餐</span>
+            <span class="block text-center tracking-[0.2em]">點餐</span>
           </button>
         </router-link>
 

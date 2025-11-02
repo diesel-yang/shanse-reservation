@@ -7,7 +7,7 @@
         alt="山色主視覺"
         class="w-[140px] h-auto mt-6 mb-4 object-contain"
       />
-      <h1 class="text-3xl font-bold text-blue-900">預先點餐</h1>
+      <h1 class="text-3xl font-bold text-blue-900">點餐</h1>
     </div>
 
     <!-- 訂位資料 -->
