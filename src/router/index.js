@@ -7,24 +7,24 @@ import Reserve from '@/pages/Reserve.vue'
 import Menu from '@/pages/Menu.vue'
 import Notice from '@/pages/Notice.vue'
 import Retail from '@/pages/Retail.vue'
-import Cart from '@/pages/Cart.vue' // 🟧 新增：購物車頁
-import ReturnPolicy from '@/pages/ReturnPolicy.vue' // 🟧 新增：退換貨政策頁
+import Cart from '@/pages/Cart.vue'
+import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/about', name: 'About', component: About },
-  { 
-  path: '/menu-view',
-  name: 'menu-view',
-  component: () => import('@/pages/MenuView.vue') 
-},
+  {
+    path: '/menu-view',
+    name: 'menu-view',
+    component: () => import('@/pages/MenuView.vue')
+  },
   { path: '/reserve', name: 'Reserve', component: Reserve },
   { path: '/menu', name: 'Menu', component: Menu },
   { path: '/notice', name: 'Notice', component: Notice },
   { path: '/retail', name: 'Retail', component: Retail },
-  { path: '/cart', name: 'Cart', component: Cart }, // 🟧 新增
-  { path: '/return-policy', name: 'ReturnPolicy', component: ReturnPolicy }, // 🟧 新增
-  { path: '/:pathMatch(.*)*', redirect: '/' } // 官方推薦寫法，放最後
+  { path: '/cart', name: 'Cart', component: Cart },
+  { path: '/return-policy', name: 'ReturnPolicy', component: ReturnPolicy },
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
@@ -36,4 +36,3 @@ const router = createRouter({
 })
 
 export default router
-

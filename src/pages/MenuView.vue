@@ -21,20 +21,25 @@
     <!-- 主餐 -->
     <SectionCard
       v-if="mains.length"
-      title="主餐 / Main"
+      title="主餐 Main"
       :items="mains"
+      :mode="'menu'"
     />
+
     <!-- 副餐 -->
     <SectionCard
       v-if="sides.length"
-      title="副餐 / Side"
+      title="副餐 Side"
       :items="sides"
+      :mode="'menu'"
     />
+
     <!-- 飲品 -->
     <SectionCard
       v-if="drinks.length"
-      title="飲品 / Drinks"
+      title="飲品 Drinks"
       :items="drinks"
+      :mode="'menu'"
     />
 
     <!-- 無資料 -->
@@ -56,10 +61,7 @@ import SectionCard from '@/components/SectionCard.vue'
 const pagePadStyle = { 'padding-bottom': 'var(--nav-height, 100px)' }
 const bottomSpacerStyle = { height: 'calc(var(--nav-height, 100px) + 12px)' }
 
-/**
- * 你現在的 App.vue 應該是 provide('menu', { main, drink, side, addon })
- * 所以這邊要對應回去
- */
+// App.vue 有 provide('menu', { main, drink, side, addon })
 const providedMenu = inject('menu', {
   main: [],
   drink: [],

@@ -12,8 +12,10 @@
           ขอให้โชคดียิ้มให้คุณและนำพรทุกอย่างมาให้คุณ
         </div>
       </div>
-      <!-- 🆕 黑底下方的漸層陰影 -->
-      <div class="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-b from-black/40 to-transparent pointer-events-none"></div>
+      <!-- 底部陰影，讓黑條和背景過渡好看一點 -->
+      <div
+        class="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-b from-black/40 to-transparent pointer-events-none"
+      ></div>
     </div>
 
     <!-- 上半：LOGO + 標語 -->
@@ -37,6 +39,7 @@
         class="w-full max-w-sm space-y-6 mb-16 sm:mb-24"
         :style="{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }"
       >
+        <!-- 關於我們 -->
         <router-link to="/about" class="block">
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
@@ -44,16 +47,17 @@
             <span class="block text-center tracking-[0.2em]">關於我們</span>
           </button>
         </router-link>
-   
-        <!-- 🆕 菜單（只看菜單，不下單） -->
+
+        <!-- 🆕 菜單（純看菜單） -->
         <router-link to="/menu-view" class="block">
           <button
-          class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
-        >
-          <span class="block text-center tracking-[0.2em]">菜單 MENU</span>
+            class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
+          >
+            <span class="block text-center tracking-[0.2em]">菜單 MENU</span>
           </button>
-       
         </router-link>
+
+        <!-- 外部訂位 -->
         <a
           href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
           target="_blank"
@@ -67,6 +71,7 @@
           </button>
         </a>
 
+        <!-- 預先點餐 -->
         <router-link to="/menu" class="block">
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
@@ -75,6 +80,7 @@
           </button>
         </router-link>
 
+        <!-- 零售商品 -->
         <router-link to="/retail" class="block">
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
@@ -83,6 +89,7 @@
           </button>
         </router-link>
 
+        <!-- 用餐須知 -->
         <router-link to="/notice" class="block">
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
@@ -91,6 +98,7 @@
           </button>
         </router-link>
 
+        <!-- 退換貨政策 -->
         <router-link to="/return-policy" class="block">
           <button
             class="w-full bg-[#ed8a3f] text-black rounded-full border border-black shadow-[6px_6px_0_rgba(0,0,0,1)] py-4 px-6 text-lg font-normal"
@@ -102,6 +110,8 @@
     </div>
   </div>
 </template>
+
+<script setup></script>
 
 <style scoped>
 @keyframes marquee {
@@ -120,5 +130,3 @@
   letter-spacing: 0.8em;
 }
 </style>
-
-<script setup></script>
