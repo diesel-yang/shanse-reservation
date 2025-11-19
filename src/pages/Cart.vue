@@ -160,6 +160,8 @@ async function submitOrder({ customer }) {
           shipping: String(shippingNum),
           total: String(totalNum)
         })
+        console.log('LINE Pay create response:', res)
+
 
         if (res?.result === 'success' && res.paymentUrl) {
           if (res.orderId) {
