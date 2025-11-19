@@ -9,21 +9,22 @@ import Notice from '@/pages/Notice.vue'
 import Retail from '@/pages/Retail.vue'
 import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
+import LinepayResult from '@/pages/LinepayResult.vue'
+
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/about', name: 'About', component: About },
-  {
-    path: '/menu-view',
-    name: 'menu-view',
-    component: () => import('@/pages/MenuView.vue')
-  },
+  { path: '/menu-view', name: 'menu-view', component: () => import('@/pages/MenuView.vue')},
+  // 🟩 LINE Pay 付款結果頁（成功 / 失敗 / 取消 都用這一頁）
+  { path: '/linepay/result', name: 'LinepayResult', component: LinepayResult },
   { path: '/reserve', name: 'Reserve', component: Reserve },
   { path: '/menu', name: 'Menu', component: Menu },
   { path: '/notice', name: 'Notice', component: Notice },
   { path: '/retail', name: 'Retail', component: Retail },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/return-policy', name: 'ReturnPolicy', component: ReturnPolicy },
+  { path: '/linepay-result', name: 'LinepayResult', component: LinepayResult },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 

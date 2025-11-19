@@ -88,7 +88,7 @@
               <p v-if="errors.address" class="text-xs text-red-500 mt-1">{{ errors.address }}</p>
             </div>
 
-            <!-- 付款方式（🟧 只剩 現金 / 轉帳） -->
+            <!-- 付款方式：現金 / 轉帳 / LINE Pay -->
             <div>
               <label class="block text-sm mb-2">付款方式</label>
               <div class="flex flex-wrap items-center gap-4">
@@ -100,13 +100,17 @@
                   <input type="radio" value="transfer" v-model="form.payment_method" />
                   <span>銀行轉帳</span>
                 </label>
+                <label class="flex items-center gap-2">
+                  <input type="radio" value="linepay" v-model="form.payment_method" />
+                  <span>LINE Pay 線上付款</span>
+                </label>
               </div>
 
-              <!-- 轉帳資訊＋後五碼 -->
+              <!-- 轉帳資訊＋後五碼（只在轉帳時顯示） -->
               <div v-if="form.payment_method === 'transfer'" class="mt-3 space-y-2">
                 <div class="rounded-lg bg-gray-50 border p-3 text-sm">
-                  <div>轉帳銀行：玉山銀行（代碼 808）</div>
-                  <div>帳號：1234-567-890123</div>
+                  <div>轉帳銀行：國泰世華商業銀行（代碼 013）</div>
+                  <div>帳號：0735-0604-6588</div>
                 </div>
                 <div>
                   <label class="block text-sm mb-1">帳號後五碼</label>
@@ -174,50 +178,30 @@
           </p>
           <button
             class="w-full rounded-full py-3 font-semibold transition disabled:opacity-60"
-            :class="submitting ? 'bg-gray-400 text-white' : 'bg-[#ed8a3f] text-black hover:bg-[#d36c1d]'"
+            :class="'bg-[#ed8a3f] text-black hover:bg-[#d36c1d]'"
             :disabled="submitting"
             @click="onSubmit"
           >
-            {{ submitting ? '送出中…' : '送出訂單' }}
+            {{ submitting ? submittingMessage : '送出訂單' }}
           </button>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- 下單成功訊息彈窗（保留） -->
-  <div
-    v-if="successDialog.open"
-    class="fixed inset-0 z-[110] flex items-center justify-center bg-black/50"
-  >
-    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
-      <h2 class="text-xl font-bold mb-2">感謝您的訂購！</h2>
-      <p class="text-gray-700 mb-4">您的訂單編號：</p>
-      <p class="text-lg font-mono font-semibold text-orange-600 mb-6">
-        {{ successDialog.orderId }}
-      </p>
-      <button
-        class="w-full rounded-full bg-black text-white py-3 font-semibold hover:bg-gray-900"
-        @click="successDialog.open = false; emit('close')"
-      >
-        確定
-      </button>
-    </div>
-  </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch, onMounted } from 'vue'
-import { useCart } from '@/composables/useCart'
+import { computed, reactive, watch, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
   cart: { type: Array, default: () => [] },
   subtotal: { type: Number, default: 0 },
-  earliestPickupDate: { type: Date, required: true }
+  earliestPickupDate: { type: Date, required: true },
+  submitting: { type: Boolean, default: false },
+  submittingMessage: { type: String, default: '送出訂單…' }
 })
 const emit = defineEmits(['close', 'submit'])
-
-const { clear } = useCart()
 
 const currency = n => `NT$ ${Number(n || 0).toLocaleString()}`
 const toDateStr = d => {
@@ -243,7 +227,7 @@ const form = reactive({
   method: 'pickup',
   pickup_date: '',
   address: '',
-  payment_method: 'cash', // 🟧 預設改成 cash
+  payment_method: 'cash',
   bank_ref: '',
   note: ''
 })
@@ -272,6 +256,7 @@ watch(
 )
 
 const errors = reactive({ name: '', phone: '', pickup_date: '', address: '', bank_ref: '' })
+
 const validate = () => {
   errors.name = form.name ? '' : '請輸入姓名'
   errors.phone = /^0\d{1,2}-?\d{6,8}$|^09\d{2}-?\d{3}-?\d{3}$/.test(form.phone)
@@ -286,7 +271,6 @@ const validate = () => {
     errors.pickup_date = ''
   }
 
-  // 🟧 只在轉帳時檢查後五碼
   if (form.payment_method === 'transfer') {
     errors.bank_ref = /^\d{5}$/.test(form.bank_ref) ? '' : '請填入 5 碼數字'
   } else {
@@ -296,14 +280,14 @@ const validate = () => {
   return !errors.name && !errors.phone && !errors.pickup_date && !errors.address && !errors.bank_ref
 }
 
-const successDialog = ref({ open: false, orderId: '' })
-const submitting = ref(false)
 const onSubmit = () => {
-  if (submitting.value) return
-  if (!props.cart?.length) return alert('購物車是空的')
+  if (!props.cart?.length) {
+    alert('購物車是空的')
+    return
+  }
   if (!validate()) return
+  if (props.submitting) return
 
-  submitting.value = true
   const customer = {
     name: form.name,
     phone: form.phone,
@@ -315,18 +299,7 @@ const onSubmit = () => {
     note: form.note
   }
 
-  emit('submit', {
-    customer,
-    done: result => {
-      submitting.value = false
-      if (result?.orderId) {
-        clear()
-        successDialog.value = { open: true, orderId: result.orderId }
-      } else {
-        alert('下單失敗，請稍後再試。')
-      }
-    }
-  })
+  emit('submit', { customer })
 }
 </script>
 

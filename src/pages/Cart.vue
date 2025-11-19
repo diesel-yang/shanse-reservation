@@ -48,10 +48,11 @@
       <!-- 結帳按鈕 -->
       <div class="mt-6">
         <button
-          class="w-full bg-black text-white rounded-full py-3 font-semibold hover:bg-gray-900 transition"
+          class="w-full bg-black text-white rounded-full py-3 font-semibold hover:bg-gray-900 transition disabled:opacity-60"
+          :disabled="submitting"
           @click="openCheckout = true"
         >
-          前往結帳
+          {{ submitting ? '處理中…' : '前往結帳' }}
         </button>
       </div>
       <!-- 🟧 退換貨政策連結 -->
@@ -83,6 +84,7 @@ import { gasPost } from '@/utils/gas'
 /** --- 購物車狀態（來自 useCart，全站共用） --- */
 const { items, subtotal, inc, dec, remove, clear } = useCart()
 const openCheckout = ref(false)
+const submitting = ref(false)
 
 /** --- 最早可取貨日（看所有商品的 lead_days） --- */
 const earliestPickupDate = computed(() => {
@@ -111,84 +113,108 @@ function toYMDLocal(dateLike) {
 
 /** --- 下單（含 LINE Pay 分支） --- */
 async function submitOrder({ customer }) {
-  const orderItems = items.value.map(i => ({
-    code: i.code,
-    name: i.name,
-    price: Number(i.price || 0),
-    qty: Number(i.qty || 1),
-    unit: i.unit || '份'
-  }))
-
-  const subtotalNum = Number(subtotal.value || 0)
-  const shippingNum = customer?.method === '宅配' ? 160 : 0
-  const totalNum = subtotalNum + shippingNum
-  const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
-
-  // 🔹 先組一個 orderId（也可以改成由後端生成）
-  const orderId = `RT-${Date.now()}`
-
-  // 🔸 若付款方式是 LINE Pay：走 linePayCreate，跳轉到 LINE Pay 付款頁
-  if (customer?.payment_method === 'linepay') {
-    const payRes = await gasPost({
-      type: 'linePayCreate',
-      orderId,
-      amount: totalNum,
-      productName: '山色零售商品',
-      // 傳給後端方便之後 confirm/記錄用
-      customer: JSON.stringify({
-        name: customer?.name || '',
-        phone: customer?.phone || '',
-        method: customer?.method || '自取',
-        pickup_date: pickupYmd,
-        address: customer?.address || '',
-        note: customer?.note || ''
-      }),
-      items: JSON.stringify(orderItems)
-    })
-
-    if (payRes?.result === 'ok' && payRes.paymentUrl?.web) {
-      // 可選：暫存 orderId，之後回來可查詢
-      localStorage.setItem('lastLinepayOrderId', payRes.orderId || orderId)
-      // 導向 LINE Pay 付款頁
-      window.location.href = payRes.paymentUrl.web
-      return
-    } else {
-      alert('無法建立 LINE Pay 付款，請改用其他付款方式或稍後再試。')
-      return
-    }
-  }
-
-  // 🔹 其他付款方式（現金 / 轉帳）維持原本 retailOrder 流程
-  const out = await gasPost({
-    type: 'retailOrder',
-    name: customer?.name || '',
-    phone: customer?.phone || '',
-    method: customer?.method || '自取',
-    pickup_date: pickupYmd,
-    address: customer?.address || '',
-    payment_method: customer?.payment_method || 'cash',
-    bank_ref: customer?.bank_ref || '',
-    note: customer?.note || '',
-    items: JSON.stringify(orderItems),
-    subtotal: String(subtotalNum),
-    shipping: String(shippingNum),
-    total: String(totalNum)
-  })
-
-  if (out?.result === 'pending' && out?.paymentUrl) {
-    // 如果你現有後端還會回 paymentUrl，就讓它保留
-    window.location.href = out.paymentUrl
+  if (submitting.value) return
+  if (!items.value.length) {
+    alert('購物車是空的')
     return
   }
 
-  if (out?.result === 'success') {
-    alert(`下單成功！訂單編號：${out.orderId}`)
-    clear() // ✅ 清空購物車
-    openCheckout.value = false
-    // ✅ 自動跳轉回零售頁
-    window.location.href = '/retail'
-  } else {
-    alert('下單失敗，請稍後再試。')
+  submitting.value = true
+
+  try {
+    const orderItems = items.value.map(i => ({
+      code: i.code,
+      name: i.name,
+      price: Number(i.price || 0),
+      qty: Number(i.qty || 1),
+      unit: i.unit || '份',
+      image: i.image || ''
+    }))
+
+    const subtotalNum = Number(subtotal.value || 0)
+    const shippingNum = customer?.method === '宅配' ? 160 : 0
+    const totalNum = subtotalNum + shippingNum
+    const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
+
+    // 🔹 LINE Pay 付款分支
+    if (customer?.payment_method === 'linepay') {
+      try {
+        const firstImg = orderItems[0]?.image || ''
+
+        const res = await gasPost({
+          type: 'linePayCreate', // ✅ 對應 GAS doPost
+          amount: totalNum,
+          productName: '山色零售商品訂單',
+          imageUrl: firstImg,
+          // 給後端暫存的完整資料（之後 confirm 用）
+          customer: JSON.stringify({
+            name: customer?.name || '',
+            phone: customer?.phone || '',
+            method: customer?.method || '自取',
+            pickup_date: pickupYmd,
+            address: customer?.address || '',
+            note: customer?.note || ''
+          }),
+          items: JSON.stringify(orderItems),
+          subtotal: String(subtotalNum),
+          shipping: String(shippingNum),
+          total: String(totalNum)
+        })
+
+        if (res?.result === 'success' && res.paymentUrl) {
+          if (res.orderId) {
+            localStorage.setItem('lastLinepayOrderId', res.orderId)
+          }
+          window.location.href = res.paymentUrl
+          return
+        } else {
+          alert(res?.message || '無法建立 LINE Pay 付款，請改用其他付款方式或稍後再試。')
+          return
+        }
+      } catch (err) {
+        console.error(err)
+        alert('建立 LINE Pay 付款時發生錯誤，請稍後再試。')
+        return
+      } finally {
+        submitting.value = false
+      }
+    }
+
+    // 🔸 現金 / 轉帳：維持原本 retailOrder 流程
+    const out = await gasPost({
+      type: 'retailOrder',
+      name: customer?.name || '',
+      phone: customer?.phone || '',
+      method: customer?.method || '自取',
+      pickup_date: pickupYmd,
+      address: customer?.address || '',
+      payment_method: customer?.payment_method || 'cash',
+      bank_ref: customer?.bank_ref || '',
+      note: customer?.note || '',
+      items: JSON.stringify(orderItems),
+      subtotal: String(subtotalNum),
+      shipping: String(shippingNum),
+      total: String(totalNum)
+    })
+
+    if (out?.result === 'pending' && out?.paymentUrl) {
+      window.location.href = out.paymentUrl
+      return
+    }
+
+    if (out?.result === 'success') {
+      alert(`下單成功！訂單編號：${out.orderId}`)
+      clear()
+      openCheckout.value = false
+      window.location.href = '/retail'
+    } else {
+      alert('下單失敗，請稍後再試。')
+    }
+  } catch (err) {
+    console.error(err)
+    alert('下單時發生錯誤，請稍後再試。')
+  } finally {
+    submitting.value = false
   }
 }
 </script>
