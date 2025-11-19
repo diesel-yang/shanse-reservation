@@ -24,7 +24,6 @@ const routes = [
   { path: '/retail', name: 'Retail', component: Retail },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/return-policy', name: 'ReturnPolicy', component: ReturnPolicy },
-  { path: '/linepay-result', name: 'LinepayResult', component: LinepayResult },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 

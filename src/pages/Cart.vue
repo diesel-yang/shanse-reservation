@@ -113,76 +113,53 @@ function toYMDLocal(dateLike) {
 
 /** --- 下單（含 LINE Pay 分支） --- */
 async function submitOrder({ customer }) {
-  if (submitting.value) return
-  if (!items.value.length) {
-    alert('購物車是空的')
-    return
+  const orderItems = items.value.map(i => ({
+    code: i.code,
+    name: i.name,
+    price: Number(i.price || 0),
+    qty: Number(i.qty || 1),
+    unit: i.unit || '份',
+    image: i.image || ''
+  }))
+
+  const subtotalNum = Number(subtotal.value || 0)
+  const shippingNum = customer?.method === '宅配' ? 160 : 0
+  const totalNum = subtotalNum + shippingNum
+  const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
+
+  // 🔸 LINE Pay
+  if (customer?.payment_method === 'linepay') {
+    try {
+      const firstImg = orderItems[0]?.image || ''
+
+      const res = await gasPost({
+        type: 'linePayCreate',              // ⬅⬅⬅ 一定要是這個大小寫
+        amount: totalNum,
+        productName: '山色零售商品訂單',
+        imageUrl: firstImg
+      })
+
+      console.log('LINE Pay create response:', res)
+
+      if (res?.result === 'success' && res.paymentUrl) {
+        if (res.orderId) {
+          localStorage.setItem('lastLinepayOrderId', res.orderId)
+        }
+        window.location.href = res.paymentUrl
+        return
+      } else {
+        alert(res?.message || '無法建立 LINE Pay 付款，請改用其他付款方式或稍後再試。')
+        return
+      }
+    } catch (err) {
+      console.error(err)
+      alert('建立 LINE Pay 付款時發生錯誤，請稍後再試。')
+      return
+    }
   }
 
-  submitting.value = true
-
+  // 🔸 現金 / 轉帳：沿用原本流程
   try {
-    const orderItems = items.value.map(i => ({
-      code: i.code,
-      name: i.name,
-      price: Number(i.price || 0),
-      qty: Number(i.qty || 1),
-      unit: i.unit || '份',
-      image: i.image || ''
-    }))
-
-    const subtotalNum = Number(subtotal.value || 0)
-    const shippingNum = customer?.method === '宅配' ? 160 : 0
-    const totalNum = subtotalNum + shippingNum
-    const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
-
-    // 🔹 LINE Pay 付款分支
-    if (customer?.payment_method === 'linepay') {
-      try {
-        const firstImg = orderItems[0]?.image || ''
-
-        const res = await gasPost({
-          type: 'linePayCreate', // ✅ 對應 GAS doPost
-          amount: totalNum,
-          productName: '山色零售商品訂單',
-          imageUrl: firstImg,
-          // 給後端暫存的完整資料（之後 confirm 用）
-          customer: JSON.stringify({
-            name: customer?.name || '',
-            phone: customer?.phone || '',
-            method: customer?.method || '自取',
-            pickup_date: pickupYmd,
-            address: customer?.address || '',
-            note: customer?.note || ''
-          }),
-          items: JSON.stringify(orderItems),
-          subtotal: String(subtotalNum),
-          shipping: String(shippingNum),
-          total: String(totalNum)
-        })
-        console.log('LINE Pay create response:', res)
-
-
-        if (res?.result === 'success' && res.paymentUrl) {
-          if (res.orderId) {
-            localStorage.setItem('lastLinepayOrderId', res.orderId)
-          }
-          window.location.href = res.paymentUrl
-          return
-        } else {
-          alert(res?.message || '無法建立 LINE Pay 付款，請改用其他付款方式或稍後再試。')
-          return
-        }
-      } catch (err) {
-        console.error(err)
-        alert('建立 LINE Pay 付款時發生錯誤，請稍後再試。')
-        return
-      } finally {
-        submitting.value = false
-      }
-    }
-
-    // 🔸 現金 / 轉帳：維持原本 retailOrder 流程
     const out = await gasPost({
       type: 'retailOrder',
       name: customer?.name || '',
@@ -215,8 +192,6 @@ async function submitOrder({ customer }) {
   } catch (err) {
     console.error(err)
     alert('下單時發生錯誤，請稍後再試。')
-  } finally {
-    submitting.value = false
   }
 }
 </script>
