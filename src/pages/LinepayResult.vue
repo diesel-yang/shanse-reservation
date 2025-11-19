@@ -52,14 +52,14 @@ onMounted(async () => {
   // 這三個是 LINE Pay redirect 回來會帶的參數
   const order = url.searchParams.get('orderId')
   const tran = url.searchParams.get('transactionId')
-  const cancel = url.searchParams.get('cancel') // 自己保留用
+  const amount = url.searchParams.get('amount')
+    // 這幾個是我們在 confirmUrl 自己塞的
+  const customer = url.searchParams.get('customer')
+  const items = url.searchParams.get('items')
+  const subtotal = url.searchParams.get('subtotal')
+  const shipping = url.searchParams.get('shipping')
 
-  // 使用者在 LINE Pay 頁面按「取消」
-  if (cancel === '1') {
-    error.value = '付款已取消'
-    loading.value = false
-    return
-  }
+
 
   if (!order || !tran) {
     error.value = '無效的付款請求（缺少必要資訊）'
@@ -72,6 +72,11 @@ onMounted(async () => {
       type: 'linepayConfirm',
       orderId: order,
       transactionId: tran
+      amount,
+      customer,
+      items,
+      subtotal,
+      shipping
     })
 
     if (res?.result === 'success') {
