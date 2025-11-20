@@ -127,21 +127,33 @@ async function submitOrder({ customer }) {
   const totalNum = subtotalNum + shippingNum
   const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
 
-  // 🔸 LINE Pay
+  // 🔸 LINE Pay 分支
   if (customer?.payment_method === 'linepay') {
     try {
       const firstImg = orderItems[0]?.image || ''
 
       const res = await gasPost({
-        type: 'linePayCreate',              // ⬅⬅⬅ 一定要是這個大小寫
+        type: 'linePayCreate',            // ✅ 對應 GAS doPost
         amount: totalNum,
         productName: '山色零售商品訂單',
-        imageUrl: firstImg
+        imageUrl: firstImg,
+        customer: JSON.stringify({
+          name: customer?.name || '',
+          phone: customer?.phone || '',
+          method: customer?.method || '自取',
+          pickup_date: pickupYmd,
+          address: customer?.address || '',
+          note: customer?.note || ''
+        }),
+        items: JSON.stringify(orderItems),
+        subtotal: String(subtotalNum),
+        shipping: String(shippingNum)
       })
 
       console.log('LINE Pay create response:', res)
 
       if (res?.result === 'success' && res.paymentUrl) {
+        // 可選：存一下 LINE Pay 訂單編號
         if (res.orderId) {
           localStorage.setItem('lastLinepayOrderId', res.orderId)
         }
