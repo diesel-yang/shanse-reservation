@@ -14,6 +14,7 @@ import LinepayResult from '@/pages/LinepayResult.vue' // ✅ 新增
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/about', name: 'About', component: About },
+  { path: '/menu-view', name: 'menu-view', component: () => import('@/pages/MenuView.vue') },
   { path: '/reserve', name: 'Reserve', component: Reserve },
   { path: '/menu', name: 'Menu', component: Menu },
   { path: '/notice', name: 'Notice', component: Notice },
