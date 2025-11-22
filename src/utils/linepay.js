@@ -1,65 +1,40 @@
-// src/utils/linepay.js
+// src/api/linepay.js
+const BASE = import.meta.env.VITE_LINEPAY_PROXY_BASE
 
-const BASE_URL = import.meta.env.VITE_LINEPAY_PROXY_BASE_URL
-
-if (!BASE_URL) {
-  console.warn('[LINEPAY] VITE_LINEPAY_PROXY_BASE_URL 尚未設定，LINE Pay 會無法使用')
+if (!BASE) {
+  console.warn('[LINEPAY] VITE_LINEPAY_PROXY_BASE not set in .env')
 }
 
-/** 建立 LINE Pay 請求（前往付款頁） */
+/**
+ * 建立 LINE Pay 付款請求（呼叫 Cloud Run Proxy）
+ * payload 結構：
+ * {
+ *   amount,
+ *   productName,
+ *   imageUrl,
+ *   customer: {...},
+ *   items: [...],
+ *   subtotal,
+ *   shipping
+ * }
+ */
 export async function linepayRequest(payload) {
-  if (!BASE_URL) {
-    throw new Error('LINE Pay proxy URL 未設定')
+  if (!BASE) {
+    throw new Error('LINE Pay Proxy base URL not configured')
   }
 
-  const res = await fetch(`${BASE_URL}/linepay/request`, {
+  const res = await fetch(`${BASE}/linepay/request`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(payload)
   })
 
-  const text = await res.text()
-  let json
-  try {
-    json = JSON.parse(text)
-  } catch {
-    console.error('LINE Pay proxy 回傳不是 JSON:', text)
-    throw new Error('LINE Pay proxy 回傳格式錯誤')
-  }
-
   if (!res.ok) {
-    console.error('LINE Pay proxy HTTP error:', res.status, json)
-    throw new Error(json.message || `LINE Pay proxy HTTP ${res.status}`)
+    throw new Error(`LINE Pay proxy HTTP error: ${res.status}`)
   }
 
-  return json
-}
-
-/** LINE Pay 付款完成後，呼叫 proxy 做 confirm */
-export async function linepayConfirm(payload) {
-  if (!BASE_URL) {
-    throw new Error('LINE Pay proxy URL 未設定')
-  }
-
-  const res = await fetch(`${BASE_URL}/linepay/confirm`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-
-  const text = await res.text()
-  let json
-  try {
-    json = JSON.parse(text)
-  } catch {
-    console.error('LINE Pay confirm proxy 回傳不是 JSON:', text)
-    throw new Error('LINE Pay confirm proxy 回傳格式錯誤')
-  }
-
-  if (!res.ok) {
-    console.error('LINE Pay confirm HTTP error:', res.status, json)
-    throw new Error(json.message || `LINE Pay confirm HTTP ${res.status}`)
-  }
-
+  const json = await res.json()
   return json
 }
