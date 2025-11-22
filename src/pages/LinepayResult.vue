@@ -26,51 +26,58 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { gasGet } from '@/utils/gas'
+import { RouterLink } from 'vue-router'
 
 const loading = ref(true)
 const error = ref('')
 const orderId = ref('')
 
 onMounted(async () => {
-  const url = new URL(window.location.href)
-
-  const transactionId = url.searchParams.get('transactionId')
-  const amount = url.searchParams.get('amount')
-  const orderIdLine = url.searchParams.get('orderId')
-
-  if (!transactionId) {
-    error.value = '找不到交易編號'
-    loading.value = false
-    return
-  }
-
   try {
-    // Cloud Run confirm
-    const crRes = await fetch(import.meta.env.VITE_LINEPAY_PROXY + '/linepay/confirm', {
+    const url = new URL(window.location.href)
+    const transactionId = url.searchParams.get('transactionId')
+    const amount = url.searchParams.get('amount')
+    const orderIdFromLine = url.searchParams.get('orderId')
+
+    // 這幾個是我們在 confirmUrl 上面追加的（如果你有加）
+    const customer = url.searchParams.get('customer')
+    const items = url.searchParams.get('items')
+    const subtotal = url.searchParams.get('subtotal')
+    const shipping = url.searchParams.get('shipping')
+
+    if (!transactionId || !amount) {
+      error.value = '缺少交易資訊，請確認付款是否成功。'
+      loading.value = false
+      return
+    }
+
+    // 打 Cloud Run /linepay/confirm
+    const proxyBase = import.meta.env.VITE_LINEPAY_PROXY_BASE
+    const res = await fetch(`${proxyBase}/linepay/confirm`, {
       method: 'POST',
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         transactionId,
         amount,
-        customer: localStorage.getItem('linepay_customer') || '',
-        items: localStorage.getItem('linepay_items') || '[]',
-        subtotal: localStorage.getItem('linepay_subtotal') || '0',
-        shipping: localStorage.getItem('linepay_shipping') || '0'
+        orderId: orderIdFromLine || '',
+        customer,
+        items,
+        subtotal,
+        shipping
       })
     })
 
-    const json = await crRes.json()
-    console.log("Confirm result:", json)
+    const json = await res.json()
+    console.log('LINE Pay confirm response:', json)
 
     if (json.result === 'success') {
-      orderId.value = json.orderId
+      orderId.value = json.orderId || ''
     } else {
-      error.value = json.message || '付款確認失敗'
+      error.value = json.message || '付款確認失敗，請聯繫店家。'
     }
   } catch (err) {
     console.error(err)
-    error.value = '伺服器錯誤'
+    error.value = '系統錯誤，請稍後再試。'
   } finally {
     loading.value = false
   }
