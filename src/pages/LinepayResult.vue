@@ -1,11 +1,18 @@
 <template>
   <div class="p-6 max-w-md mx-auto text-center">
-    <h1 class="text-2xl font-bold mb-4">LINE Pay 付款結果</h1>
+    <h1 class="text-2xl font-bold mb-4">付款結果</h1>
 
     <div v-if="loading">處理中，請稍候…</div>
 
     <div v-else-if="error" class="text-red-600">
       {{ error }}
+    </div>
+
+    <div v-else class="text-green-600">
+      付款成功！<br />
+      訂單編號：
+      <span class="font-mono text-xl">{{ orderId }}</span>
+
       <div class="mt-6">
         <RouterLink to="/retail">
           <button class="bg-black text-white px-4 py-2 rounded">
@@ -14,25 +21,11 @@
         </RouterLink>
       </div>
     </div>
-
-    <div v-else class="text-green-600">
-      付款成功！<br />
-      您的訂單編號：
-      <div class="mt-2 mb-6 font-mono text-xl text-orange-600">
-        {{ orderId }}
-      </div>
-      <RouterLink to="/retail">
-        <button class="bg-black text-white px-4 py-2 rounded">
-          返回零售商品
-        </button>
-      </RouterLink>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
 import { gasGet } from '@/utils/gas'
 
 const loading = ref(true)
@@ -40,43 +33,44 @@ const error = ref('')
 const orderId = ref('')
 
 onMounted(async () => {
-  const route = useRoute()
-  const transactionId = route.query.transactionId
-  const amount = route.query.amount
-  const order = route.query.orderId || ''
+  const url = new URL(window.location.href)
 
-  // 這幾個是我們在 confirmUrl 裡塞進去的
-  const customer = route.query.customer || ''
-  const items = route.query.items || ''
-  const subtotal = route.query.subtotal || ''
-  const shipping = route.query.shipping || ''
+  const transactionId = url.searchParams.get('transactionId')
+  const amount = url.searchParams.get('amount')
+  const orderIdLine = url.searchParams.get('orderId')
 
-  if (!transactionId || !amount) {
-    error.value = '缺少必要參數（transactionId 或 amount）'
+  if (!transactionId) {
+    error.value = '找不到交易編號'
     loading.value = false
     return
   }
 
   try {
-    const res = await gasGet({
-      type: 'linepayConfirm',
-      transactionId,
-      amount,
-      orderId: order,
-      customer,
-      items,
-      subtotal,
-      shipping
+    // Cloud Run confirm
+    const crRes = await fetch(import.meta.env.VITE_LINEPAY_PROXY + '/linepay/confirm', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transactionId,
+        amount,
+        customer: localStorage.getItem('linepay_customer') || '',
+        items: localStorage.getItem('linepay_items') || '[]',
+        subtotal: localStorage.getItem('linepay_subtotal') || '0',
+        shipping: localStorage.getItem('linepay_shipping') || '0'
+      })
     })
 
-    if (res?.result === 'success') {
-      orderId.value = res.orderId
+    const json = await crRes.json()
+    console.log("Confirm result:", json)
+
+    if (json.result === 'success') {
+      orderId.value = json.orderId
     } else {
-      error.value = res?.message || '付款確認失敗'
+      error.value = json.message || '付款確認失敗'
     }
   } catch (err) {
     console.error(err)
-    error.value = '伺服器錯誤，請稍後再試。'
+    error.value = '伺服器錯誤'
   } finally {
     loading.value = false
   }

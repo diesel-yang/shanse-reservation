@@ -48,11 +48,10 @@
       <!-- 結帳按鈕 -->
       <div class="mt-6">
         <button
-          class="w-full bg-black text-white rounded-full py-3 font-semibold hover:bg-gray-900 transition disabled:opacity-60"
-          :disabled="submitting"
+          class="w-full bg-black text-white rounded-full py-3 font-semibold hover:bg-gray-900 transition"
           @click="openCheckout = true"
         >
-          {{ submitting ? '處理中…' : '前往結帳' }}
+          前往結帳
         </button>
       </div>
       <!-- 🟧 退換貨政策連結 -->
@@ -80,11 +79,11 @@ import { RouterLink } from 'vue-router'
 import { useCart } from '@/composables/useCart'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
+import { linepayRequest } from '@/utils/linepay' // 🟧 新增：呼叫 Cloud Run Proxy
 
 /** --- 購物車狀態（來自 useCart，全站共用） --- */
 const { items, subtotal, inc, dec, remove, clear } = useCart()
 const openCheckout = ref(false)
-const submitting = ref(false)
 
 /** --- 最早可取貨日（看所有商品的 lead_days） --- */
 const earliestPickupDate = computed(() => {
@@ -127,33 +126,31 @@ async function submitOrder({ customer }) {
   const totalNum = subtotalNum + shippingNum
   const pickupYmd = toYMDLocal(customer?.pickup_date || earliestPickupDate.value)
 
-  // 🔸 LINE Pay 分支
+  // 🔹 LINE Pay 付款：走 Cloud Run Proxy
   if (customer?.payment_method === 'linepay') {
     try {
       const firstImg = orderItems[0]?.image || ''
-
-      const res = await gasPost({
-        type: 'linePayCreate',            // ✅ 對應 GAS doPost
+      const payload = {
         amount: totalNum,
         productName: '山色零售商品訂單',
         imageUrl: firstImg,
-        customer: JSON.stringify({
+        customer: {
           name: customer?.name || '',
           phone: customer?.phone || '',
           method: customer?.method || '自取',
           pickup_date: pickupYmd,
           address: customer?.address || '',
           note: customer?.note || ''
-        }),
-        items: JSON.stringify(orderItems),
-        subtotal: String(subtotalNum),
-        shipping: String(shippingNum)
-      })
+        },
+        items: orderItems,
+        subtotal: subtotalNum,
+        shipping: shippingNum
+      }
 
-      console.log('LINE Pay create response:', res)
+      const res = await linepayRequest(payload)
+      console.log('LINE Pay proxy response:', res)
 
       if (res?.result === 'success' && res.paymentUrl) {
-        // 可選：存一下 LINE Pay 訂單編號
         if (res.orderId) {
           localStorage.setItem('lastLinepayOrderId', res.orderId)
         }
@@ -170,7 +167,7 @@ async function submitOrder({ customer }) {
     }
   }
 
-  // 🔸 現金 / 轉帳：沿用原本流程
+  // 🔸 現金 / 轉帳：維持原本 GAS retailOrder 流程
   try {
     const out = await gasPost({
       type: 'retailOrder',
