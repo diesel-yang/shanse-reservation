@@ -33,51 +33,73 @@ const error = ref('')
 const orderId = ref('')
 
 onMounted(async () => {
+  const url = new URL(window.location.href)
+  const order = url.searchParams.get('orderId')
+  const tran = url.searchParams.get('transactionId')
+  const amount = url.searchParams.get('amount')
+
+  // 這幾個是我們在 Cloud Run confirm 要回寫 GAS 用的
+  const customerRaw = url.searchParams.get('customer')
+  const itemsRaw = url.searchParams.get('items')
+  const subtotalRaw = url.searchParams.get('subtotal')
+  const shippingRaw = url.searchParams.get('shipping')
+
+  if (!order || !tran || !amount) {
+    error.value = '缺少必要參數（order / transactionId / amount）'
+    loading.value = false
+    return
+  }
+
+  let customer = {}
+  let items = []
+  let subtotal = Number(subtotalRaw || 0)
+  let shipping = Number(shippingRaw || 0)
+
   try {
-    const url = new URL(window.location.href)
-    const transactionId = url.searchParams.get('transactionId')
-    const amount = url.searchParams.get('amount')
-    const orderIdFromLine = url.searchParams.get('orderId')
-
-    // 這幾個是我們在 confirmUrl 上面追加的（如果你有加）
-    const customer = url.searchParams.get('customer')
-    const items = url.searchParams.get('items')
-    const subtotal = url.searchParams.get('subtotal')
-    const shipping = url.searchParams.get('shipping')
-
-    if (!transactionId || !amount) {
-      error.value = '缺少交易資訊，請確認付款是否成功。'
-      loading.value = false
-      return
+    if (customerRaw) {
+      customer = JSON.parse(decodeURIComponent(customerRaw))
     }
+  } catch (_) {
+    console.warn('parse customer failed')
+  }
 
-    // 打 Cloud Run /linepay/confirm
-    const proxyBase = import.meta.env.VITE_LINEPAY_PROXY_BASE
-    const res = await fetch(`${proxyBase}/linepay/confirm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transactionId,
-        amount,
-        orderId: orderIdFromLine || '',
-        customer,
-        items,
-        subtotal,
-        shipping
-      })
-    })
+  try {
+    if (itemsRaw) {
+      items = JSON.parse(decodeURIComponent(itemsRaw))
+    }
+  } catch (_) {
+    console.warn('parse items failed')
+  }
+
+  try {
+    const res = await fetch(
+      import.meta.env.VITE_LINEPAY_PROXY_BASE + '/linepay/confirm',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionId: tran,
+          amount: Number(amount),
+          orderId: order,
+          customer,
+          items,
+          subtotal,
+          shipping
+        })
+      }
+    )
 
     const json = await res.json()
     console.log('LINE Pay confirm response:', json)
 
-    if (json.result === 'success') {
-      orderId.value = json.orderId || ''
+    if (json?.result === 'success') {
+      orderId.value = json.orderId || '(無訂單編號)'
     } else {
-      error.value = json.message || '付款確認失敗，請聯繫店家。'
+      error.value = json?.message || '付款確認失敗'
     }
   } catch (err) {
     console.error(err)
-    error.value = '系統錯誤，請稍後再試。'
+    error.value = '伺服器錯誤'
   } finally {
     loading.value = false
   }
