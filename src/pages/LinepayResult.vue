@@ -26,61 +26,61 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const loading = ref(true)
 const error = ref('')
-const orderId = ref('')
+const orderNo = ref('')
 
 onMounted(async () => {
-  const url = new URL(window.location.href)
-  const order = url.searchParams.get('orderId')
-  const tran = url.searchParams.get('transactionId')
-  const amount = url.searchParams.get('amount')
-
-  // 這幾個是我們在 Cloud Run confirm 要回寫 GAS 用的
-  const customerRaw = url.searchParams.get('customer')
-  const itemsRaw = url.searchParams.get('items')
-  const subtotalRaw = url.searchParams.get('subtotal')
-  const shippingRaw = url.searchParams.get('shipping')
-
-  if (!order || !tran || !amount) {
-    error.value = '缺少必要參數（order / transactionId / amount）'
-    loading.value = false
-    return
-  }
-
-  let customer = {}
-  let items = []
-  let subtotal = Number(subtotalRaw || 0)
-  let shipping = Number(shippingRaw || 0)
-
   try {
-    if (customerRaw) {
-      customer = JSON.parse(decodeURIComponent(customerRaw))
+    const url = new URL(window.location.href)
+    const p = url.searchParams
+
+    const transactionId = p.get('transactionId') || ''
+    const amount = p.get('amount') || ''
+    const orderId = p.get('orderId') || ''  // LINE Pay 自己帶的
+
+    let rawCustomer = p.get('customer') || ''
+    let rawItems = p.get('items') || ''
+    const subtotal = p.get('subtotal') || '0'
+    const shipping = p.get('shipping') || '0'
+
+    let customer = {}
+    let items = []
+
+    if (rawCustomer) {
+      try {
+        customer = JSON.parse(rawCustomer)
+      } catch (_) {
+        try { customer = JSON.parse(decodeURIComponent(rawCustomer)) } catch (_) {}
+      }
     }
-  } catch (_) {
-    console.warn('parse customer failed')
-  }
 
-  try {
-    if (itemsRaw) {
-      items = JSON.parse(decodeURIComponent(itemsRaw))
+    if (rawItems) {
+      try {
+        items = JSON.parse(rawItems)
+      } catch (_) {
+        try { items = JSON.parse(decodeURIComponent(rawItems)) } catch (_) {}
+      }
     }
-  } catch (_) {
-    console.warn('parse items failed')
-  }
 
-  try {
+    if (!transactionId || !amount) {
+      error.value = '缺少交易資訊，無法確認付款。'
+      loading.value = false
+      return
+    }
+
     const res = await fetch(
       import.meta.env.VITE_LINEPAY_PROXY_BASE + '/linepay/confirm',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transactionId: tran,
-          amount: Number(amount),
-          orderId: order,
+          transactionId,
+          amount,
+          orderId,
           customer,
           items,
           subtotal,
@@ -90,18 +90,22 @@ onMounted(async () => {
     )
 
     const json = await res.json()
-    console.log('LINE Pay confirm response:', json)
+    console.log('LINE Pay confirm response :', json)
 
-    if (json?.result === 'success') {
-      orderId.value = json.orderId || '(無訂單編號)'
+    if (json.result === 'success') {
+      orderNo.value = json.orderId || ''
     } else {
-      error.value = json?.message || '付款確認失敗'
+      error.value = json.message || '付款確認失敗'
     }
-  } catch (err) {
-    console.error(err)
-    error.value = '伺服器錯誤'
+  } catch (e) {
+    console.error(e)
+    error.value = '付款確認過程發生錯誤'
   } finally {
     loading.value = false
   }
 })
+
+function goBackToRetail() {
+  router.replace('/retail')
+}
 </script>
