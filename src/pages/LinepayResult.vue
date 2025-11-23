@@ -29,49 +29,48 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
 const loading = ref(true)
 const error = ref('')
-const orderNo = ref('')
+const orderId = ref('')
 
 onMounted(async () => {
   try {
     const url = new URL(window.location.href)
     const p = url.searchParams
 
+    // LINE Pay 帶回來的
     const transactionId = p.get('transactionId') || ''
-    const amount = p.get('amount') || ''
-    const orderId = p.get('orderId') || ''  // LINE Pay 自己帶的
+    const amount = Number(p.get('amount') || 0)
+    const orderKey = p.get('orderId') || localStorage.getItem('lastLinepayOrderId') || ''
 
-    let rawCustomer = p.get('customer') || ''
-    let rawItems = p.get('items') || ''
-    const subtotal = p.get('subtotal') || '0'
-    const shipping = p.get('shipping') || '0'
-
-    let customer = {}
-    let items = []
-
-    if (rawCustomer) {
-      try {
-        customer = JSON.parse(rawCustomer)
-      } catch (_) {
-        try { customer = JSON.parse(decodeURIComponent(rawCustomer)) } catch (_) {}
-      }
-    }
-
-    if (rawItems) {
-      try {
-        items = JSON.parse(rawItems)
-      } catch (_) {
-        try { items = JSON.parse(decodeURIComponent(rawItems)) } catch (_) {}
-      }
-    }
-
-    if (!transactionId || !amount) {
+    if (!transactionId || !amount || !orderKey) {
       error.value = '缺少交易資訊，無法確認付款。'
       loading.value = false
       return
     }
 
+    // ===== 取回 cart.vue 存的 pending order 資料 =====
+    const pendingKey = `linepayPending:${orderKey}`
+    let customer = {}
+    let items = []
+    let subtotal = 0
+    let shipping = 0
+
+    try {
+      const raw = localStorage.getItem(pendingKey)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        customer = parsed.customer || {}
+        items = parsed.items || []
+        subtotal = Number(parsed.subtotal || 0)
+        shipping = Number(parsed.shipping || 0)
+      }
+    } catch (err) {
+      console.error('parse pending order error:', err)
+    }
+
+    // ===== 呼叫 Cloud Run confirm =====
     const res = await fetch(
       import.meta.env.VITE_LINEPAY_PROXY_BASE + '/linepay/confirm',
       {
@@ -80,7 +79,7 @@ onMounted(async () => {
         body: JSON.stringify({
           transactionId,
           amount,
-          orderId,
+          orderId: orderKey,
           customer,
           items,
           subtotal,
@@ -90,10 +89,14 @@ onMounted(async () => {
     )
 
     const json = await res.json()
-    console.log('LINE Pay confirm response :', json)
+    console.log('LINE Pay confirm response:', json)
 
     if (json.result === 'success') {
-      orderNo.value = json.orderId || ''
+      orderId.value = json.orderId || '(無訂單編號)'
+
+      // 清除 pending order
+      localStorage.removeItem(pendingKey)
+      localStorage.removeItem('lastLinepayOrderId')
     } else {
       error.value = json.message || '付款確認失敗'
     }

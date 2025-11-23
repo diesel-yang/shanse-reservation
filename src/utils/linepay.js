@@ -1,4 +1,4 @@
-// src/api/linepay.js
+// src/utils/linepay.js
 const BASE = import.meta.env.VITE_LINEPAY_PROXY_BASE
 
 if (!BASE) {
