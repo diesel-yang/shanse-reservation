@@ -130,6 +130,7 @@ async function submitOrder({ customer }) {
   if (customer?.payment_method === 'linepay') {
     try {
       const firstImg = orderItems[0]?.image || ''
+
       const payload = {
         amount: totalNum,
         productName: '山色零售商品訂單',
@@ -147,27 +148,26 @@ async function submitOrder({ customer }) {
         shipping: shippingNum
       }
 
-      const res = await linepayRequest(payload)
+      const res = await linepayRequest(payload)   // ⬅ utils/linepay.js
       console.log('LINE Pay proxy response:', res)
 
-      if (res?.result === 'success' && res.paymentUrl) {
-        if (res.orderId) {
-          localStorage.setItem('lastLinepayOrderId', res.orderId)
-          
-          // ✅ 把這次訂單的資料存起來，給 linepay-result 用
-          const pendingKey = `linepayPending:${res.orderId}`
-          localStorage.setItem(
-             pendingKey,
-             JSON.stringify({
-             customer: payload.customer,
-             items: payload.items,
-             subtotal: payload.subtotal,
-             shipping: payload.shipping
-           })
-         )
-       }
-      window.location.href = res.paymentUrl
-      return
+      if (res?.result === 'success' && res.paymentUrl && res.orderId) {
+        // 🔐 把訂單資料存在 localStorage，給 linepay-result 用
+        const pendingKey = `linepayPending:${res.orderId}`
+        localStorage.setItem(
+          pendingKey,
+          JSON.stringify({
+            customer: payload.customer,
+            items: payload.items,
+            subtotal: payload.subtotal,
+            shipping: payload.shipping
+          })
+        )
+        // 備份一下 orderId
+        localStorage.setItem('lastLinepayOrderId', res.orderId)
+
+        window.location.href = res.paymentUrl
+        return
       } else {
         alert(res?.message || '無法建立 LINE Pay 付款，請改用其他付款方式或稍後再試。')
         return

@@ -149,4 +149,41 @@ export const gasApi = {
       options
     )
   },
+export const gasApi = {
+  /** 取得菜單 */
+  getMenu(options) {
+    return gasGet({ type: 'menu' }, options)
+  },
+
+  /** 取得訂位 / 用餐須知 */
+  getNotice(options) {
+    return gasGet({ type: 'notice' }, options)
+  },
+
+  /** 取得零售商品 */
+  getRetail(options) {
+    return gasGet({ type: 'retail' }, options)
+  },
+
+  /** 寫入零售訂單（現金 / 轉帳）*/
+  saveRetailOrder(order, options) {
+    return gasPost(
+      {
+        type: 'retailOrder',
+        ...order,
+      },
+      options
+    )
+  },
+
+  /** 🔥🔥🔥 新增：用餐預先點餐 */
+  saveDineOrder(order, options) {
+    return gasPost(
+      {
+        type: 'dine',   // 建議明確指定
+        ...order,
+      },
+      options
+    )
+  },
 }
