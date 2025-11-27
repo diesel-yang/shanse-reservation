@@ -400,12 +400,14 @@ async function submitOrder() {
   isSubmitting.value = true
   submitMessage.value = ''
 
-  // 金額拆解放到每位 order.price
+  // 加上金額拆解
   form.orders.forEach(order => {
     order.price = calcPriceBreakdown(order, menu)
   })
 
+  // ★★★ 這裡一定要加 type=dine ★★★
   const payload = new URLSearchParams()
+  payload.append('type', 'dine')
   payload.append('name', form.name)
   payload.append('date', form.date)
   payload.append('time', form.time)
