@@ -3,7 +3,7 @@ import AdminLogin from '@/admin/AdminLogin.vue'
 import AdminHome from '@/admin/AdminHome.vue'
 import AdminRefundList from '@/admin/AdminRefundList.vue'
 import AdminBookings from '@/admin/AdminBookings.vue'
-import { useAdminAuth } from '@/composables/useAdminAuth'
+import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
 export default {
   path: '/admin',

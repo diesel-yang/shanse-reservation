@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAdminAuth } from '@/composables/useAdminAuth'
+import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
 const router = useRouter()
 const route = useRoute()
