@@ -14,7 +14,7 @@ import LinepayResult from '@/pages/LinepayResult.vue'
 
 // 後台頁面
 import AdminLogin from '@/admin/AdminLogin.vue'
-import AdminLogin from '@/admin/AdminRetail.vue'
+import AdminRetail from '@/admin/AdminRetail.vue'
 
 // Composable (JS)
 import { useAdminAuth } from '@/admin/composables/useAdminAuth'
