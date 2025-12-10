@@ -13,11 +13,11 @@ import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
 
 // 後台頁面
-import AdminLogin from '@/pages/admin/AdminLogin.vue'
-import AdminRetail from '@/pages/admin/AdminRetail.vue'
+import AdminLogin from '@/admin/AdminLogin.vue'
+import AdminLogin from '@/admin/AdminRetail.vue'
 
 // Composable (JS)
-import { useAdminAuth } from '@/composables/useAdminAuth'
+import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
 const routes = [
   // 前台
