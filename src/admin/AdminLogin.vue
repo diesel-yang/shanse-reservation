@@ -39,10 +39,11 @@ function initGoogle() {
   })
 
   // eslint-disable-next-line no-undef
-  google.accounts.id.renderButton(
-    document.getElementById('google-login-btn'),
-    { theme: 'outline', size: 'large', width: '100%' }
-  )
+  google.accounts.id.renderButton(document.getElementById('google-login-btn'), {
+    theme: 'outline',
+    size: 'large',
+    width: '100%'
+  })
 }
 
 function handleCredentialResponse(response) {
@@ -71,7 +72,7 @@ function handleCredentialResponse(response) {
   <div class="min-h-screen flex items-center justify-center bg-gray-100 p-6">
     <div class="bg-white shadow rounded-xl p-6 w-full max-w-sm text-center">
       <h1 class="text-lg font-semibold mb-3">山色 後台登入</h1>
-      <p class="text-sm text-gray-600 mb-4">請使用 Google 帳號登入</p>
+      <p class="text-sm text-gray-600 mb-4">請使用帳號登入</p>
 
       <div id="google-login-btn" class="flex justify-center"></div>
     </div>
