@@ -43,6 +43,7 @@ export default defineConfig({
     injectBuildId(),
     VitePWA({
       registerType: 'autoUpdate',
+      manifestFilename: 'manifest.webmanifest', // ★ 強制輸出位置
       includeAssets: [
         'favicon.ico',
         'apple-touch-icon.png',

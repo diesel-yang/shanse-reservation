@@ -1,3 +1,4 @@
+<!-- src/admin/AdminLogin.vue -->
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
