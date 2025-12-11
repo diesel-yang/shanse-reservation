@@ -1,43 +1,51 @@
 // src/admin/router.js
-import AdminLogin from '@/admin/AdminLogin.vue'
-import AdminHome from '@/admin/AdminHome.vue'
-import AdminRefundList from '@/admin/AdminRefundList.vue'
-import AdminBookings from '@/admin/AdminBookings.vue'
-import { useAdminAuth } from '@/admin/composables/useAdminAuth'
+import { createRouter, createWebHistory } from 'vue-router'
+import AdminLayout from './AdminLayout.vue'
+import AdminLogin from './AdminLogin.vue'
+import AdminRetail from './AdminRetail.vue'
+import AdminBookings from './AdminBookings.vue'
+import AdminPreorders from './AdminPreorders.vue'
+import AdminDashboard from './AdminDashboard.vue'
+import { useAdminAuth } from './composables/useAdminAuth'
 
-export default {
-  path: '/admin',
-  children: [
-    { path: 'login', name: 'AdminLogin', component: AdminLogin },
+const routes = [
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: AdminLogin
+  },
 
-    {
-      path: '',
-      name: 'AdminHome',
-      component: AdminHome,
-      beforeEnter: () => {
-        const { isAuthed } = useAdminAuth()
-        return isAuthed.value ? true : '/admin/login'
-      }
-    },
+  {
+    path: '/admin',
+    component: AdminLayout,
+    meta: { requiresAdmin: true },
+    children: [
+      { path: '', name: 'AdminDashboard', component: AdminDashboard },
+      { path: 'dashboard', name: 'Dashboard', component: AdminDashboard },
+      { path: 'retail', name: 'AdminRetail', component: AdminRetail },
+      { path: 'bookings', name: 'AdminBookings', component: AdminBookings },
+      { path: 'preorders', name: 'AdminPreorders', component: AdminPreorders }
+    ]
+  }
+]
 
-    {
-      path: 'refund-list',
-      name: 'AdminRefundList',
-      component: AdminRefundList,
-      beforeEnter: () => {
-        const { isAuthed } = useAdminAuth()
-        return isAuthed.value ? true : '/admin/login'
-      }
-    },
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
 
-    {
-      path: 'bookings',
-      name: 'AdminBookings',
-      component: AdminBookings,
-      beforeEnter: () => {
-        const { isAuthed } = useAdminAuth()
-        return isAuthed.value ? true : '/admin/login'
-      }
-    }
-  ]
-}
+// 🔐 後台 Router Guard
+router.beforeEach((to, from, next) => {
+  const { isAuthed, ensureAdminLoggedIn } = useAdminAuth()
+
+  if (to.meta.requiresAdmin && !isAuthed.value) {
+    return next({
+      path: '/admin/login',
+      query: { redirect: to.fullPath }
+    })
+  }
+
+  next()
+})
+
+export default router

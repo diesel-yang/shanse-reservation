@@ -1,5 +1,6 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
 // 前台頁面
 import Home from '@/pages/Home.vue'
@@ -12,15 +13,13 @@ import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
 
-// 後台頁面
-import AdminLogin from '@/admin/AdminLogin.vue'
-import AdminRetail from '@/admin/AdminRetail.vue'
+// 後台 routes（import routes 陣列）
+import adminRoutes from '@/admin/adminRouter'
 
-// Composable (JS)
-import { useAdminAuth } from '@/admin/composables/useAdminAuth'
-
-const routes = [
-  // 前台
+/* -------------------------------------------
+ * 前台 Routes
+ * ------------------------------------------- */
+const frontendRoutes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/about', name: 'About', component: About },
   { path: '/reserve', name: 'Reserve', component: Reserve },
@@ -31,55 +30,41 @@ const routes = [
   { path: '/return-policy', name: 'ReturnPolicy', component: ReturnPolicy },
   { path: '/menu-view', name: 'menu-view', component: () => import('@/pages/MenuView.vue') },
 
-  // 🔹 LINE Pay 結果頁
+  // LINE Pay 結果頁
   { path: '/linepay-result', name: 'LinepayResult', component: LinepayResult },
-
   {
     path: '/linepay-cancel',
     name: 'LinepayCancel',
     component: () => import('@/pages/LinepayCancel.vue')
   },
 
-  // 後台登入
-  { path: '/admin/login', name: 'AdminLogin', component: AdminLogin },
-
-  // 後台（需身分驗證）
-  {
-    path: '/admin/retail',
-    name: 'AdminRetail',
-    component: AdminRetail,
-    meta: { requiresAdmin: true }
-  },
-
   // 404 redirect
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
+/* -------------------------------------------
+ * 合併前台 + 後台 Routes
+ * ------------------------------------------- */
 const router = createRouter({
   history: createWebHistory(),
-  routes,
-  scrollBehavior() {
-    return { top: 0 }
-  }
+  routes: [
+    ...frontendRoutes,
+    ...adminRoutes // ← 正確合併後台 routes
+  ]
 })
 
-/** ===============================
- *  🔐 Router Admin 權限保護（JS 版）
- * =============================== */
+/* -------------------------------------------
+ * 後台登入權限保護
+ * ------------------------------------------- */
 router.beforeEach((to, from, next) => {
   const { isAuthed, loadFromStorage } = useAdminAuth()
-
-  // 每次切換頁面，先試著載入 localStorage
   loadFromStorage()
 
-  // 若此頁面需要 Admin 身分
-  if (to.meta.requiresAdmin) {
-    if (!isAuthed.value) {
-      return next({
-        path: '/admin/login',
-        query: { redirect: to.fullPath }
-      })
-    }
+  if (to.meta.requiresAdmin && !isAuthed.value) {
+    return next({
+      path: '/admin/login',
+      query: { redirect: to.fullPath }
+    })
   }
 
   next()

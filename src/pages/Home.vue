@@ -25,6 +25,11 @@
         src="/hero-transparent.png"
         alt="山色主視覺"
         class="w-[140px] h-auto mb-4 object-contain bg-transparent"
+        @mousedown="startAdminPress"
+        @mouseup="cancelAdminPress"
+        @mouseleave="cancelAdminPress"
+        @touchstart="startAdminPress"
+        @touchend="cancelAdminPress"
       />
 
       <!-- 中間文字 -->
@@ -111,7 +116,29 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+let pressTimer = null
+const PRESS_DURATION = 3000 // 3 秒
+
+function startAdminPress() {
+  cancelAdminPress() // 保險處理
+
+  pressTimer = setTimeout(() => {
+    router.push('/admin/login')
+  }, PRESS_DURATION)
+}
+
+function cancelAdminPress() {
+  if (pressTimer) {
+    clearTimeout(pressTimer)
+    pressTimer = null
+  }
+}
+</script>
 
 <style scoped>
 @keyframes marquee {

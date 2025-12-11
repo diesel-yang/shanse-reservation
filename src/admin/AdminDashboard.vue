@@ -1,50 +1,57 @@
-<template>
-  <div class="page">
-    <h2>營收儀表板</h2>
+<!-- src/admin/AdminDashboard.vue -->
+<script setup>
+import { ref, onMounted } from 'vue'
+import { gasApi } from '@/utils/gas'
 
-    <div class="card">
-      <p>今日收入：<b>{{ data.todayIncome }}</b></p>
-      <p>Line Pay：{{ data.todayLinePay }}</p>
-      <p>現金/轉帳：{{ data.todayCash }}</p>
-      <p>退款：<span class="refund">{{ data.refundTotal }}</span></p>
-      <p>淨收入：<b>{{ data.net }}</b></p>
+const retailCount = ref(0)
+const bookingCount = ref(0)
+const preorderCount = ref(0)
+
+onMounted(async () => {
+  const retail = await gasApi.getRetail()
+  retailCount.value = retail?.data?.frozen?.length + retail?.data?.dessert?.length || 0
+
+  const notice = await gasApi.getNotice()
+  bookingCount.value = notice?.data?.length || 0
+
+  // 假設預先點餐 API → 後端還沒完成
+  preorderCount.value = 0
+})
+</script>
+
+<template>
+  <div>
+    <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+    <div class="grid grid-cols-3 gap-6">
+      <div class="box">
+        <h3>零售商品數量</h3>
+        <p class="value">{{ retailCount }}</p>
+      </div>
+
+      <div class="box">
+        <h3>訂位規則</h3>
+        <p class="value">{{ bookingCount }}</p>
+      </div>
+
+      <div class="box">
+        <h3>預先點餐（開發中）</h3>
+        <p class="value">{{ preorderCount }}</p>
+      </div>
     </div>
   </div>
 </template>
 
-<script>
-import { ref, onMounted } from "vue";
-import { useAdminAuth } from "@/composables/useAdminAuth";
-
-export default {
-  setup() {
-    const data = ref({});
-    const { idToken } = useAdminAuth();
-
-    async function load() {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE}/admin/dashboard`,
-        {
-          headers: { Authorization: `Bearer ${idToken.value}` },
-        }
-      );
-      const json = await res.json();
-      data.value = json.data;
-    }
-
-    onMounted(load);
-    return { data };
-  },
-};
-</script>
-
-<style scoped>
-.card {
-  border: 1px solid #ccc;
-  padding: 16px;
+<style>
+.box {
+  background: white;
+  padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
-.refund {
-  color: #d9534f;
+.value {
+  font-size: 36px;
+  font-weight: 700;
+  margin-top: 10px;
 }
 </style>

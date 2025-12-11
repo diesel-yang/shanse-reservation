@@ -1,23 +1,16 @@
-<template>
-  <div class="admin-layout">
-    <AdminNav />
-
-    <div class="admin-content">
-      <router-view />
-    </div>
-  </div>
-</template>
-
+<!-- src/admin/AdminLayout.vue -->
 <script setup>
 import AdminNav from './components/AdminNav.vue'
 </script>
 
-<style>
-.admin-layout {
-  display: flex;
-}
-.admin-content {
-  flex: 1;
-  padding: 20px;
-}
-</style>
+<template>
+  <div class="flex min-h-screen bg-gray-100">
+    <!-- 左側選單 -->
+    <AdminNav class="w-64" />
+
+    <!-- 右側內容區域 -->
+    <main class="flex-1 p-6">
+      <router-view />
+    </main>
+  </div>
+</template>
