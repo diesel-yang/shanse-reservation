@@ -1,5 +1,6 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
+import { adminRoutes } from '@/admin/adminRouter'
 import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
 // 前台
@@ -12,9 +13,6 @@ import Retail from '@/pages/Retail.vue'
 import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
-
-// 後台 routes（純陣列，不是 router）
-import adminRoutes from '@/admin/adminRouter'
 
 /* -------------------------------------------
  * 前台 Routes

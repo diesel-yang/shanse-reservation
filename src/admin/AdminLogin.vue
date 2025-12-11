@@ -9,7 +9,6 @@ const { setAuth } = useAdminAuth()
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
-// 解析 JWT payload
 function parseJwt(token) {
   const base64Url = token.split('.')[1]
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
@@ -32,17 +31,16 @@ onMounted(() => {
 })
 
 function initGoogle() {
-  // eslint-disable-next-line no-undef
   google.accounts.id.initialize({
     client_id: CLIENT_ID,
     callback: handleCredentialResponse
   })
 
-  // eslint-disable-next-line no-undef
-  google.accounts.id.renderButton(document.getElementById('google-login-btn'), {
+  google.accounts.id.renderButton(document.getElementById('google-btn'), {
     theme: 'outline',
     size: 'large',
-    width: '100%'
+    width: 320,
+    shape: 'pill'
   })
 }
 
@@ -51,30 +49,75 @@ function handleCredentialResponse(response) {
   const payload = parseJwt(idToken)
 
   if (!payload.email) {
-    alert('登入錯誤：Google 回傳無 email')
+    alert('登入錯誤：Google 未回傳 email')
     return
   }
 
-  // 儲存管理者登入資訊
   setAuth(idToken, {
     email: payload.email,
     name: payload.name,
     picture: payload.picture
   })
 
-  // 導回被擋住的頁面
-  const target = route.query.redirect || '/admin/retail'
+  const target = route.query.redirect || '/admin'
   router.replace(target)
 }
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-    <div class="bg-white shadow rounded-xl p-6 w-full max-w-sm text-center">
-      <h1 class="text-lg font-semibold mb-3">山色 後台登入</h1>
-      <p class="text-sm text-gray-600 mb-4">請使用帳號登入</p>
+  <div class="login-bg">
+    <div class="login-card">
+      <img src="/hero-transparent.png" alt="logo" class="logo" />
 
-      <div id="google-login-btn" class="flex justify-center"></div>
+      <h1 class="title">山色後台登入</h1>
+      <p class="subtitle">請使用 Google 帳號登入</p>
+
+      <div id="google-btn" class="google-btn"></div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.login-bg {
+  min-height: 100vh;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 40px 32px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+  width: 90px;
+  margin: 0 auto 12px;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #444;
+  margin-bottom: 24px;
+}
+
+.google-btn {
+  display: flex;
+  justify-content: center;
+}
+</style>

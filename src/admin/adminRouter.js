@@ -6,13 +6,12 @@ import AdminBookings from './AdminBookings.vue'
 import AdminPreorders from './AdminPreorders.vue'
 import AdminDashboard from './AdminDashboard.vue'
 
-export default [
+export const adminRoutes = [
   {
     path: '/admin/login',
     name: 'AdminLogin',
     component: AdminLogin
   },
-
   {
     path: '/admin',
     component: AdminLayout,
