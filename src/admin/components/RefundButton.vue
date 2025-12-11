@@ -1,7 +1,7 @@
-<!-- src/admin/components/RefundButton.vue -->
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
 const props = defineProps({
   orderId: String,
@@ -9,6 +9,7 @@ const props = defineProps({
   amount: Number
 })
 
+const { idToken } = useAdminAuth()
 const emit = defineEmits(['done'])
 const loading = ref(false)
 
@@ -18,11 +19,17 @@ async function doRefund() {
   loading.value = true
 
   try {
-    await axios.post(`${import.meta.env.VITE_LINEPAY_PROXY_BASE}/refund`, {
-      orderId: props.orderId,
-      transactionId: props.transactionId,
-      amount: props.amount
-    })
+    await axios.post(
+      `${import.meta.env.VITE_LINEPAY_PROXY_BASE}/linepay/refund`,
+      {
+        orderId: props.orderId,
+        transactionId: props.transactionId,
+        refundAmount: props.amount
+      },
+      {
+        headers: { Authorization: `Bearer ${idToken.value}` }
+      }
+    )
 
     alert('退款成功')
     emit('done')
@@ -34,13 +41,3 @@ async function doRefund() {
   loading.value = false
 }
 </script>
-
-<template>
-  <button
-    @click="doRefund"
-    :disabled="loading"
-    class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-  >
-    {{ loading ? '處理中...' : '退款' }}
-  </button>
-</template>
