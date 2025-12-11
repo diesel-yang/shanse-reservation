@@ -1,17 +1,17 @@
 // src/admin/adminRouter.js
-import AdminLayout from './AdminLayout.vue'
-import AdminLogin from './AdminLogin.vue'
-import AdminRetail from './AdminRetail.vue'
-import AdminBookings from './AdminBookings.vue'
-import AdminPreorders from './AdminPreorders.vue'
-import AdminDashboard from './AdminDashboard.vue'
 
-// ⭐️ 注意：此檔案不建立 router，只輸出 routes
+import AdminLayout from '@/admin/AdminLayout.vue'
+import AdminLogin from '@/admin/AdminLogin.vue'
+import AdminRetail from '@/admin/AdminRetail.vue'
+import AdminBookings from '@/admin/AdminBookings.vue'
+import AdminPreorders from '@/admin/AdminPreorders.vue'
+import AdminDashboard from '@/admin/AdminDashboard.vue'
+
 export const adminRoutes = [
   {
     path: '/admin/login',
     name: 'AdminLogin',
-    component: AdminLogin
+    component: AdminLogin // ← 這裡一定要成功 import！
   },
   {
     path: '/admin',
@@ -19,10 +19,10 @@ export const adminRoutes = [
     meta: { requiresAdmin: true },
     children: [
       { path: '', name: 'AdminDashboard', component: AdminDashboard },
-      { path: 'dashboard', name: 'Dashboard', component: AdminDashboard },
-      { path: 'retail', name: 'AdminRetail', component: AdminRetail },
-      { path: 'bookings', name: 'AdminBookings', component: AdminBookings },
-      { path: 'preorders', name: 'AdminPreorders', component: AdminPreorders }
+      { path: 'dashboard', component: AdminDashboard },
+      { path: 'retail', component: AdminRetail },
+      { path: 'bookings', component: AdminBookings },
+      { path: 'preorders', component: AdminPreorders }
     ]
   }
 ]
