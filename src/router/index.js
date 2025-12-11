@@ -2,7 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
-// 前台頁面
+// 前台
 import Home from '@/pages/Home.vue'
 import About from '@/pages/About.vue'
 import Reserve from '@/pages/Reserve.vue'
@@ -13,7 +13,7 @@ import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
 
-// 後台 routes（import routes 陣列）
+// 後台 routes（純陣列，不是 router）
 import adminRoutes from '@/admin/adminRouter'
 
 /* -------------------------------------------
@@ -30,7 +30,6 @@ const frontendRoutes = [
   { path: '/return-policy', name: 'ReturnPolicy', component: ReturnPolicy },
   { path: '/menu-view', name: 'menu-view', component: () => import('@/pages/MenuView.vue') },
 
-  // LINE Pay 結果頁
   { path: '/linepay-result', name: 'LinepayResult', component: LinepayResult },
   {
     path: '/linepay-cancel',
@@ -38,23 +37,19 @@ const frontendRoutes = [
     component: () => import('@/pages/LinepayCancel.vue')
   },
 
-  // 404 redirect
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 /* -------------------------------------------
- * 合併前台 + 後台 Routes
+ * Router（合併前台 + 後台）
  * ------------------------------------------- */
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    ...frontendRoutes,
-    ...adminRoutes // ← 正確合併後台 routes
-  ]
+  routes: [...frontendRoutes, ...adminRoutes]
 })
 
 /* -------------------------------------------
- * 後台登入權限保護
+ * Admin 身分驗證
  * ------------------------------------------- */
 router.beforeEach((to, from, next) => {
   const { isAuthed, loadFromStorage } = useAdminAuth()
