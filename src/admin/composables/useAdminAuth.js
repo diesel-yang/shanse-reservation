@@ -6,21 +6,17 @@ const adminUser = ref(null)
 const initialized = ref(false)
 
 /**
- * 初始化：只在第一次載入檔案時執行
+ * 一次性初始化（讀取 localStorage）
  */
 function init() {
   if (initialized.value) return
 
-  const t = localStorage.getItem('admin_id_token')
+  idToken.value = localStorage.getItem('admin_id_token') || null
   const u = localStorage.getItem('admin_user')
-
-  if (t) idToken.value = t
-  if (u) adminUser.value = JSON.parse(u)
+  adminUser.value = u ? JSON.parse(u) : null
 
   initialized.value = true
 }
-
-init() // ⭐ 只執行一次，不會重覆導致 reactivity 問題
 
 /**
  * 設定登入資料
@@ -39,28 +35,20 @@ function setAuth(token, userInfo) {
 function logout() {
   idToken.value = null
   adminUser.value = null
-
   localStorage.removeItem('admin_id_token')
   localStorage.removeItem('admin_user')
-
-  // ⭐ 重要：停止 Google 自動登入
-  if (window.google?.accounts?.id) {
-    try {
-      google.accounts.id.disableAutoSelect()
-    } catch (_) {}
-  }
 }
 
 /**
- * 檢查是否登入（供 router 使用）
+ * 檢查是否登入（for router）
  */
 const isAuthed = computed(() => !!idToken.value)
 
 /**
- * Router guard 專用：未登入導向 /admin/login
+ * Router Guard 專用
  */
 function ensureAdminLoggedIn(router, to) {
-  init() // 確保 localStorage 已經同步到 memory
+  init()
 
   if (!idToken.value) {
     return router.replace({
@@ -77,6 +65,7 @@ export function useAdminAuth() {
     isAuthed,
     setAuth,
     logout,
-    ensureAdminLoggedIn
+    ensureAdminLoggedIn,
+    init
   }
 }

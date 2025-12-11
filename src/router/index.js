@@ -50,14 +50,11 @@ const router = createRouter({
  * 後台登入驗證
  * -------------------------- */
 router.beforeEach((to, from, next) => {
-  const { isAuthed, loadFromStorage } = useAdminAuth()
-  loadFromStorage()
+  const { ensureAdminLoggedIn } = useAdminAuth()
 
-  if (to.meta.requiresAdmin && !isAuthed.value) {
-    return next({
-      path: '/admin/login',
-      query: { redirect: to.fullPath }
-    })
+  if (to.meta.requiresAdmin) {
+    const r = ensureAdminLoggedIn(router, to)
+    if (r !== undefined) return // 被導向到 login
   }
 
   next()
