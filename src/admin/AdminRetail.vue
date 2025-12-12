@@ -8,26 +8,18 @@ const loading = ref(true)
 
 async function loadOrders() {
   loading.value = true
+  const res = await axios.get(`${import.meta.env.VITE_GAS_URL}?type=retailOrders`)
 
-  const res = await axios.get(`${import.meta.env.VITE_GAS_URL}?action=getRetailOrders`)
-
-  if (res.data.status !== 'success') {
-    console.error('GAS 錯誤：', res.data)
-    orders.value = []
-    loading.value = false
-    return
-  }
-
-  // ★ GAS 格式 → 轉成 Admin 顯示格式
-  orders.value = res.data.data.map(r => ({
-    id: r['訂單編號'],
-    name: r['姓名'],
-    amount: r['合計'],
-    payment: r['付款方式'],
-    paid: r['付款狀態'] === 'paid',
-    refundAmount: r['退款金額'],
-    refundTx: r['退款交易編號'],
-    refundAt: r['退款時間']
+  orders.value = res.data.data.map(o => ({
+    id: o['訂單編號'],
+    name: o['姓名'],
+    amount: o['合計'],
+    method: o['付款方式'],
+    status: o['付款狀態'],
+    transactionId: o['交易ID'],
+    refundAmount: o['退款金額'],
+    refundTxId: o['退款交易ID'],
+    refundTime: o['退款時間']
   }))
 
   loading.value = false
@@ -57,24 +49,28 @@ onMounted(loadOrders)
           <td class="p-2">{{ o.id }}</td>
           <td class="p-2">{{ o.name }}</td>
           <td class="p-2">{{ o.amount }}</td>
-          <td class="p-2">{{ o.payment }}</td>
+          <td class="p-2">{{ o.method }}</td>
 
           <td class="p-2">
-            <span v-if="o.paid" class="text-green-600">已付款</span>
+            <span v-if="o.status === 'paid'" class="text-green-600">已付款</span>
+            <span v-else-if="o.status === 'refunded'" class="text-blue-600">已退款</span>
             <span v-else class="text-red-600">未付款</span>
           </td>
 
           <td class="p-2">
-            <span v-if="o.refundAt" class="text-red-600"> 已退款（{{ o.refundAt }}） </span>
+            <span v-if="o.status === 'refunded'" class="text-blue-600"
+              >已退款（{{ o.refundTime }}）</span
+            >
 
             <RefundButton
-              v-else-if="o.paid"
+              v-else-if="o.status === 'paid'"
               :orderId="o.id"
+              :transactionId="o.transactionId"
               :amount="o.amount"
               @done="loadOrders"
             />
 
-            <span v-else class="text-gray-400">無資料</span>
+            <span v-else class="text-gray-400">無</span>
           </td>
         </tr>
       </tbody>
