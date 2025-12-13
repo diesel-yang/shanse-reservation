@@ -1,8 +1,12 @@
+// src/domain/_core/abilities.js
 import { PayMethod, PayStatus } from './enums'
 
 export function canRefund(order) {
-  if (order.payMethod !== PayMethod.LINEPAY) return false
-  if (order.payStatus !== PayStatus.PAID) return false
-  if (!order.transactionId) return false
-  return true
+  if (!order) return false
+
+  return (
+    order.付款方式 === PayMethod.LINEPAY &&
+    order.付款狀態 === PayStatus.PAID &&
+    Boolean(order.交易ID)
+  )
 }
