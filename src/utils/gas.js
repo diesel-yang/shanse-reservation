@@ -1,28 +1,34 @@
-// src/utils/gas.js
-
 /**
  * Google Apps Script 呼叫工具
  *
- * Env 支援兩種寫法：
- *   VITE_GAS_URL  = https://script.google.com/macros/s/xxxx/exec
- *   VITE_GAS_BASE = https://script.google.com/macros/s/xxxx/exec
+ * 角色：Transport / Gateway Adapter
+ * 唯一責任：讓前端「安全地」與 GAS 溝通
+ *
+ * ⚠️ 原則：
+ * - 不理解 domain
+ * - 不驗證資料 schema
+ * - 不 throw 破壞 UI
+ *
+ * Env 支援：
+ *   VITE_GAS_URL
+ *   VITE_GAS_BASE
  */
 
-// 先把原始 env 字串抓出來（可能為 undefined）
+// --------------------------------------------------
+// 0) Resolve GAS Base URL
+// --------------------------------------------------
 const RAW_GAS_BASE = (import.meta.env.VITE_GAS_URL || import.meta.env.VITE_GAS_BASE || '').trim()
 
-// 內部快取（避免每次 new URL）
 let _resolvedGasBase = null
 
-/**
- * 取得 GAS Base URL（含格式驗證）
- */
 function getGasBase() {
   if (_resolvedGasBase) return _resolvedGasBase
 
   if (!RAW_GAS_BASE) {
-    console.error('[GAS] 找不到環境變數 VITE_GAS_URL / VITE_GAS_BASE')
-    throw new Error('系統設定錯誤：尚未設定後端連線網址')
+    console.error('[GAS] Missing env: VITE_GAS_URL / VITE_GAS_BASE')
+    // ⚠️ 不 throw，回傳空字串讓 fetch 失敗後走安全 fallback
+    _resolvedGasBase = ''
+    return _resolvedGasBase
   }
 
   try {
@@ -30,34 +36,64 @@ function getGasBase() {
     _resolvedGasBase = url.toString()
     return _resolvedGasBase
   } catch (err) {
-    console.error('[GAS] GAS URL 格式錯誤：', RAW_GAS_BASE, err)
-    throw new Error('系統設定錯誤：GAS URL 格式無效')
+    console.error('[GAS] Invalid GAS URL:', RAW_GAS_BASE, err)
+    _resolvedGasBase = ''
+    return _resolvedGasBase
   }
 }
 
-/**
- * 統一處理 fetch 結果
- */
+// --------------------------------------------------
+// 1) Unified Response Handler（重點修正）
+// --------------------------------------------------
 async function handleResponse(res) {
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    console.error('[GAS] HTTP 錯誤：', res.status, text)
-    throw new Error(`GAS 呼叫失敗（${res.status}）`)
+  // HTTP 層錯誤 → 回傳標準錯誤物件
+  if (!res || !res.ok) {
+    let text = ''
+    try {
+      text = await res.text()
+    } catch (_) {}
+
+    console.error('[GAS] HTTP error', res?.status, text)
+
+    return {
+      result: 'error',
+      message: 'HTTP_ERROR',
+      status: res?.status || 0,
+      data: null
+    }
   }
 
+  // 嘗試 parse JSON
   try {
-    return await res.json()
+    const json = await res.json()
+    // ⚠️ 即使 GAS 回奇怪格式，也包一層保證結構
+    if (typeof json !== 'object' || json === null) {
+      return {
+        result: 'error',
+        message: 'INVALID_JSON',
+        data: null
+      }
+    }
+    return json
   } catch (err) {
-    console.error('[GAS] 回傳非 JSON：', err)
-    throw new Error('GAS 回傳格式錯誤')
+    console.error('[GAS] Invalid JSON response', err)
+    return {
+      result: 'error',
+      message: 'INVALID_JSON',
+      data: null
+    }
   }
 }
 
-/**
- * GET 請求
- */
+// --------------------------------------------------
+// 2) GET
+// --------------------------------------------------
 export async function gasGet(params = {}, options = {}) {
   const base = getGasBase()
+  if (!base) {
+    return { result: 'error', message: 'NO_GAS_BASE', data: null }
+  }
+
   const url = new URL(base)
 
   Object.entries(params).forEach(([k, v]) => {
@@ -66,19 +102,34 @@ export async function gasGet(params = {}, options = {}) {
     }
   })
 
-  const res = await fetch(url.toString(), {
-    method: 'GET',
-    signal: options.signal
-  })
+  try {
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      signal: options.signal
+    })
 
-  return handleResponse(res)
+    return await handleResponse(res)
+  } catch (err) {
+    if (err?.name !== 'AbortError') {
+      console.error('[GAS] GET fetch failed', err)
+    }
+    return {
+      result: 'error',
+      message: 'FETCH_FAILED',
+      data: null
+    }
+  }
 }
 
-/**
- * POST 請求
- */
+// --------------------------------------------------
+// 3) POST
+// --------------------------------------------------
 export async function gasPost(payload, options = {}) {
   const base = getGasBase()
+  if (!base) {
+    return { result: 'error', message: 'NO_GAS_BASE', data: null }
+  }
+
   let body
 
   if (payload instanceof URLSearchParams || payload instanceof FormData) {
@@ -86,51 +137,60 @@ export async function gasPost(payload, options = {}) {
   } else if (typeof payload === 'object' && payload !== null) {
     const params = new URLSearchParams()
     Object.entries(payload).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) params.append(k, String(v))
+      if (v !== undefined && v !== null) {
+        params.append(k, String(v))
+      }
     })
     body = params
   } else {
-    console.error('[GAS] payload 類型錯誤：', payload)
-    throw new Error('payload 必須是 Object / URLSearchParams / FormData')
+    console.error('[GAS] Invalid payload type', payload)
+    return {
+      result: 'error',
+      message: 'INVALID_PAYLOAD',
+      data: null
+    }
   }
-  /**
-   * 意思是：把資料 POST 到 Google Apps Script，等它回應
-   */
-  const res = await fetch(base, {
-    method: 'POST',
-    body,
-    signal: options.signal
-  })
 
-  return handleResponse(res)
+  try {
+    const res = await fetch(base, {
+      method: 'POST',
+      body,
+      signal: options.signal
+    })
+
+    return await handleResponse(res)
+  } catch (err) {
+    if (err?.name !== 'AbortError') {
+      console.error('[GAS] POST fetch failed', err)
+    }
+    return {
+      result: 'error',
+      message: 'FETCH_FAILED',
+      data: null
+    }
+  }
 }
 
-/* ------------------------------------------------------------- */
-/*  提供前端使用的 GAS API（乾淨版本）                            */
-/* ------------------------------------------------------------- */
-
+// --------------------------------------------------
+// 4) gasApi（系統用，不建議 UI 直接使用）
+// --------------------------------------------------
 export const gasApi = {
-  /** 取得菜單 */
   getMenu(options) {
     return gasGet({ type: 'menu' }, options)
   },
 
-  /** 取得訂位/須知 */
   getNotice(options) {
     return gasGet({ type: 'notice' }, options)
   },
 
-  /** 取得零售商品 */
   getRetail(options) {
     return gasGet({ type: 'retail' }, options)
   },
 
-  /** 零售訂單（現金 / 轉帳） */
   saveRetailOrder(order, options) {
     return gasPost({ type: 'retailOrder', ...order }, options)
   },
 
-  /** 用餐預先點餐 */
   saveDineOrder(order, options) {
     return gasPost({ type: 'dine', ...order }, options)
   }

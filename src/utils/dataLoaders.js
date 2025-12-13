@@ -1,35 +1,52 @@
 // src/utils/dataLoaders.js
+
 import { gasGet } from '@/utils/gas'
 
 /** =========================
  *  菜單（GAS: ?type=menu）
- *  支援 AbortController.signal
+ *  Application Data Loader / Anti-corruption Layer
+ *  保證回傳 UI 可用的固定結構
+ *  角色：Application Data Loader資料轉譯層 / 責任是「把後端回傳的資料，轉成『前端 UI 保證能用的格式』」
  * ========================= */
 export const fetchMenu = async signal => {
+  const EMPTY_MENU = { main: [], drink: [], side: [], addon: [] }
+
   try {
     const json = await gasGet({ type: 'menu' }, { signal })
-    if (json.result !== 'success' || !json.data) throw new Error('menu 資料格式錯誤')
 
-    const convert = (arr = []) =>
-      arr.map(r => ({
-        code: r.code || r.name || '',
-        name: r.name || '',
-        price: Number(r.price) || 0,
-        note: r.note || '',
-        description: r.description || '',
-        image: r.image || '',
-        disabled: r.stop === true
+    // 1️⃣ 基本防禦
+    if (!json || json.result !== 'success' || typeof json.data !== 'object') {
+      console.warn('[menu] 非預期回傳，fallback 空菜單', json)
+      return EMPTY_MENU
+    }
+
+    const data = json.data || {}
+
+    // 2️⃣ schema guard
+    const safeArray = v => (Array.isArray(v) ? v : [])
+
+    const convert = arr =>
+      safeArray(arr).map(r => ({
+        code: r?.code || r?.name || '',
+        name: r?.name || '',
+        price: Number(r?.price) || 0,
+        note: r?.note || '',
+        description: r?.description || '',
+        image: r?.image || '',
+        disabled: r?.stop === true
       }))
 
     return {
-      main: convert(json.data.main),
-      drink: convert(json.data.drink),
-      side: convert(json.data.side),
-      addon: convert(json.data.addon)
+      main: convert(data.main),
+      drink: convert(data.drink),
+      side: convert(data.side),
+      addon: convert(data.addon)
     }
   } catch (err) {
-    if (err?.name !== 'AbortError') console.error('❌ 載入菜單失敗', err)
-    return { main: [], drink: [], side: [], addon: [] }
+    if (err?.name !== 'AbortError') {
+      console.error('❌ fetchMenu 失敗，使用空菜單', err)
+    }
+    return EMPTY_MENU
   }
 }
 
@@ -69,8 +86,10 @@ export const fetchHolidays = async signal => {
 export const fetchRetail = async signal => {
   try {
     const json = await gasGet({ type: 'retail' }, { signal })
-    // 後端約定：{ frozen: [], dessert: [] }
-    return json?.data || { frozen: [], dessert: [] }
+    return {
+      frozen: Array.isArray(json?.data?.frozen) ? json.data.frozen : [],
+      dessert: Array.isArray(json?.data?.dessert) ? json.data.dessert : []
+    }
   } catch (err) {
     if (err?.name !== 'AbortError') console.error('❌ 載入零售資料失敗', err)
     return { frozen: [], dessert: [] }
