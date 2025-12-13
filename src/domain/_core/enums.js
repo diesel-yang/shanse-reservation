@@ -7,17 +7,17 @@
 /* -----------------------------
  * 付款方式（RETAIL_ORDER.付款方式）
  * ----------------------------- */
-export const PaymentMethod = Object.freeze({
-  CASH: 'cash',
-  LINEPAY: 'linepay'
+export const PayMethod = Object.freeze({
+  LINEPAY: 'linepay',
+  CASH: 'cash'
 })
 
 /* -----------------------------
  * 訂單付款狀態（RETAIL_ORDER.付款狀態）
  * ----------------------------- */
-export const OrderPaymentStatus = Object.freeze({
-  UNPAID: 'unpaid',
+export const PayStatus = Object.freeze({
   PAID: 'paid',
+  UNPAID: 'unpaid',
   REFUNDED: 'refunded'
 })
 
