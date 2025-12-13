@@ -17,6 +17,7 @@ if (!BASE) {
  *   subtotal,
  *   shipping
  * }
+ * 只做一件事：跟 Cloud Run / LINE Pay 溝通，不知道「零售訂單」「退款」「admin」
  */
 export async function linepayRequest(payload) {
   if (!BASE) {

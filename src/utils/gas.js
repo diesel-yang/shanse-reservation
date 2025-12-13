@@ -9,8 +9,7 @@
  */
 
 // 先把原始 env 字串抓出來（可能為 undefined）
-const RAW_GAS_BASE =
-  (import.meta.env.VITE_GAS_URL || import.meta.env.VITE_GAS_BASE || '').trim()
+const RAW_GAS_BASE = (import.meta.env.VITE_GAS_URL || import.meta.env.VITE_GAS_BASE || '').trim()
 
 // 內部快取（避免每次 new URL）
 let _resolvedGasBase = null
@@ -69,7 +68,7 @@ export async function gasGet(params = {}, options = {}) {
 
   const res = await fetch(url.toString(), {
     method: 'GET',
-    signal: options.signal,
+    signal: options.signal
   })
 
   return handleResponse(res)
@@ -94,11 +93,13 @@ export async function gasPost(payload, options = {}) {
     console.error('[GAS] payload 類型錯誤：', payload)
     throw new Error('payload 必須是 Object / URLSearchParams / FormData')
   }
-
+  /**
+   * 意思是：把資料 POST 到 Google Apps Script，等它回應
+   */
   const res = await fetch(base, {
     method: 'POST',
     body,
-    signal: options.signal,
+    signal: options.signal
   })
 
   return handleResponse(res)
@@ -132,5 +133,5 @@ export const gasApi = {
   /** 用餐預先點餐 */
   saveDineOrder(order, options) {
     return gasPost({ type: 'dine', ...order }, options)
-  },
+  }
 }

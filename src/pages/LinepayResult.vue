@@ -25,6 +25,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { linepayConfirm } from '@/api/linepay'
 
 const router = useRouter()
 

@@ -27,12 +27,12 @@
       >
         <div class="min-w-0">
           <div class="font-medium truncate">{{ c.name }}</div>
-          <div class="text-xs text-gray-500">
-            {{ currency(c.price) }} / {{ c.unit || '份' }}
-          </div>
+          <div class="text-xs text-gray-500">{{ currency(c.price) }} / {{ c.unit || '份' }}</div>
         </div>
         <div class="flex items-center gap-2">
-          <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">－</button>
+          <button class="px-2 py-1 border rounded" @click="dec(idx)" :disabled="c.qty <= 1">
+            －
+          </button>
           <span class="w-6 text-center">{{ c.qty }}</span>
           <button class="px-2 py-1 border rounded" @click="inc(idx)">＋</button>
           <button class="ml-2 text-xs text-red-500 underline" @click="remove(idx)">移除</button>
@@ -79,7 +79,7 @@ import { RouterLink } from 'vue-router'
 import { useCart } from '@/composables/useCart'
 import ModalCheckout from '@/components/ModalCheckout.vue'
 import { gasPost } from '@/utils/gas'
-import { linepayRequest } from '@/utils/linepay' // 🟧 新增：呼叫 Cloud Run Proxy
+import { linepayRequest } from '@/api/linepay' // 呼叫 Cloud Run Proxy
 
 /** --- 購物車狀態（來自 useCart，全站共用） --- */
 const { items, subtotal, inc, dec, remove, clear } = useCart()
@@ -148,7 +148,11 @@ async function submitOrder({ customer }) {
         shipping: shippingNum
       }
 
-      const res = await linepayRequest(payload)   // ⬅ utils/linepay.js
+      const res = await linepayRequest({
+        amount,
+        customer,
+        items
+      })
       console.log('LINE Pay proxy response:', res)
 
       if (res?.result === 'success' && res.paymentUrl && res.orderId) {
@@ -166,7 +170,8 @@ async function submitOrder({ customer }) {
         // 備份一下 orderId
         localStorage.setItem('lastLinepayOrderId', res.orderId)
 
-        window.location.href = res.paymentUrl
+        // 導向 LINE Pay
+        window.location.href = res.data.paymentUrl
         return
       } else {
         alert(res?.message || '無法建立 LINE Pay 付款，請改用其他付款方式或稍後再試。')
