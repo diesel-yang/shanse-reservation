@@ -20,6 +20,11 @@
 const RAW_GAS_READ_BASE = (import.meta.env.VITE_GAS_READ_URL || '').trim()
 const RAW_GAS_WRITE_BASE = (import.meta.env.VITE_GAS_WRITE_URL || '').trim()
 
+console.log('[ENV]', {
+  READ: import.meta.env.VITE_GAS_READ_URL,
+  WRITE: import.meta.env.VITE_GAS_WRITE_URL
+})
+
 let _resolvedReadBase = null
 let _resolvedWriteBase = null
 
