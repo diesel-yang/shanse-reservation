@@ -6,7 +6,6 @@ import { gasGet } from '@/utils/gas'
  *  菜單（GAS: ?type=menu）
  *  Application Data Loader / Anti-corruption Layer
  *  保證回傳 UI 可用的固定結構
- *  角色：Application Data Loader資料轉譯層 / 責任是「把後端回傳的資料，轉成『前端 UI 保證能用的格式』」
  * ========================= */
 export const fetchMenu = async signal => {
   const EMPTY_MENU = { main: [], drink: [], side: [], addon: [] }
@@ -14,15 +13,23 @@ export const fetchMenu = async signal => {
   try {
     const json = await gasGet({ type: 'menu' }, { signal })
 
-    // 1️⃣ 基本防禦
-    if (!json || json.result !== 'success' || typeof json.data !== 'object') {
+    /**
+     * ✅ 相容兩種後端格式：
+     * 1) 新 Read API：{ main, drink, side, addon }
+     * 2) 舊 Gateway：{ result: 'success', data: {...} }
+     */
+    const data =
+      json?.data && typeof json.data === 'object'
+        ? json.data
+        : json && typeof json === 'object'
+          ? json
+          : null
+
+    if (!data) {
       console.warn('[menu] 非預期回傳，fallback 空菜單', json)
       return EMPTY_MENU
     }
 
-    const data = json.data || {}
-
-    // 2️⃣ schema guard
     const safeArray = v => (Array.isArray(v) ? v : [])
 
     const convert = arr =>
@@ -52,7 +59,6 @@ export const fetchMenu = async signal => {
 
 /** =========================
  *  假日（Google Calendar API）
- *  支援 AbortController.signal
  * ========================= */
 export const fetchHolidays = async signal => {
   try {
@@ -70,6 +76,7 @@ export const fetchHolidays = async signal => {
 
     const res = await fetch(url, { cache: 'no-store', signal })
     const data = await res.json()
+
     return Array.isArray(data.items)
       ? data.items.filter(e => e?.start?.date).map(e => e.start.date)
       : []
@@ -81,14 +88,21 @@ export const fetchHolidays = async signal => {
 
 /** =========================
  *  零售清單（GAS: ?type=retail）
- *  支援 AbortController.signal
  * ========================= */
 export const fetchRetail = async signal => {
   try {
     const json = await gasGet({ type: 'retail' }, { signal })
+
+    const data =
+      json?.data && typeof json.data === 'object'
+        ? json.data
+        : json && typeof json === 'object'
+          ? json
+          : {}
+
     return {
-      frozen: Array.isArray(json?.data?.frozen) ? json.data.frozen : [],
-      dessert: Array.isArray(json?.data?.dessert) ? json.data.dessert : []
+      frozen: Array.isArray(data.frozen) ? data.frozen : [],
+      dessert: Array.isArray(data.dessert) ? data.dessert : []
     }
   } catch (err) {
     if (err?.name !== 'AbortError') console.error('❌ 載入零售資料失敗', err)
@@ -96,22 +110,26 @@ export const fetchRetail = async signal => {
   }
 }
 
-/** （可選）訂位/用餐須知（GAS: ?type=notice） */
+/** =========================
+ *  訂位 / 用餐須知（GAS: ?type=notice）
+ * ========================= */
 export const fetchNotice = async signal => {
   try {
     const json = await gasGet({ type: 'notice' }, { signal })
-    return Array.isArray(json?.data) ? json.data : []
+
+    const data =
+      json?.data && Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : []
+
+    return data
   } catch (err) {
     if (err?.name !== 'AbortError') console.error('❌ 取得 notice 失敗', err)
     return []
   }
 }
 
-/** ============================================================
- *  一鍵預載：App 啟動時一次抓齊資料
- *  @param {Object} options
- *  @param {AbortSignal} [options.signal] - 傳遞給子請求
- * ============================================================ */
+/** =========================
+ *  一鍵預載
+ * ========================= */
 export const preloadAll = async (options = {}) => {
   const signal = options.signal
 
@@ -119,7 +137,7 @@ export const preloadAll = async (options = {}) => {
     fetchMenu(signal),
     fetchHolidays(signal),
     fetchRetail(signal),
-    fetchNotice(signal) // 若目前未用到，可移除
+    fetchNotice(signal)
   ])
 
   return { menu, holidays, retail, notice }
