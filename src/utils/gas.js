@@ -9,44 +9,74 @@
  * - 不驗證資料 schema
  * - 不 throw 破壞 UI
  *
- * Env 支援：
- *   VITE_GAS_URL
- *   VITE_GAS_BASE
+ * Env（強制分流）：
+ *   VITE_GAS_READ_URL   → Read API（menu / retail / notice）
+ *   VITE_GAS_WRITE_URL  → Write API（dine / retailOrder / booking）
  */
 
 // --------------------------------------------------
-// 0) Resolve GAS Base URL
+// 0) Resolve GAS Base URL（Read / Write 分離）
 // --------------------------------------------------
-const RAW_GAS_BASE = (import.meta.env.VITE_GAS_URL || import.meta.env.VITE_GAS_BASE || '').trim()
+const RAW_GAS_READ_BASE = (import.meta.env.VITE_GAS_READ_URL || '').trim()
+const RAW_GAS_WRITE_BASE = (import.meta.env.VITE_GAS_WRITE_URL || '').trim()
 
-let _resolvedGasBase = null
+let _resolvedReadBase = null
+let _resolvedWriteBase = null
 
-function getGasBase() {
-  if (_resolvedGasBase) return _resolvedGasBase
+function resolveBase(raw, cacheRef, label) {
+  if (cacheRef.value) return cacheRef.value
 
-  if (!RAW_GAS_BASE) {
-    console.error('[GAS] Missing env: VITE_GAS_URL / VITE_GAS_BASE')
-    // ⚠️ 不 throw，回傳空字串讓 fetch 失敗後走安全 fallback
-    _resolvedGasBase = ''
-    return _resolvedGasBase
+  if (!raw) {
+    console.error(`[GAS] Missing env: ${label}`)
+    cacheRef.value = ''
+    return ''
   }
 
   try {
-    const url = new URL(RAW_GAS_BASE)
-    _resolvedGasBase = url.toString()
-    return _resolvedGasBase
+    const url = new URL(raw)
+    cacheRef.value = url.toString()
+    return cacheRef.value
   } catch (err) {
-    console.error('[GAS] Invalid GAS URL:', RAW_GAS_BASE, err)
-    _resolvedGasBase = ''
-    return _resolvedGasBase
+    console.error(`[GAS] Invalid GAS URL (${label}):`, raw, err)
+    cacheRef.value = ''
+    return ''
   }
 }
 
+function getGasReadBase() {
+  return resolveBase(
+    RAW_GAS_READ_BASE,
+    {
+      get value() {
+        return _resolvedReadBase
+      },
+      set value(v) {
+        _resolvedReadBase = v
+      }
+    },
+    'VITE_GAS_READ_URL'
+  )
+}
+
+function getGasWriteBase() {
+  return resolveBase(
+    RAW_GAS_WRITE_BASE,
+    {
+      get value() {
+        return _resolvedWriteBase
+      },
+      set value(v) {
+        _resolvedWriteBase = v
+      }
+    },
+    'VITE_GAS_WRITE_URL'
+  )
+}
+
 // --------------------------------------------------
-// 1) Unified Response Handler（重點修正）
+// 1) Unified Response Handler（保持你原本的防禦）
 // --------------------------------------------------
 async function handleResponse(res) {
-  // HTTP 層錯誤 → 回傳標準錯誤物件
   if (!res || !res.ok) {
     let text = ''
     try {
@@ -63,10 +93,8 @@ async function handleResponse(res) {
     }
   }
 
-  // 嘗試 parse JSON
   try {
     const json = await res.json()
-    // ⚠️ 即使 GAS 回奇怪格式，也包一層保證結構
     if (typeof json !== 'object' || json === null) {
       return {
         result: 'error',
@@ -86,16 +114,15 @@ async function handleResponse(res) {
 }
 
 // --------------------------------------------------
-// 2) GET
+// 2) GET → Read API ONLY
 // --------------------------------------------------
 export async function gasGet(params = {}, options = {}) {
-  const base = getGasBase()
+  const base = getGasReadBase()
   if (!base) {
-    return { result: 'error', message: 'NO_GAS_BASE', data: null }
+    return { result: 'error', message: 'NO_GAS_READ_BASE', data: null }
   }
 
   const url = new URL(base)
-
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {
       url.searchParams.append(k, String(v))
@@ -107,11 +134,10 @@ export async function gasGet(params = {}, options = {}) {
       method: 'GET',
       signal: options.signal
     })
-
     return await handleResponse(res)
   } catch (err) {
     if (err?.name !== 'AbortError') {
-      console.error('[GAS] GET fetch failed', err)
+      console.error('[GAS][GET] fetch failed', err)
     }
     return {
       result: 'error',
@@ -122,12 +148,12 @@ export async function gasGet(params = {}, options = {}) {
 }
 
 // --------------------------------------------------
-// 3) POST
+// 3) POST → Write API ONLY
 // --------------------------------------------------
 export async function gasPost(payload, options = {}) {
-  const base = getGasBase()
+  const base = getGasWriteBase()
   if (!base) {
-    return { result: 'error', message: 'NO_GAS_BASE', data: null }
+    return { result: 'error', message: 'NO_GAS_WRITE_BASE', data: null }
   }
 
   let body
@@ -157,11 +183,10 @@ export async function gasPost(payload, options = {}) {
       body,
       signal: options.signal
     })
-
     return await handleResponse(res)
   } catch (err) {
     if (err?.name !== 'AbortError') {
-      console.error('[GAS] POST fetch failed', err)
+      console.error('[GAS][POST] fetch failed', err)
     }
     return {
       result: 'error',
@@ -172,9 +197,10 @@ export async function gasPost(payload, options = {}) {
 }
 
 // --------------------------------------------------
-// 4) gasApi（系統用，不建議 UI 直接使用）
+// 4) gasApi（保持原本 API 形狀，UI 不用改）
 // --------------------------------------------------
 export const gasApi = {
+  // ---------- READ ----------
   getMenu(options) {
     return gasGet({ type: 'menu' }, options)
   },
@@ -187,6 +213,7 @@ export const gasApi = {
     return gasGet({ type: 'retail' }, options)
   },
 
+  // ---------- WRITE ----------
   saveRetailOrder(order, options) {
     return gasPost({ type: 'retailOrder', ...order }, options)
   },
