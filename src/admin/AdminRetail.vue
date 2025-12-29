@@ -1,63 +1,94 @@
+<!--
+  src/admin/AdminRetail.vue
+  ------------------------------------------------------------
+  用途：
+  - 後台零售訂單管理
+  - 顯示訂單清單（不含退款操作）
+-->
+
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { fetchRetailOrders, refundLinepay } from '@/api/retail.api'
-import { adaptRetailOrders } from '@/domain/retail/retail.adapter'
-import { canRefund } from '@/domain/_core/abilities'
-import RefundButton from './components/RefundButton.vue'
+import { ref, onMounted } from 'vue'
+import { fetchAdminRetail } from '@/admin/api/admin.retail.api'
 
-const orders = ref([])
+const rows = ref([])
 const loading = ref(false)
-let timer = null
+const error = ref(null)
 
-async function loadOrders() {
+async function loadData() {
   loading.value = true
-  orders.value = await fetchRetailOrders()
-  loading.value = false
+  error.value = null
+
+  try {
+    rows.value = await fetchAdminRetail()
+  } catch (err) {
+    console.error('[AdminRetail] loadData failed', err)
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
 }
 
-onMounted(() => {
-  loadOrders()
-  timer = setInterval(loadOrders, 30000) // 30 秒 auto-refresh
-})
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
+onMounted(loadData)
 </script>
 
 <template>
   <div>
-    <h1 class="text-xl font-bold mb-4">零售訂單</h1>
+    <h1 class="text-xl font-bold mb-4">零售訂單管理</h1>
 
-    <table class="w-full">
+    <div v-if="error" class="text-red-600 text-sm mb-4">
+      {{ error }}
+    </div>
+
+    <table class="w-full border">
       <thead>
-        <tr>
-          <th>訂單</th>
-          <th>姓名</th>
-          <th>金額</th>
-          <th>狀態</th>
-          <th>退款</th>
+        <tr class="bg-gray-100">
+          <th class="p-2 text-left">姓名</th>
+          <th class="p-2 text-left">電話</th>
+          <th class="p-2 text-right">金額</th>
+          <th class="p-2 text-left">狀態</th>
         </tr>
       </thead>
 
       <tbody>
-        <tr v-for="o in orders" :key="o.id">
-          <td>{{ o.id }}</td>
-          <td>{{ o.name }}</td>
-          <td>{{ o.total }}</td>
-
-          <td>
-            <span v-if="o.payStatus === 'paid'">已付款</span>
-            <span v-else-if="o.payStatus === 'refunded'">已退款</span>
-            <span v-else>未付款</span>
+        <tr
+          v-for="row in rows"
+          :key="row.retailId"
+          class="border-t"
+          data-testid="retail-row"
+        >
+          <td class="p-2">
+            {{ row.name }}
           </td>
 
-          <td>
-            <RefundButton v-if="canRefund(o)" :order="o" @done="loadOrders" />
-            <span v-else class="text-gray-400">—</span>
+          <td class="p-2">
+            {{ row.phone }}
+          </td>
+
+          <td class="p-2 text-right">
+            {{ row.totalAmount }}
+          </td>
+
+          <td class="p-2">
+            {{ row.status }}
+          </td>
+        </tr>
+
+        <tr v-if="!loading && rows.length === 0">
+          <td
+            colspan="4"
+            class="p-4 text-center text-gray-400"
+          >
+            尚無零售訂單
           </td>
         </tr>
       </tbody>
     </table>
+
+    <div
+      v-if="loading"
+      class="mt-4 text-gray-500 text-sm"
+    >
+      載入中…
+    </div>
   </div>
 </template>

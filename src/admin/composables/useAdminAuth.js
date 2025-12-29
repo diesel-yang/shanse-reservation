@@ -1,71 +1,98 @@
 // src/admin/composables/useAdminAuth.js
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
-const idToken = ref(null)
+/**
+ * Admin Auth Composable
+ * -------------------------------------------------------------
+ * 用途：
+ * - 管理後台登入狀態
+ * - 支援「正式登入」與「測試 token 模式」
+ *
+ * 原則：
+ * - router guard 只問「現在是不是 admin」
+ * - 不關心你是怎麼登入的
+ */
+
+/**
+ * 是否為測試模式
+ * - VITE_ADMIN_TEST_MODE = true 時啟用
+ * - Playwright / E2E 專用
+ */
+const isTestMode =
+  import.meta.env.VITE_ADMIN_TEST_MODE === 'true'
+
+/**
+ * 全域 admin 狀態（單例）
+ * ※ 這裡是唯一真實來源
+ */
 const adminUser = ref(null)
-const initialized = ref(false)
+const adminToken = ref(null)
 
 /**
- * 一次性初始化（讀取 localStorage）
+ * 初始化（模組載入時只跑一次）
+ * - 若為測試模式，自動注入假 admin
  */
-function init() {
-  if (initialized.value) return
-
-  idToken.value = localStorage.getItem('admin_id_token') || null
-  const u = localStorage.getItem('admin_user')
-  adminUser.value = u ? JSON.parse(u) : null
-
-  initialized.value = true
+if (isTestMode) {
+  adminUser.value = {
+    email: 'test-admin@local',
+    name: 'Test Admin'
+  }
+  adminToken.value = 'TEST_ADMIN_TOKEN'
 }
 
 /**
- * 設定登入資料
+ * 主 composable
  */
-function setAuth(token, userInfo) {
-  idToken.value = token
-  adminUser.value = userInfo
+export function useAdminAuth() {
+  /**
+   * 設定登入狀態（正式登入 / 測試登入都走這）
+   */
+  function setAuth(token, user) {
+    adminToken.value = token
+    adminUser.value = user
+  }
 
-  localStorage.setItem('admin_id_token', token)
-  localStorage.setItem('admin_user', JSON.stringify(userInfo))
-}
+  /**
+   * 是否已登入（有 token 就算）
+   */
+  function isLoggedIn() {
+    return !!adminToken.value
+  }
 
-/**
- * 登出
- */
-function logout() {
-  idToken.value = null
-  adminUser.value = null
-  localStorage.removeItem('admin_id_token')
-  localStorage.removeItem('admin_user')
-}
+  /**
+   * router.beforeEach 用的 guard helper
+   */
+  function ensureAdminLoggedIn(router, to) {
+    // ✅ 修正點：用 adminToken，不是 token
+    if (adminToken.value) {
+      return true
+    }
 
-/**
- * 檢查是否登入（for router）
- */
-const isAuthed = computed(() => !!idToken.value)
-
-/**
- * Router Guard 專用
- */
-function ensureAdminLoggedIn(router, to) {
-  init()
-
-  if (!idToken.value) {
-    return router.replace({
+    // 未登入 → 導向 login
+    router.replace({
       path: '/admin/login',
       query: { redirect: to.fullPath }
     })
-  }
-}
 
-export function useAdminAuth() {
+    // 告訴 router：我已處理 redirect
+    return false
+  }
+
+  /**
+   * 登出
+   */
+  function logout(router) {
+    adminToken.value = null
+    adminUser.value = null
+    router.replace('/admin/login')
+  }
+
   return {
-    idToken,
     adminUser,
-    isAuthed,
+    adminToken,
+    isLoggedIn,
     setAuth,
-    logout,
     ensureAdminLoggedIn,
-    init
+    logout
   }
 }

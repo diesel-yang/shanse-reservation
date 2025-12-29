@@ -1,6 +1,6 @@
 <!-- src/admin/AdminLogin.vue -->
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
@@ -8,6 +8,25 @@ const router = useRouter()
 const route = useRoute()
 const { setAuth } = useAdminAuth()
 
+/**
+ * --------------------------------------------------
+ * ✅ Test Mode 判斷
+ * --------------------------------------------------
+ * 1. ?test=1
+ * 2. VITE_ADMIN_TEST_MODE=true
+ */
+const isTestMode = computed(() => {
+  return (
+    route.query.test === '1' ||
+    import.meta.env.VITE_ADMIN_TEST_MODE === 'true'
+  )
+})
+
+/**
+ * --------------------------------------------------
+ * ✅ Google Login（正式登入）
+ * --------------------------------------------------
+ */
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 function parseJwt(token) {
@@ -22,27 +41,35 @@ function parseJwt(token) {
   return JSON.parse(jsonPayload)
 }
 
-onMounted(() => {
+function loadGoogleLogin() {
+  // 防呆：已載入就不再載
+  if (window.google) return
+
   const script = document.createElement('script')
   script.src = 'https://accounts.google.com/gsi/client'
   script.async = true
   script.defer = true
   script.onload = initGoogle
   document.head.appendChild(script)
-})
+}
 
 function initGoogle() {
-  google.accounts.id.initialize({
+  if (!window.google) return
+
+  window.google.accounts.id.initialize({
     client_id: CLIENT_ID,
     callback: handleCredentialResponse
   })
 
-  google.accounts.id.renderButton(document.getElementById('google-btn'), {
-    theme: 'outline',
-    size: 'large',
-    width: 320,
-    shape: 'pill'
-  })
+  window.google.accounts.id.renderButton(
+    document.getElementById('google-btn'),
+    {
+      theme: 'outline',
+      size: 'large',
+      width: 320,
+      shape: 'pill'
+    }
+  )
 }
 
 function handleCredentialResponse(response) {
@@ -63,6 +90,39 @@ function handleCredentialResponse(response) {
   const target = route.query.redirect || '/admin'
   router.replace(target)
 }
+
+/**
+ * --------------------------------------------------
+ * ✅ Test Token Login（給 E2E / Playwright）
+ * --------------------------------------------------
+ */
+function loginWithTestToken() {
+  setAuth('test-token', {
+    email: 'test@admin.local',
+    name: 'Test Admin',
+    picture: ''
+  })
+
+  const target = route.query.redirect || '/admin'
+  router.replace(target)
+}
+
+/**
+ * --------------------------------------------------
+ * ✅ 正確處理模式切換
+ * --------------------------------------------------
+ */
+onMounted(() => {
+  if (!isTestMode.value) {
+    loadGoogleLogin()
+  }
+})
+
+watch(isTestMode, value => {
+  if (!value) {
+    loadGoogleLogin()
+  }
+})
 </script>
 
 <template>
@@ -71,9 +131,31 @@ function handleCredentialResponse(response) {
       <img src="/hero-transparent.png" alt="logo" class="logo" />
 
       <h1 class="title">山色後台登入</h1>
-      <p class="subtitle">請使用 Google 帳號登入</p>
 
-      <div id="google-btn" class="google-btn"></div>
+      <!-- ===============================
+           正式模式：Google 登入
+           =============================== -->
+      <template v-if="!isTestMode">
+        <p class="subtitle">請使用 Google 帳號登入</p>
+        <div id="google-btn" class="google-btn"></div>
+      </template>
+
+      <!-- ===============================
+           測試模式：Test Token 登入
+           =============================== -->
+      <template v-else>
+        <p class="subtitle text-red-500">
+          ⚠ 測試模式（不經 Google）
+        </p>
+
+        <button
+          class="w-full bg-black text-white py-2 rounded mt-4"
+          @click="loginWithTestToken"
+          data-testid="admin-test-login"
+        >
+          使用測試帳號登入
+        </button>
+      </template>
     </div>
   </div>
 </template>

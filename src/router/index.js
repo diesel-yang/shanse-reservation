@@ -3,9 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { adminRoutes } from '@/admin/adminRouter'
 import { useAdminAuth } from '@/admin/composables/useAdminAuth'
 
-/* --------------------------
- * 前台頁面匯入（必須存在）
- * -------------------------- */
+/* =========================================================
+ * 前台頁面（必須存在）
+ * ========================================================= */
 import Home from '@/pages/Home.vue'
 import About from '@/pages/About.vue'
 import Reserve from '@/pages/Reserve.vue'
@@ -16,9 +16,9 @@ import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
 
-/* --------------------------
+/* =========================================================
  * 前台 Routes
- * -------------------------- */
+ * ========================================================= */
 const frontendRoutes = [
   { path: '/', component: Home },
   { path: '/about', component: About },
@@ -32,29 +32,41 @@ const frontendRoutes = [
 
   // Line Pay
   { path: '/linepay-result', component: LinepayResult },
-  { path: '/linepay-cancel', component: () => import('@/pages/LinepayCancel.vue') },
-
-  // 404 fallback
-  { path: '/:pathMatch(.*)*', redirect: '/' }
+  { path: '/linepay-cancel', component: () => import('@/pages/LinepayCancel.vue') }
 ]
 
-/* --------------------------
- * 合併前台 + 後台路由
- * -------------------------- */
+/* =========================================================
+ * 建立 Router（前台 + 後台）
+ * ========================================================= */
 const router = createRouter({
   history: createWebHistory(),
-  routes: [...frontendRoutes, ...adminRoutes]
+  routes: [
+    ...frontendRoutes,
+    ...adminRoutes,
+
+    // 404 fallback（一定放最後）
+    { path: '/:pathMatch(.*)*', redirect: '/' }
+  ]
 })
 
-/* --------------------------
- * 後台登入驗證
- * -------------------------- */
+/* =========================================================
+ * Admin Guard（唯一入口）
+ * ========================================================= */
 router.beforeEach((to, from, next) => {
-  const { ensureAdminLoggedIn } = useAdminAuth()
+  const { isAdmin, ensureAdminLoggedIn } = useAdminAuth()
 
-  if (to.meta.requiresAdmin) {
-    const r = ensureAdminLoggedIn(router, to)
-    if (r !== undefined) return // 被導向到 login
+  // 只有標記 requiresAdmin 才進行檢查
+  if (to.meta?.requiresAdmin) {
+    /**
+     * ensureAdminLoggedIn 的責任：
+     * - 已登入：admin → return true
+     * - 未登入 → redirect /admin/login 並 return false
+     */
+    const ok = ensureAdminLoggedIn(to)
+
+    if (!ok) {
+      return next({ path: '/admin/login', query: { redirect: to.fullPath } })
+    }
   }
 
   next()
