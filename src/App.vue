@@ -3,6 +3,14 @@
   <!-- 需要全域 gate 的話可以改成 v-if="!loadingAll" 再渲染 RouterView -->
   <RouterView />
   <FloatingNav v-if="showNav" />
+
+  <!-- STG Badge（只在 stg 顯示） -->
+  <div
+    v-if="env === 'stg'"
+    class="fixed bottom-3 right-3 z-50 rounded bg-orange-600 px-3 py-1 text-xs font-bold text-white shadow-lg"
+  >
+    {{ badge || 'STAGING' }}
+  </div>
 </template>
 
 <script setup>
@@ -13,6 +21,8 @@ import { preloadAll } from '@/utils/dataLoaders'
 import { gasGet } from '@/utils/gas' // 用於 notice 背景更新（SWR）
 import { provideCart } from '@/composables/useCart'
 
+const env = import.meta.env.VITE_APP_ENV
+const badge = import.meta.env.VITE_APP_BADGE
 
 /** -------- 全域狀態（provide 給頁面 inject） -------- */
 const menu = reactive({ main: [], drink: [], side: [], addon: [] })
@@ -20,7 +30,6 @@ const holidays = reactive([]) // 用 splice 維持同一個 array 參考
 const retail = reactive({ frozen: [], dessert: [] })
 const notice = reactive([])
 const cart = provideCart() // ✅ 提供全域購物車 store
-
 
 /** -------- 載入狀態（細分） -------- */
 const loading = reactive({
