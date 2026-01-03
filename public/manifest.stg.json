@@ -1,0 +1,20 @@
+{
+  "name": "山色（STG）",
+  "short_name": "山色 STG",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/icons/stg/icon-192-stg.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/stg/icon-512-stg.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
