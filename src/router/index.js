@@ -15,7 +15,7 @@ import Retail from '@/pages/Retail.vue'
 import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
-import logo from '@/assets/logo.png'
+import logo from '@/assets/shanse-logo-original'
 
 /* =========================================================
  * 前台 Routes
