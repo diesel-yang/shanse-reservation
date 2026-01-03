@@ -1,0 +1,45 @@
+{\rtf1\ansi\ansicpg950\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 RestaurantPage\
+  \uc0\u9492 \u9472  GET /api/booking/slots\
+\
+ContactFormPage\
+  \uc0\u9492 \u9472  \u25910 \u38598 \u32879 \u32097 \u36039 \u26009 \u65288 \u19981 \u25171  API\u65289 \
+\
+PaymentPage\
+  \uc0\u9492 \u9472  POST /api/payment/initiate\
+     \uc0\u8594  redirect LINE Pay\
+\
+LINE Pay\
+  \uc0\u9492 \u9472  redirect /booking/result\
+\
+PaymentResultPage\
+  \uc0\u9492 \u9472  POST /api/payment/pay\
+       \uc0\u9500 \u9472  confirm LINE Pay\
+       \uc0\u9500 \u9472  create booking (CONFIRMED)\
+       \uc0\u9500 \u9472  \u23492  Email + PDF\
+       \uc0\u9492 \u9472  \u39023 \u31034 \u25104 \u21151  / \u22833 \u25943 \
+\
+\
+\pard\pardeftab720\partightenfactor0
+\cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 Admin Slot UI \uc0\u8594  GAS \u8594  \u21069 \u21488  \u21363 \u26178 \u29983 \u25928 \u65288 \u36039 \u26009 \u27969 \u30906 \u35469 \u65289 \
+\uc0\u36039 \u26009 \u27969 \u65288 \u29694 \u22312 \u26159 \u23436 \u25972 \u38281 \u29872 \u65289 \
+Admin UI\
+  \uc0\u8595  POST /api/admin/slots\
+Node booking.service.saveSlotCapacities\
+  \uc0\u8595  bookingRepo.saveSlotCapacities\
+GAS bookingSaveSlotCapacities_\
+  \uc0\u8595  \u23531  BookingSlots sheet\
+----------------------------------\
+Frontend RestaurantPage\
+  \uc0\u8595  GET /api/booking/slots\
+Node booking.service.getSlots\
+  \uc0\u8595  bookingRepo.getSlotCapacities\
+GAS bookingGetSlotCapacities_\
+}

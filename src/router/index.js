@@ -15,6 +15,7 @@ import Retail from '@/pages/Retail.vue'
 import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
+import logo from '@/assets/logo.png'
 
 /* =========================================================
  * 前台 Routes
@@ -29,6 +30,22 @@ const frontendRoutes = [
   { path: '/cart', component: Cart },
   { path: '/return-policy', component: ReturnPolicy },
   { path: '/menu-view', component: () => import('@/pages/MenuView.vue') },
+  {
+    path: '/booking/restaurant',
+    component: () => import('@/pages/booking/RestaurantPage.vue')
+  },
+  {
+    path: '/booking/select',
+    component: () => import('@/pages/booking/SelectSlotPage.vue')
+  },
+  {
+    path: '/booking/contact',
+    component: () => import('@/pages/booking/ContactFormPage.vue')
+  },
+  {
+    path: '/booking/payment',
+    component: () => import('@/pages/booking/PaymentPage.vue')
+  },
 
   // Line Pay
   { path: '/linepay-result', component: LinepayResult },

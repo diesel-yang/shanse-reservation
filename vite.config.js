@@ -6,7 +6,9 @@ import { fileURLToPath, URL } from 'node:url'
 import fs from 'fs'
 import path from 'path'
 
-// 🔹 建置版號（git commit 短哈希）
+/* --------------------------------------------------
+ * Build ID
+ * -------------------------------------------------- */
 function injectBuildId() {
   return {
     name: 'inject-build-id',
@@ -15,14 +17,16 @@ function injectBuildId() {
       try {
         buildId = execSync('git rev-parse --short HEAD').toString().trim()
       } catch {
-        console.warn('⚠️ 無法取得 git commit hash，改用 dev')
+        console.warn('⚠️ 無法取得 git commit hash，使用 dev')
       }
       return html.replace(/__BUILD_ID__/g, buildId)
     }
   }
 }
 
-// 🟧 自動檢查 manifest 是否輸出
+/* --------------------------------------------------
+ * Manifest Check
+ * -------------------------------------------------- */
 function checkManifest() {
   return {
     name: 'check-manifest',
@@ -31,19 +35,22 @@ function checkManifest() {
       if (fs.existsSync(manifestPath)) {
         console.log('✅ PWA manifest 已生成:', manifestPath)
       } else {
-        console.warn('⚠️ 沒找到 manifest.webmanifest，請檢查 VitePWA 設定')
+        console.warn('⚠️ 未產生 manifest.webmanifest')
       }
     }
   }
 }
 
+/* --------------------------------------------------
+ * Vite Config
+ * -------------------------------------------------- */
 export default defineConfig({
   plugins: [
     vue(),
     injectBuildId(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifestFilename: 'manifest.webmanifest', // ★ 強制輸出位置
+      manifestFilename: 'manifest.webmanifest',
       includeAssets: [
         'favicon.ico',
         'apple-touch-icon.png',
@@ -71,42 +78,43 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) =>
-              url.origin === 'https://script.google.com' ||
-              url.origin === 'https://script.googleusercontent.com',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-gas',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] }
-            }
-          },
-          {
-            urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'images',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }
-            }
-          }
-        ]
-      },
       devOptions: { enabled: true }
     }),
-    checkManifest() // ✅ build 完檢查 manifest
+    checkManifest()
   ],
-  base: '/',
+
+  /* --------------------------------------------------
+   * 🔑 關鍵修正：API Proxy
+   * -------------------------------------------------- */
+  server: {
+    proxy: {
+      /**
+       * 所有 /api 開頭 → 轉給後端（Node / Cloud Run）
+       * ❗這一段是你「slot 回 HTML」的根本解法
+       */
+      '/api': {
+        target: 'http://localhost:8080', // ← 你的後端 API server
+        changeOrigin: true,
+        secure: false,
+        rewrite: path => path.replace(/^\/api/, '/api')
+      }
+    }
+  },
+
+  /* --------------------------------------------------
+   * Alias
+   * -------------------------------------------------- */
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       vue: 'vue/dist/vue.esm-bundler.js'
     }
   },
-  optimizeDeps: { include: ['vue'] },
+
+  optimizeDeps: {
+    include: ['vue', 'axios']
+  },
+
   build: {
     target: 'es2015',
     outDir: 'dist',
@@ -118,7 +126,6 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]'
       }
-    },
-    commonjsOptions: { include: [/node_modules/] }
+    }
   }
 })
