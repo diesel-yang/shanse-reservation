@@ -8,13 +8,14 @@ import { useAdminAuth } from '@/admin/composables/useAdminAuth'
  * ========================================================= */
 import Home from '@/pages/Home.vue'
 import About from '@/pages/About.vue'
-import Reserve from '@/pages/Reserve.vue'
+import Booking from '@/pages/booking/booking.vue'
 import Menu from '@/pages/Menu.vue'
 import Notice from '@/pages/Notice.vue'
 import Retail from '@/pages/Retail.vue'
 import Cart from '@/pages/Cart.vue'
 import ReturnPolicy from '@/pages/ReturnPolicy.vue'
 import LinepayResult from '@/pages/LinepayResult.vue'
+import AdminSlotPage from '@/admin/AdminSlotPage.vue'
 
 /* =========================================================
  * 前台 Routes

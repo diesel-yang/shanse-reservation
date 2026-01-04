@@ -103,7 +103,7 @@ async function loadSlots() {
   try {
     const res = await fetchSlots({
       date: date.value,
-      people: people.valu                                                                                                                                                                      e
+      people: people.value
     })
     slots.value = res.slots
   } finally {

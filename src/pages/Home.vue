@@ -79,14 +79,9 @@ function cancelPress() {
           <button class="btn-main">菜單 MENU</button>
         </router-link>
 
-        <a
-          href="https://instantfood.store/collections/%E9%A4%90%E6%A1%8C%E4%BA%88%E7%B4%84"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block w-full"
-        >
+        <router-link to="/restaurant" class="block">
           <button class="btn-main">訂位</button>
-        </a>
+        </router-link>
 
         <router-link to="/menu" class="block">
           <button class="btn-main">點餐</button>
